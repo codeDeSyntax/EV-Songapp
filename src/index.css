@@ -1,0 +1,311 @@
+@import url("https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "EB Garamond", "Times New Roman", serif;
+  overflow-x: hidden;
+}
+.wqote {
+  font-family: "Brush Script MT", "Cursive", "Pacifico", cursive;
+}
+.bod {
+  border-width: 10px;
+}
+
+.dottedb {
+  background: radial-gradient(
+    circle,
+    #29282810 1px,
+    white 0
+  ); /* Dots - reduced opacity from 20 to 10 */
+  background-size: 20px 20px; /* Adjust the size of the background pattern */
+}
+.dottedb1 {
+  background: radial-gradient(
+    circle,
+    #2c2b2b10 1px,
+    #000000 0
+  ); /* Dots - reduced opacity from 20 to 10 */
+  background-size: 20px 20px; /* Adjust the size of the background pattern */
+}
+.gridb {
+  background: linear-gradient(to right, white 1px, white 1px),
+    linear-gradient(to bottom, white 1px, #fafafa 1px);
+  background-size: 20px 20px; /* Adjust the size of the grid */
+}
+.gridb1 {
+  background: linear-gradient(to right, #fffdd5 1px, transparent 1px),
+    linear-gradient(to bottom, #fffdd5 1px, #faeed1 1px);
+  background-size: 20px 20px; /* Adjust the size of the grid */
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+/* button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+} */
+/* button:hover {
+  border-color: #646cff;
+} */
+button {
+  border: none;
+  border-radius: 10px;
+}
+button:hover {
+  cursor: pointer;
+}
+
+.inputcontrol {
+  caret-color: white; /* Customize the caret color */
+  font-size: 15px; /* Adjust font size to modify caret size */
+  animation: caret-blink 1s infinite step-end; /* Control blinking rate */
+}
+
+@font-face {
+  font-family: "Anton SC";
+  src: url("/fonts/antonsc.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Big Shoulders Thin";
+  src: url("/fonts/bigshouldsvw.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Bitter Thin";
+  src: url("/fonts/bittervw.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Oswald ExtraLight";
+  src: url("/fonts/oswaldv.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Archivo Black";
+  src: url("/fonts/archivoblack.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Roboto Thin";
+  src: url("/fonts/robotovw.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Cooper Black";
+  src: url("/fonts/COOPBL.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Haettenschweiler";
+  src: url("/fonts/HATTEN.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Impact";
+  src: url("/fonts/impact.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Teko Light";
+  src: url("/fonts/teko.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Alumini Sans Black";
+  src: url("/fonts/aluminisans.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+@font-face {
+  font-family: "LTFuzz";
+  src: url("./fonts/LTFuzz-Regular.ttf") format("truetype");
+  /* font-weight: bold;
+  font-style: normal; */
+}
+@font-face {
+  font-family: "ThePriest";
+  src: url("./fonts/thepriest.ttf") format("truetype");
+  /* font-weight: bold;
+  font-style: normal; */
+}
+@font-face {
+  font-family: "Rowdies";
+  src: url("./fonts/Rowdies-Bold.ttf") format("truetype");
+  /* font-weight: bold;
+  font-style: normal; */
+}
+@font-face {
+  font-family: "Rubik Dirt";
+  src: url("./fonts/RubikDirt-Regular.ttf") format("truetype");
+  /* font-weight: bold;
+  font-style: normal; */
+}
+@font-face {
+  font-family: "Milkyway DEMO";
+  src: url("./fonts/milkyway-demo.regular.ttf") format("truetype");
+  /* font-weight: bold;
+  font-style: normal; */
+}
+@font-face {
+  font-family: "Moliga DEMO";
+  src: url("./fonts/moliga-demo.regular.otf") format("truetype");
+  /* font-weight: bold;
+  font-style: normal; */
+}
+@font-face {
+  font-family: "Ketchup Manis Demo";
+  src: url("./fonts/ketchup-manis-demo.regular.ttf") format("truetype");
+  /* font-weight: bold;
+  font-style: normal; */
+}
+@font-face {
+  font-family: "Merich";
+  src: url("./fonts/merich.regular.otf") format("truetype");
+  /* font-weight: bold;
+  font-style: normal; */
+}
+
+/* Custom utilities for sleek presentation */
+.bg-gradient-radial {
+  background: radial-gradient(ellipse at center, var(--tw-gradient-stops));
+}
+
+.text-shadow-lg {
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.backdrop-blur-xl {
+  backdrop-filter: blur(24px);
+}
+
+/* Animation enhancements */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Smooth transitions for font family changes */
+* {
+  transition: font-family 0.3s ease;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
+
+/* Hide scrollbar utility class */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Live Presentation Window Effects */
+@keyframes pulseBorder {
+  0%,
+  100% {
+    opacity: 0.6;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3), 0 0 40px rgba(239, 68, 68, 0.2),
+      0 0 60px rgba(239, 68, 68, 0.1);
+  }
+  50% {
+    opacity: 0.9;
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.5), 0 0 60px rgba(239, 68, 68, 0.3),
+      0 0 90px rgba(239, 68, 68, 0.2);
+  }
+}
+
+@keyframes liquidFlow {
+  0% {
+    background-position: -100% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* Modern Thin Scrollbar with Cream Theme */
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #d4c4a8 transparent;
+  overflow-x: hidden; /* Hide horizontal scrollbar */
+}
+
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 0px; /* Hide horizontal scrollbar */
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: #d4c4a8;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #c7b596;
+}
+
+.thin-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar-horizontal {
+  display: none; /* Hide horizontal scrollbar */
+}

@@ -1,0 +1,71 @@
+{
+  "name": "ev-songapp",
+  "version": "1.0.0",
+  "main": "dist-electron/main/index.js",
+  "description": "Electron Vite React boilerplate.",
+  "author": "dlcentimemessage>",
+  "license": "MIT",
+  "private": true,
+  "debug": {
+    "env": {
+      "VITE_DEV_SERVER_URL": "http://127.0.0.1:7777/"
+    }
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && electron-builder",
+    "preview": "vite preview",
+    "pree2e": "vite build --mode=test",
+    "e2e": "playwright test",
+    "package": "electron-packager . eastvoice --platform=win32 --arch=x64  --icon=C:\\Users\\josiah-ok\\Downloads\\evv.ico --out=release/ --overwrite --asar"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.4.0",
+    "@electron-toolkit/preload": "^3.0.2",
+    "@reactour/tour": "^3.8.0",
+    "@reduxjs/toolkit": "^2.8.2",
+    "@tailwindcss/vite": "^4.0.4",
+    "@tiptap/core": "^2.11.5",
+    "@tiptap/extension-blockquote": "^2.11.5",
+    "@tiptap/extension-character-count": "^2.11.5",
+    "@tiptap/extension-color": "^2.11.5",
+    "@tiptap/extension-heading": "^2.11.5",
+    "@tiptap/extension-placeholder": "^2.11.5",
+    "@tiptap/extension-text": "^2.11.5",
+    "@tiptap/extension-text-align": "^2.11.5",
+    "@tiptap/extension-typography": "^2.11.5",
+    "@tiptap/pm": "^2.11.5",
+    "@tiptap/react": "^2.11.5",
+    "@tiptap/starter-kit": "^2.11.5",
+    "antd": "^5.26.2",
+    "aos": "^2.3.4",
+    "electron-updater": "^6.1.8",
+    "framer-motion": "^11.5.4",
+    "lucide-react": "^0.441.0",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^4.10.38",
+    "react-redux": "^9.2.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.42.1",
+    "@types/aos": "^3.0.7",
+    "@types/pdfjs-dist": "^2.10.377",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.18",
+    "electron": "^29.1.1",
+    "electron-builder": "^24.13.3",
+    "electron-packager": "^17.1.2",
+    "postcss": "^8.4.35",
+    "postcss-import": "^16.0.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.4.2",
+    "vite": "^6.1.0",
+    "vite-plugin-electron": "^0.28.4",
+    "vite-plugin-electron-renderer": "^0.14.5"
+  }
+}
