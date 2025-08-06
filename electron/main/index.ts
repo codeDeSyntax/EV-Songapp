@@ -296,7 +296,7 @@ async function createSongPresentationWindow() {
     songPresentationWin.loadURL(
       `${VITE_DEV_SERVER_URL}/#/song-presentation-display`
     );
-    songPresentationWin.webContents.openDevTools();
+    // songPresentationWin.webContents.openDevTools();
   } else {
     songPresentationWin.loadFile(indexHtml, {
       hash: "song-presentation-display",
