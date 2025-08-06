@@ -15,13 +15,14 @@ export interface PianoAnimationOptions {
   glowColor?: string;
   enableAudio?: boolean;
   audioVolume?: number;
-  audioType?: 'generated' | 'files'; // Use generated tones or audio files
+  audioType?: "generated" | "files"; // Use generated tones or audio files
 }
 
 export class PianoAnimation {
   private container: HTMLElement;
   private keyElements: HTMLElement[] = [];
   private currentKeyIndex = 0;
+  private currentMelodyIndex = 0;
   private options: Required<PianoAnimationOptions>;
   private progressInterval: NodeJS.Timeout | null = null;
   private audioContext: AudioContext | null = null;
@@ -34,11 +35,12 @@ export class PianoAnimation {
       keyWidth: options.keyWidth || 16,
       keyHeight: options.keyHeight || 60,
       blackKeyHeight: options.blackKeyHeight || 35,
-      animationSpeed: options.animationSpeed || 100,
+      animationSpeed: options.animationSpeed || 800, // Much slower for quality chromatic scale
       glowColor: options.glowColor || "rgba(255, 215, 0, 0.6)",
-      enableAudio: options.enableAudio !== undefined ? options.enableAudio : true,
-      audioVolume: options.audioVolume || 0.3,
-      audioType: options.audioType || 'generated',
+      enableAudio:
+        options.enableAudio !== undefined ? options.enableAudio : true,
+      audioVolume: options.audioVolume || 0.25, // Softer volume for church atmosphere
+      audioType: options.audioType || "generated",
     };
 
     this.initializePiano();
@@ -286,102 +288,187 @@ export class PianoAnimation {
   private async initializeAudio(): Promise<void> {
     try {
       // Create AudioContext for generating piano sounds
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
+      this.audioContext = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
+
       // Handle audio context state for user interaction requirements
-      if (this.audioContext.state === 'suspended') {
+      if (this.audioContext.state === "suspended") {
         // Try to resume immediately (works in Electron)
         await this.audioContext.resume();
-        
+
         // If still suspended, set up user interaction listener
-        if (this.audioContext.state === 'suspended') {
+        if (this.audioContext.state === "suspended") {
           const resumeAudio = async () => {
-            if (this.audioContext && this.audioContext.state === 'suspended') {
+            if (this.audioContext && this.audioContext.state === "suspended") {
               await this.audioContext.resume();
-              console.log('Piano audio context resumed after user interaction');
+              console.log("Piano audio context resumed after user interaction");
             }
-            document.removeEventListener('click', resumeAudio);
-            document.removeEventListener('keydown', resumeAudio);
+            document.removeEventListener("click", resumeAudio);
+            document.removeEventListener("keydown", resumeAudio);
           };
-          
-          document.addEventListener('click', resumeAudio, { once: true });
-          document.addEventListener('keydown', resumeAudio, { once: true });
+
+          document.addEventListener("click", resumeAudio, { once: true });
+          document.addEventListener("keydown", resumeAudio, { once: true });
         }
       }
-      
-      console.log('Piano audio initialized successfully');
+
+      console.log("Piano audio initialized successfully");
     } catch (error) {
-      console.warn('Failed to initialize piano audio:', error);
+      console.warn("Failed to initialize piano audio:", error);
       this.options.enableAudio = false;
     }
   }
 
-  private generatePianoTone(frequency: number, duration: number = 0.3): void {
+  private generateGrandPianoTone(
+    frequency: number,
+    duration: number = 1.5
+  ): void {
     if (!this.audioContext || !this.options.enableAudio) return;
 
     try {
-      const oscillator = this.audioContext.createOscillator();
-      const gainNode = this.audioContext.createGain();
-      
-      // Connect oscillator to gain to output
-      oscillator.connect(gainNode);
-      gainNode.connect(this.audioContext.destination);
-      
-      // Set oscillator properties for piano-like sound
-      oscillator.type = 'triangle'; // More piano-like than sine
-      oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-      
-      // Create ADSR envelope for piano-like sound
       const now = this.audioContext.currentTime;
-      gainNode.gain.setValueAtTime(0, now);
-      gainNode.gain.linearRampToValueAtTime(this.options.audioVolume, now + 0.01); // Attack
-      gainNode.gain.exponentialRampToValueAtTime(this.options.audioVolume * 0.7, now + 0.1); // Decay
-      gainNode.gain.setValueAtTime(this.options.audioVolume * 0.5, now + 0.1); // Sustain
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + duration); // Release
-      
-      // Start and stop the oscillator
-      oscillator.start(now);
-      oscillator.stop(now + duration);
-      
+
+      // Create multiple oscillators for rich grand piano harmonics
+      const fundamentalOsc = this.audioContext.createOscillator();
+      const harmonicOsc1 = this.audioContext.createOscillator(); // Octave
+      const harmonicOsc2 = this.audioContext.createOscillator(); // Perfect fifth
+      const harmonicOsc3 = this.audioContext.createOscillator(); // Major third
+      const subOsc = this.audioContext.createOscillator(); // Sub-octave for depth
+
+      // Create gain nodes for each oscillator
+      const fundamentalGain = this.audioContext.createGain();
+      const harmonicGain1 = this.audioContext.createGain();
+      const harmonicGain2 = this.audioContext.createGain();
+      const harmonicGain3 = this.audioContext.createGain();
+      const subGain = this.audioContext.createGain();
+      const masterGain = this.audioContext.createGain();
+
+      // Create reverb effect for concert hall acoustics
+      const convolver = this.audioContext.createConvolver();
+      const reverbGain = this.audioContext.createGain();
+
+      // Create impulse response for grand piano hall reverb
+      const length = this.audioContext.sampleRate * 2; // 2 second reverb
+      const impulse = this.audioContext.createBuffer(
+        2,
+        length,
+        this.audioContext.sampleRate
+      );
+
+      for (let channel = 0; channel < 2; channel++) {
+        const channelData = impulse.getChannelData(channel);
+        for (let i = 0; i < length; i++) {
+          channelData[i] =
+            (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+        }
+      }
+      convolver.buffer = impulse;
+
+      // Set oscillator types for rich grand piano sound
+      fundamentalOsc.type = "triangle"; // Warm fundamental
+      harmonicOsc1.type = "sine"; // Pure octave
+      harmonicOsc2.type = "triangle"; // Rich fifth
+      harmonicOsc3.type = "sine"; // Bright third
+      subOsc.type = "sine"; // Deep sub-octave
+
+      // Set frequencies - grand piano harmonic series
+      fundamentalOsc.frequency.setValueAtTime(frequency, now);
+      harmonicOsc1.frequency.setValueAtTime(frequency * 2, now); // Octave
+      harmonicOsc2.frequency.setValueAtTime(frequency * 1.498, now); // Perfect fifth (slightly detuned)
+      harmonicOsc3.frequency.setValueAtTime(frequency * 1.259, now); // Major third
+      subOsc.frequency.setValueAtTime(frequency * 0.5, now); // Sub-octave
+
+      // Set gain levels for balanced grand piano sound
+      fundamentalGain.gain.setValueAtTime(this.options.audioVolume * 0.8, now);
+      harmonicGain1.gain.setValueAtTime(this.options.audioVolume * 0.4, now);
+      harmonicGain2.gain.setValueAtTime(this.options.audioVolume * 0.3, now);
+      harmonicGain3.gain.setValueAtTime(this.options.audioVolume * 0.2, now);
+      subGain.gain.setValueAtTime(this.options.audioVolume * 0.3, now);
+
+      // Connect oscillators to their gain nodes
+      fundamentalOsc.connect(fundamentalGain);
+      harmonicOsc1.connect(harmonicGain1);
+      harmonicOsc2.connect(harmonicGain2);
+      harmonicOsc3.connect(harmonicGain3);
+      subOsc.connect(subGain);
+
+      // Connect gain nodes to master gain
+      fundamentalGain.connect(masterGain);
+      harmonicGain1.connect(masterGain);
+      harmonicGain2.connect(masterGain);
+      harmonicGain3.connect(masterGain);
+      subGain.connect(masterGain);
+
+      // Set up reverb for concert hall acoustics
+      reverbGain.gain.setValueAtTime(0.4, now);
+      masterGain.connect(convolver);
+      convolver.connect(reverbGain);
+
+      // Connect to output (dry + wet signal)
+      masterGain.connect(this.audioContext.destination);
+      reverbGain.connect(this.audioContext.destination);
+
+      // Create realistic grand piano envelope
+      masterGain.gain.setValueAtTime(0, now);
+      masterGain.gain.linearRampToValueAtTime(
+        this.options.audioVolume,
+        now + 0.05
+      ); // Quick attack
+      masterGain.gain.exponentialRampToValueAtTime(
+        this.options.audioVolume * 0.7,
+        now + 0.3
+      ); // Decay
+      masterGain.gain.setValueAtTime(this.options.audioVolume * 0.6, now + 0.5); // Sustain
+      masterGain.gain.exponentialRampToValueAtTime(0.001, now + duration); // Release
+
+      // Start all oscillators
+      fundamentalOsc.start(now);
+      harmonicOsc1.start(now);
+      harmonicOsc2.start(now);
+      harmonicOsc3.start(now);
+      subOsc.start(now);
+
+      // Stop all oscillators
+      fundamentalOsc.stop(now + duration);
+      harmonicOsc1.stop(now + duration);
+      harmonicOsc2.stop(now + duration);
+      harmonicOsc3.stop(now + duration);
+      subOsc.stop(now + duration);
     } catch (error) {
-      console.warn('Failed to generate piano tone:', error);
+      console.warn("Failed to generate grand piano tone:", error);
     }
   }
 
-  private getKeyFrequency(keyIndex: number): number {
-    // Piano key frequencies starting from C4 (middle C = 261.63 Hz)
-    // This creates a pentatonic scale for more pleasant loading sounds
-    const baseFrequencies = [
-      261.63, // C4
-      293.66, // D4
-      329.63, // E4
-      392.00, // G4
-      440.00, // A4
-      523.25, // C5
-      587.33, // D5
-      659.25, // E5
-      783.99, // G5
-      880.00, // A5
-      1046.50, // C6
-      1174.66, // D6
-      1318.51, // E6
-      1567.98, // G6
-      1760.00, // A6
-    ];
-    
-    return baseFrequencies[keyIndex % baseFrequencies.length];
+  private getChromaticScaleFrequency(noteIndex: number): number {
+    // Simple chromatic scale starting from C4 (middle C)
+    // Each semitone increases by the 12th root of 2 (approximately 1.05946)
+    const baseFrequency = 261.63; // C4 - Middle C
+    const semitonesPerOctave = 12;
+
+    // Calculate the frequency for the current note in the chromatic scale
+    const semitoneOffset = noteIndex % (semitonesPerOctave * 2); // Two octaves for variety
+    const frequency =
+      baseFrequency * Math.pow(2, semitoneOffset / semitonesPerOctave);
+
+    return frequency;
   }
 
-  private playKeySound(keyIndex: number): void {
+  private mapChromaticToKeyIndex(noteIndex: number): number {
+    // Map to specific visual keys for a clean chromatic progression
+    // Use every other key for better visual spacing and clarity
+    const keyMapping = [0, 1, 2, 3, 4, 5, 6, 7]; // First 8 keys for clean progression
+    return keyMapping[noteIndex % keyMapping.length];
+  }
+
+  private playKeySound(noteIndex: number): void {
     if (!this.options.enableAudio) return;
-    
-    const frequency = this.getKeyFrequency(keyIndex);
-    const isBlackKey = this.keyElements[keyIndex]?.getAttribute("data-key-type") === "black";
-    
-    // Black keys have slightly shorter duration and different timbre
-    const duration = isBlackKey ? 0.25 : 0.3;
-    
-    this.generatePianoTone(frequency, duration);
+
+    const frequency = this.getChromaticScaleFrequency(noteIndex);
+
+    // Longer duration for each note to let it breathe and be heard clearly
+    const duration = 2.0; // Much longer sustain for quality sound
+
+    this.generateGrandPianoTone(frequency, duration);
   }
 
   public playKey(index: number): void {
@@ -389,9 +476,6 @@ export class PianoAnimation {
 
     const key = this.keyElements[index];
     const isBlack = key.getAttribute("data-key-type") === "black";
-
-    // Play piano sound
-    this.playKeySound(index);
 
     // Add pressed state with top-view appropriate animations
     key.classList.add("piano-key-pressed");
@@ -428,35 +512,31 @@ export class PianoAnimation {
       key.style.filter = "";
       key.style.background = "";
       key.style.boxShadow = "";
-    }, 250);
+    }, 400);
   }
 
   public startProgressAnimation(
     onProgress?: (progress: number) => void,
     onComplete?: () => void
   ): void {
-    this.currentKeyIndex = 0;
+    this.currentMelodyIndex = 0;
     let progress = 0;
     const totalProgress = 100;
+    const totalNotes = 8; // Just 8 notes for a clean, quality chromatic scale (one octave)
 
     this.progressInterval = setInterval(() => {
-      // Simulate realistic loading progress
-      const increment = Math.random() * 15 + 5;
-      progress = Math.min(progress + increment, totalProgress);
+      // Play a select few chromatic notes for quality over quantity
+      const keyIndex = this.mapChromaticToKeyIndex(this.currentMelodyIndex);
 
-      // Calculate which key should be playing based on progress
-      const targetKeyIndex = Math.floor(
-        (progress / totalProgress) * this.keyElements.length
-      );
+      // Play the sound for this chromatic note
+      this.playKeySound(this.currentMelodyIndex);
 
-      // Play keys sequentially as we progress
-      if (
-        targetKeyIndex > this.currentKeyIndex &&
-        this.currentKeyIndex < this.keyElements.length
-      ) {
-        this.playKey(this.currentKeyIndex);
-        this.currentKeyIndex++;
-      }
+      // Light up the corresponding visual key
+      this.playKey(keyIndex);
+
+      // Increment melody and progress
+      this.currentMelodyIndex++;
+      progress = Math.min(progress + 100 / totalNotes, totalProgress);
 
       // Call progress callback
       if (onProgress) {
@@ -464,7 +544,7 @@ export class PianoAnimation {
       }
 
       // Check if complete
-      if (progress >= totalProgress) {
+      if (progress >= totalProgress || this.currentMelodyIndex >= totalNotes) {
         this.completeAnimation(onComplete);
       }
     }, this.options.animationSpeed);
@@ -476,34 +556,35 @@ export class PianoAnimation {
       this.progressInterval = null;
     }
 
-    // Play remaining keys in rapid succession for finale
-    const finalKeys = setInterval(() => {
-      if (this.currentKeyIndex < this.keyElements.length) {
-        this.playKey(this.currentKeyIndex);
-        this.currentKeyIndex++;
-      } else {
-        clearInterval(finalKeys);
+    // Grand finale - play a beautiful ascending chord
+    setTimeout(() => {
+      this.playChromaticFinaleChord();
 
-        // Grand finale - play all keys together for a chord
-        setTimeout(() => {
-          this.playAllKeys();
-
-          // Call completion callback after finale
-          setTimeout(() => {
-            if (onComplete) {
-              onComplete();
-            }
-          }, 500);
-        }, 200);
-      }
-    }, 50); // Faster succession for finale
+      // Call completion callback after finale
+      setTimeout(() => {
+        if (onComplete) {
+          onComplete();
+        }
+      }, 1000);
+    }, 200);
   }
 
-  private playAllKeys(): void {
-    this.keyElements.forEach((key, index) => {
+  private playChromaticFinaleChord(): void {
+    // Play a beautiful C major chord to end the chromatic scale (C-E-G)
+    const chordNotes = [0, 2, 4]; // First few keys for a nice visual effect
+
+    chordNotes.forEach((keyIndex, index) => {
       setTimeout(() => {
-        this.playKey(index);
-      }, Math.random() * 100); // Slight randomization for natural chord effect
+        if (keyIndex < this.keyElements.length) {
+          this.playKey(keyIndex);
+
+          // Play the chord tones - C major chord
+          if (this.options.enableAudio) {
+            const frequencies = [261.63, 329.63, 392.0]; // C4, E4, G4
+            this.generateGrandPianoTone(frequencies[index], 2.5); // Long sustain for finale
+          }
+        }
+      }, index * 150); // Gentle arpeggiation for beautiful effect
     });
   }
 
@@ -527,11 +608,13 @@ export class PianoAnimation {
     });
 
     this.currentKeyIndex = 0;
+    this.currentMelodyIndex = 0;
   }
 
   public reset(): void {
     this.stop();
     this.currentKeyIndex = 0;
+    this.currentMelodyIndex = 0;
   }
 
   public destroy(): void {
@@ -561,7 +644,8 @@ export class PianoAnimation {
 
   // Get current progress as percentage
   public getCurrentProgress(): number {
-    return (this.currentKeyIndex / this.keyElements.length) * 100;
+    const totalNotes = 8; // Just 8 quality notes
+    return (this.currentMelodyIndex / totalNotes) * 100;
   }
 
   // Audio control methods
@@ -593,16 +677,17 @@ export function createPianoAnimation(
   return new PianoAnimation(container, options);
 }
 
-// Audio-enabled factory function with default audio settings
+// Audio-enabled factory function with church-appropriate audio settings
 export function createPianoAnimationWithAudio(
   container: HTMLElement,
-  options?: Omit<PianoAnimationOptions, 'enableAudio'>
+  options?: Omit<PianoAnimationOptions, "enableAudio">
 ): PianoAnimation {
   return new PianoAnimation(container, {
     ...options,
     enableAudio: true,
-    audioVolume: options?.audioVolume || 0.3,
-    audioType: options?.audioType || 'generated',
+    audioVolume: options?.audioVolume || 0.25, // Softer, more reverent
+    audioType: options?.audioType || "generated",
+    animationSpeed: options?.animationSpeed || 800, // Slower for quality chromatic scale
   });
 }
 
@@ -611,18 +696,18 @@ export const PianoUtils = {
   // Convert key index to note name (simplified)
   getNoteName(keyIndex: number): string {
     const notes = [
-      "C",
-      "C#",
-      "D",
-      "D#",
-      "E",
-      "F",
-      "F#",
       "G",
       "G#",
       "A",
       "A#",
       "B",
+      "C",
+      "C#",
+      "D",
+      "D#",
+      "E",
+      "E#",
+      "F#",
     ];
     return notes[keyIndex % 12];
   },
@@ -633,24 +718,99 @@ export const PianoUtils = {
     return blackKeys.includes(keyIndex % 12);
   },
 
-  // Generate a pleasing key sequence for loading
-  generateKeySequence(totalKeys: number): number[] {
+  // Generate chromatic scale sequence for loading
+  generateChromaticKeySequence(totalKeys: number): number[] {
     const sequence: number[] = [];
-    for (let i = 0; i < totalKeys; i++) {
-      sequence.push(i);
+    for (let i = 0; i < totalKeys * 2; i++) {
+      // Two full cycles
+      sequence.push(i % totalKeys);
     }
     return sequence;
   },
 
   // Audio utility functions
-  getOptimalVolume(environmentType: 'loading' | 'interactive' = 'loading'): number {
-    return environmentType === 'loading' ? 0.2 : 0.4;
+  getOptimalVolumeForGrandPiano(
+    environmentType: "loading" | "interactive" = "loading"
+  ): number {
+    return environmentType === "loading" ? 0.2 : 0.3; // Slightly higher for grand piano richness
   },
 
-  // Create pleasant chord progressions for loading
-  generateChordProgression(baseKeyIndex: number = 0): number[] {
-    // Generate a pleasant I-V-vi-IV progression
-    const progression = [0, 4, 5, 3]; // Relative to base key
-    return progression.map(offset => (baseKeyIndex + offset) % 12);
+  // Create simple chromatic chord progressions
+  generateChromaticChordProgression(baseKeyIndex: number = 0): number[] {
+    // Simple ascending chromatic progression
+    const progression = [0, 1, 2, 3, 4]; // Five consecutive semitones
+    return progression.map((offset) => (baseKeyIndex + offset) % 12);
+  },
+
+  // Generate chromatic scale frequencies
+  generateChromaticFrequencies(
+    startNote: number = 261.63,
+    octaves: number = 2
+  ): number[] {
+    const frequencies: number[] = [];
+    const totalSemitones = 12 * octaves;
+
+    for (let i = 0; i < totalSemitones; i++) {
+      const frequency = startNote * Math.pow(2, i / 12);
+      frequencies.push(frequency);
+    }
+
+    return frequencies;
+  },
+
+  // Generate passing chord sequence for smooth voice leading
+  generatePassingChordSequence(startKey: number, endKey: number): number[] {
+    const sequence: number[] = [];
+    const step = startKey < endKey ? 1 : -1;
+
+    for (let i = startKey; i !== endKey; i += step) {
+      sequence.push(i);
+    }
+    sequence.push(endKey);
+
+    return sequence;
+  },
+
+  // Get grand piano harmonic intervals for rich sound
+  getGrandPianoHarmony(fundamentalKey: number): number[] {
+    return [
+      fundamentalKey, // Root
+      fundamentalKey + 4, // Major third
+      fundamentalKey + 7, // Perfect fifth
+      fundamentalKey + 12, // Octave
+    ];
+  },
+
+  // Convert Amazing Grace scale degrees to frequencies
+  scaleDegreesToFrequencies(scaleDegrees: number[]): number[] {
+    const gMajorScale = {
+      1: 391.995, // G4 - Tonic
+      2: 440.0, // A4 - Supertonic
+      3: 493.883, // B4 - Mediant
+      4: 523.251, // C5 - Subdominant
+      5: 587.33, // D5 - Dominant
+      6: 659.255, // E5 - Submediant
+      7: 698.456, // F#5 - Leading tone
+      8: 783.991, // G5 - Octave
+    };
+
+    return scaleDegrees.map(
+      (degree) =>
+        gMajorScale[degree as keyof typeof gMajorScale] || gMajorScale[1]
+    );
+  },
+
+  // Get the tempo marking for Amazing Grace (traditional hymn tempo)
+  getAmazingGraceTempo(): { bpm: number; description: string } {
+    return {
+      bpm: 75,
+      description: "Andante - walking pace, reverent and contemplative",
+    };
+  },
+
+  // Calculate note duration based on hymn tempo
+  calculateNoteDuration(bpm: number = 75): number {
+    // Quarter note duration in milliseconds
+    return (60 / bpm) * 1000;
   },
 };
