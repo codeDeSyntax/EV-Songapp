@@ -23,8 +23,11 @@
   "dependencies": {
     "@ant-design/icons": "^5.4.0",
     "@electron-toolkit/preload": "^3.0.2",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@reactour/tour": "^3.8.0",
     "@reduxjs/toolkit": "^2.8.2",
+    "@sentry/react": "^10.1.0",
     "@tailwindcss/vite": "^4.0.4",
     "@tiptap/core": "^2.11.5",
     "@tiptap/extension-blockquote": "^2.11.5",

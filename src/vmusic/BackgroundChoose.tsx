@@ -74,13 +74,13 @@ const PresentationBackgroundSelector: React.FC = () => {
   // Memoized default backgrounds - these won't change
   const defaultBackgrounds = useMemo<Background[]>(
     () => [
-      { name: "Wood Pattern", src: "./wood2.jpg", category: "Nature" },
-      { name: "Snow Scene", src: "./snow1.jpg", category: "Nature" },
-      { name: "Wooden Texture", src: "./wood6.jpg", category: "Nature" },
-      { name: "Pine Pattern", src: "./wood7.png", category: "Nature" },
-      { name: "Mountain View", src: "./pic2.jpg", category: "Landscape" },
-      { name: "Abstract Art", src: "./wood10.jpg", category: "Abstract" },
-      { name: "Vintage Paper", src: "./wood11.jpg", category: "Texture" },
+      { name: "Wood Pattern", src: "wood2.jpg", category: "Nature" },
+      { name: "Snow Scene", src: "snow1.jpg", category: "Nature" },
+      { name: "Wooden Texture", src: "wood6.jpg", category: "Nature" },
+      { name: "Pine Pattern", src: "wood7.png", category: "Nature" },
+      { name: "Mountain View", src: "pic2.jpg", category: "Landscape" },
+      { name: "Abstract Art", src: "wood10.jpg", category: "Abstract" },
+      { name: "Vintage Paper", src: "wood11.jpg", category: "Texture" },
     ],
     []
   );

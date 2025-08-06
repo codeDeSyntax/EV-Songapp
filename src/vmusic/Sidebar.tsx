@@ -225,19 +225,19 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
     {
       id: "bg2",
       name: "Midnight Jazz",
-      thumbnail: "./pic2.jpg",
+      thumbnail: "pic2.jpg",
       gradient: "bg-gradient-to-r from-blue-900 to-purple-900",
     },
     {
       id: "bg3",
       name: "Sunset Vibes",
-      thumbnail: "./wood7.png",
+      thumbnail: "wood7.png",
       gradient: "bg-gradient-to-r from-orange-200 to-rose-200",
     },
     {
       id: "bg4",
       name: "Forest Calm",
-      thumbnail: "./wood9.png",
+      thumbnail: "wood9.png",
       gradient: "bg-gradient-to-r from-green-100 to-emerald-100",
     },
   ];
@@ -361,7 +361,7 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
                 {/* Fixed scroll background image - completely static */}
                 <div className="absolute inset-0 w-full h-full">
                   <img
-                    src={`./${
+                    src={`${
                       localTheme === "creamy"
                         ? "creampaper.jpg"
                         : "whitescroll.png"
@@ -376,9 +376,9 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
                 <div className="absolute inset-0 flex items-start justify-center pointer-events-none">
                   <div className="w-[90%] h-[80%] relative pointer-events-auto">
                     {/* Scrollable text content with proper boundaries */}
-                     <h3 className="text-lg text-left font-ThePriest underline text-stone-600 font-semibold overflow-hidden mb-1">
-              {selectedSong?.title}
-            </h3>
+                    <h3 className="text-lg text-left font-ThePriest underline text-stone-600 font-semibold overflow-hidden mb-1">
+                      {selectedSong?.title}
+                    </h3>
                     <div
                       dangerouslySetInnerHTML={{
                         __html: selectedSong?.content || "",

@@ -59,7 +59,7 @@ const useFontControls = () => {
     }
   };
 
-  // Enhanced automatic font sizing algorithm - Maximum space utilization
+  // Enhanced automatic font sizing algorithm - Maximum space utilization (exactly from SongPresentationDisplay)
   const calculateOptimalFontSize = useCallback(
     (container: HTMLElement, lines: string[]): number => {
       if (!lines || lines.length === 0) return baseFontSize;
@@ -192,7 +192,7 @@ const useFontControls = () => {
     setFontFamily(savedFont!);
   }, []);
 
-  // Enhanced font control functions with overflow prevention
+  // Enhanced font control functions with overflow prevention (exactly from SongPresentationDisplay)
   const increaseFontSize = useCallback(
     (currentPage: any) => {
       if (fontSizeMultiplier < 7.0) {
@@ -322,8 +322,7 @@ const useFontControls = () => {
 
 const SongPresentation = () => {
   const [fontSize, setFontSize] = useState<string>("");
-  const [presentationBg, setPresentationBg] =
-    useState<string>("url(wood7.png)");
+  const [presentationBg, setPresentationBg] = useState<string>("evdefault.jpg");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [songPages, setSongPages] = useState<
     {
@@ -860,14 +859,14 @@ const SongPresentation = () => {
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-1000 ease-out"
         style={{
-          backgroundImage: `url(${presentationBg})`,
+          backgroundImage: `url(${presentationBg || "evdefault.jpg"})`,
           filter: "brightness(0.7) contrast(1.1)",
         }}
       />
 
       {/* Test image to check if path is accessible */}
       <img
-        src={presentationBg}
+        src={presentationBg || "evdefault.jpg"}
         style={{
           position: "absolute",
           top: "-100px",
