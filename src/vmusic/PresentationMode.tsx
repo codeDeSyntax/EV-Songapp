@@ -59,7 +59,7 @@ const useFontControls = () => {
     }
   };
 
-  // Enhanced automatic font sizing algorithm - Maximum space utilization (exactly from SongPresentationDisplay)
+  // Enhanced automatic font sizing algorithm - Maximum space utilization
   const calculateOptimalFontSize = useCallback(
     (container: HTMLElement, lines: string[]): number => {
       if (!lines || lines.length === 0) return baseFontSize;
@@ -192,7 +192,7 @@ const useFontControls = () => {
     setFontFamily(savedFont!);
   }, []);
 
-  // Enhanced font control functions with overflow prevention (exactly from SongPresentationDisplay)
+  // Enhanced font control functions with overflow prevention
   const increaseFontSize = useCallback(
     (currentPage: any) => {
       if (fontSizeMultiplier < 7.0) {

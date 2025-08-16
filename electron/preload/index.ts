@@ -1,9 +1,6 @@
 import { ipcRenderer, contextBridge, dialog } from "electron";
 import { DisplayInfo } from "@/types/electron-api";
-import {
-  createPianoAnimationWithAudio,
-  PianoAnimation,
-} from "./pianoAnimation";
+import { createPianoAnimationWithAudio, PianoAnimation } from "./pianoAnimation";
 
 // --------- Splash Screen Implementation ---------
 function createSplashScreen() {

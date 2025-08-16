@@ -294,7 +294,7 @@ const BlessedMusic = () => {
   return (
     <AppTour>
       <div
-        className={`w-screen h-screen overflow-hidden transition-all duration-300 `}
+        className={`w-screen h-screen pt-6 overflow-hidden transition-all duration-300 `}
         style={{
           backgroundColor: theme === "creamy" ? "#faeed1" : "white",
         }}

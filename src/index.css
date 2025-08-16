@@ -11,6 +11,11 @@ body {
   font-family: "EB Garamond", "Times New Roman", serif;
   overflow-x: hidden;
 }
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
 .wqote {
   font-family: "Brush Script MT", "Cursive", "Pacifico", cursive;
 }

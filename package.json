@@ -18,7 +18,7 @@
     "preview": "vite preview",
     "pree2e": "vite build --mode=test",
     "e2e": "playwright test",
-    "package": "electron-packager . eastvoice --platform=win32 --arch=x64  --icon=C:\\Users\\josiah-ok\\Downloads\\evv.ico --out=release/ --overwrite --asar"
+    "package": "electron-packager . evsongapp --platform=win32 --arch=x64  --icon=J:\\electron\\songsapp\\public\\evsongsicon.ico --out=release/ --overwrite --asar"
   },
   "dependencies": {
     "@ant-design/icons": "^5.4.0",

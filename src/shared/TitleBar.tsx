@@ -90,172 +90,161 @@ const TitleBar = () => {
 
   return (
     <div
-      className="h-6 w-screen  fixed w-100 flex z-50 top-0 bg-white/0 bg-opacity-sm backdrop-blur-sm  items-center justify-between px-2 select-none"
+      className="h-12 w-full  fixed flex z-50 top-0 m-auto bg-opacity-sm backdrop-blur-sm  items-center justify-center px-2 select-none"
       style={{ WebkitAppRegion: "drag" } as any} // Make the entire title bar draggable
     >
-      <div className="flex items-center space-x-2 ml-2">
+      <div className="flex w-full  items-center justify-between space-x-2 ">
         {/* Control buttons excluded from dragging */}
         <div
-          className="flex items-center space-x-2"
+          className="flex items-center justify-between w-full m-auto  space-x-2"
           style={{ WebkitAppRegion: "no-drag" } as any} // Exclude control buttons from dragging
         >
-          <div
-            onClick={handleClose}
-            onMouseEnter={() => setIsHovered("close")}
-            onMouseLeave={() => setIsHovered(null)}
-            className="w-4 h-4 rounded-full bg-[#FF5F57] hover:bg-red-600 hover:cursor-pointer flex items-center justify-center"
-            // style={{
-            //   backgroundColor: `rgba(${Math.floor(
-            //     Math.random() * 255
-            //   )},${Math.floor(Math.random() * 255)},${Math.floor(
-            //     Math.random() * 255
-            //   )},1)`,
-            // }}
-          >
-            {isHovered === "close" && <X className="text-white z-20 size-3" />}
-          </div>
-          <div
-            onClick={handleMinimize}
-            onMouseEnter={() => setIsHovered("minimize")}
-            onMouseLeave={() => setIsHovered(null)}
-            className="w-4 h-4 rounded-full bg-[#FFBD2E] hover:bg-yellow-600 hover:cursor-pointer flex items-center justify-center"
-            // style={{
-            //   backgroundColor: `rgba(${Math.floor(
-            //     Math.random() * 255
-            //   )},${Math.floor(Math.random() * 255)},${Math.floor(
-            //     Math.random() * 255
-            //   )},1)`,
-            // }}
-          >
-            {isHovered === "minimize" && (
-              <Minus className="text-white z-20 size-3" />
-            )}
-          </div>
-          <div
-            onClick={handleMaximize}
-            onMouseEnter={() => setIsHovered("maximize")}
-            onMouseLeave={() => setIsHovered(null)}
-            className="w-4 h-4 rounded-full bg-[#28CA41] hover:bg-green-600 hover:cursor-pointer flex items-center justify-center"
-            // style={{
-            //   backgroundColor: `rgba(${Math.floor(
-            //     Math.random() * 255
-            //   )},${Math.floor(Math.random() * 255)},${Math.floor(
-            //     Math.random() * 255
-            //   )},1)`,
-            // }}
-          >
-            {isHovered === "maximize" && (
-              <Square className="text-white z-20 size-3" />
-            )}
-          </div>
-
-          <div
-            onClick={() => dispatch(setCurrentScreen("Home"))}
-            className="w-4 h-4 rounded-full bg-gray-500 hover:bg-gray-600 hover:cursor-pointer flex items-center justify-center"
-          >
-            <HomeFilled
-              className="text-white z-20 size-3"
-              color={`rgba(${Math.floor(Math.random() * 255)},${Math.floor(
-                Math.random() * 255
-              )},${Math.floor(Math.random() * 255)},1)`}
-            />
-          </div>
-          <div
-            onClick={setThemeChoice}
-            className={`w-4 h-4 rounded-full bg-gray-500 hover:bg-gray-600 hover:cursor-pointer  
+          <div className="flex items-center justify-center gap-2">
+            <div
+              onClick={handleClose}
+              onMouseEnter={() => setIsHovered("close")}
+              onMouseLeave={() => setIsHovered(null)}
+              className="w-4 h-4 rounded-full bg-[#FF5F57] hover:bg-red-600 hover:cursor-pointer flex items-center justify-center"
+              // style={{
+              //   backgroundColor: `rgba(${Math.floor(
+              //     Math.random() * 255
+              //   )},${Math.floor(Math.random() * 255)},${Math.floor(
+              //     Math.random() * 255
+              //   )},1)`,
+              // }}
+            >
+              {isHovered === "close" && (
+                <X className="text-white z-20 size-6" />
+              )}
+            </div>
+            <div
+              onClick={handleMinimize}
+              onMouseEnter={() => setIsHovered("minimize")}
+              onMouseLeave={() => setIsHovered(null)}
+              className="w-4 h-4 text-white rounded-full bg-[#FFBD2E] hover:bg-yellow-600 hover:cursor-pointer flex items-center justify-center hover:text-white"
+              // style={{
+              //   backgroundColor: `rgba(${Math.floor(
+              //     Math.random() * 255
+              //   )},${Math.floor(Math.random() * 255)},${Math.floor(
+              //     Math.random() * 255
+              //   )},1)`,
+              // }}
+            >
+              {isHovered === "minimize" && (
+                <Minus className="text-white z-20 size-6" />
+              )}
+            </div>
+            <div
+              onClick={handleMaximize}
+              onMouseEnter={() => setIsHovered("maximize")}
+              onMouseLeave={() => setIsHovered(null)}
+              className="w-4 h-4 rounded-full bg-[#28CA41] hover:bg-green-600 hover:cursor-pointer flex items-center justify-center"
+              // style={{
+              //   backgroundColor: `rgba(${Math.floor(
+              //     Math.random() * 255
+              //   )},${Math.floor(Math.random() * 255)},${Math.floor(
+              //     Math.random() * 255
+              //   )},1)`,
+              // }}
+            >
+              {isHovered === "maximize" && (
+                <Square className="text-white z-20 size-3" />
+              )}
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <div
+                onClick={() => dispatch(setCurrentScreen("Home"))}
+                className={`w-4 h-4 rounded-full  hover:scale-105 hover:cursor-pointer flex items-center justify-center 
+                 ${currentScreen === "Songs" ? "bg-primary/20" : "hidden"}
+                `}
+              >
+                <HomeFilled
+                  className="text-primary z-20 size-6"
+                  color={`rgba(${Math.floor(Math.random() * 255)},${Math.floor(
+                    Math.random() * 255
+                  )},${Math.floor(Math.random() * 255)},1)`}
+                />
+              </div>
+              <div
+                onClick={setThemeChoice}
+                className={`w-4 h-4 rounded-full  hover:scale-105 hover:cursor-pointer  
               items-center justify-center ${
                 currentScreen === "Songs" ? "flex" : "hidden"
               }`}
-            title="Mild theme 🟤"
-          >
-            <SwitchCamera className="text-white z-20 size-3" />
-          </div>
-          <div
-            onClick={() => dispatch(setCurrentScreen("backgrounds"))}
-            className={`w-4 h-4 rounded-full bg-gray-500 hover:bg-gray-600 hover:cursor-pointer items-center justify-center flex`}
-            title="Presentation backgrounds"
-          >
-            <GalleryHorizontal className="text-white z-20 size-3" />
-          </div>
-          <div
-            onClick={() => dispatch(setCurrentScreen("Songs"))}
-            className={`w-4 h-4 rounded-full bg-gray-500 hover:bg-gray-600 hover:cursor-pointer  
+                title="Mild theme 🟤"
+              >
+                <SwitchCamera className="text-primary z-20 size-3" />
+              </div>
+              <div
+                onClick={() => dispatch(setCurrentScreen("backgrounds"))}
+                className={`w-4 h-4 rounded-full hover:scale-105 hover:cursor-pointer items-center justify-center flex relative ${
+                  currentScreen === "backgrounds" ? "bg-primary/10" : ""
+                }`}
+                title="Presentation backgrounds"
+              >
+                <GalleryHorizontal className="text-primary z-20 size-6" />
+                {currentScreen === "backgrounds" && (
+                  <div className="absolute -bottom-2 w-1 h-1 rounded-full bg-primary"></div>
+                )}
+              </div>
+              <div
+                onClick={() => dispatch(setCurrentScreen("Songs"))}
+                className={`w-4 h-4 rounded-full hover:scale-105 hover:cursor-pointer relative
               items-center justify-center ${
                 currentScreen === "categorize" ? "flex" : "hidden"
               }`}
-            title="back"
-          >
-            <ArrowLeftFromLine className="text-white z-20 size-3" />
-          </div>
-          <div
-            onClick={() => dispatch(setCurrentScreen("categorize"))}
-            className={`w-4 h-4 rounded-full bg-gray-500 hover:bg-gray-600 hover:cursor-pointer items-center justify-center flex`}
-            title="Music categories"
-          >
-            <Group className="text-white z-20 size-3" />
-          </div>
-          <div
-            onClick={() => dispatch(setCurrentScreen("recents"))}
-            className={`w-4 h-4 rounded-full bg-amber-600 hover:bg-amber-700 hover:cursor-pointer
-              items-center justify-center flex ${
+                title="back"
+              >
+                <ArrowLeftFromLine className="text-primary z-20 size-6" />
+              </div>
+              <div
+                onClick={() => dispatch(setCurrentScreen("categorize"))}
+                className={`w-4 h-4 rounded-full hover:scale-105 hover:cursor-pointer items-center justify-center flex relative ${
+                  currentScreen === "categorize" ? "bg-primary/10" : ""
+                }`}
+                title="Music categories"
+              >
+                <Group className="text-primary z-20 size-6" />
+                {currentScreen === "categorize" && (
+                  <div className="absolute -bottom-2 w-1 h-1 rounded-full bg-primary"></div>
+                )}
+              </div>
+              <div
+                onClick={() => dispatch(setCurrentScreen("recents"))}
+                className={`w-4 h-4 rounded-full hover:bg-amber-700 hover:cursor-pointer
+              items-center justify-center flex relative ${
                 currentScreen !== "Songs" &&
                 currentScreen !== "recents" &&
                 "hidden"
-              }`}
-            title="Recent Songs"
-          >
-            <Clock className="text-white z-20 size-3" />
-          </div>
-          <div
-            onClick={() => dispatch(setCurrentScreen("userguide"))}
-            className={`w-4 h-4 rounded-full bg-gray-500 hover:bg-gray-600 hover:cursor-pointer  
-              items-center justify-center flex ${
-                currentScreen !== "Songs" && "hidden"
-              }`}
-            title="User manual"
-          >
-            <User2Icon className="text-white z-20 size-3" />
-          </div>
-
-          {/* New dropdown toggle icon */}
-          <div
-            onClick={toggleDropdown}
-            className="w-4 h-4 rounded-full bg-bgray hover:bg-gray-600 hover:cursor-pointer flex items-center justify-center relative"
-          >
-            <MoreHorizontal className="text-white z-20 size-3" />
-
-            {/* Dropdown menu */}
-            {showDropdown && (
-              <div className="absolute top-5 right-0 left-0 bg-white dark:bg-bgray shadow-md rounded-md p-1 z-50 w-32">
-                {/* <div
-                  className="flex items-center space-x-2 p-1 hover:bg-gray-100 rounded cursor-pointer"
-                  onClick={() => {
-                    setAndSaveCurrentScreen("hisvoice");
-                    setShowDropdown(false);
-                  }}
-                >
-                  <img src="./icon.png" className="h-4 w-4 " />
-                  <span className="text-xs text-stone-500 dark:text-gray-600">His voice</span>
-                </div> */}
-                <div
-                  className="flex items-center space-x-2 p-1 hover:bg-gray-100 rounded cursor-pointer"
-                  onClick={() => {
-                    dispatch(setCurrentScreen("Songs"));
-                    setShowDropdown(false);
-                  }}
-                >
-                  <img
-                    src="./music2.png"
-                    className="h-4 w-4"
-                    alt="Music icon"
-                  />
-                  <span className="text-xs text-stone-500 dark:text-gray-600">
-                    Bmusic
-                  </span>
-                </div>
+              } ${currentScreen === "recents" ? "bg-primary/10" : ""}`}
+                title="Recent Songs"
+              >
+                <Clock className="text-primary z-20 size-6" />
+                {currentScreen === "recents" && (
+                  <div className="absolute -bottom-2 w-1 h-1 rounded-full bg-primary"></div>
+                )}
               </div>
-            )}
+              <div
+                onClick={() => dispatch(setCurrentScreen("userguide"))}
+                className={`w-4 h-4 rounded-full hover:scale-105 hover:cursor-pointer  
+              items-center justify-center flex relative ${
+                currentScreen !== "Songs" && "hidden"
+              } ${currentScreen === "userguide" ? "bg-primary/10" : ""}`}
+                title="User manual"
+              >
+                <User2Icon className="text-primary z-20 size-6" />
+                {currentScreen === "userguide" && (
+                  <div className="absolute -bottom-2 w-1 h-1 rounded-full bg-primary"></div>
+                )}
+              </div>
+            </div>
           </div>
+
+          <img
+            src="./evsongsicon.png"
+            alt="Description"
+            className="w-8 h-8 animate-bounce"
+          />
         </div>
       </div>
     </div>
