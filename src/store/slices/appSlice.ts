@@ -8,8 +8,7 @@ export type CurrentScreen =
   | "Presentation"
   | "categorize"
   | "userguide"
-  | "backgrounds"
-  | "recents";
+  | "backgrounds";
 
 export type Theme = "dark" | "light" | "creamy";
 

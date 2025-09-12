@@ -14,8 +14,6 @@ import {
   setShowDeleteDialog,
   deleteSongFromState,
   clearSearch,
-  addToRecents,
-  removeFromRecents,
   ViewMode,
   ActiveTab,
 } from "@/store/slices/songSlice";
@@ -61,9 +59,6 @@ export const useSongOperations = () => {
         window.api.onDisplaySong((selectedSong) => {
           console.log(`songData: ${selectedSong.title}`);
         });
-
-        // Add song to recents when presented
-        dispatch(addToRecents(song));
       }
     },
     [dispatch]
@@ -227,14 +222,6 @@ export const useSongOperations = () => {
     }
   }, [deleteSong, selectedSong]);
 
-  // Remove song from recents
-  const removeRecentSong = useCallback(
-    (songId: string, date: string) => {
-      dispatch(removeFromRecents({ songId, date }));
-    },
-    [dispatch]
-  );
-
   return {
     // State
     songs,
@@ -273,6 +260,5 @@ export const useSongOperations = () => {
     hideDeleteConfirmation,
     deleteSong,
     deleteSelectedSong,
-    removeRecentSong,
   };
 };

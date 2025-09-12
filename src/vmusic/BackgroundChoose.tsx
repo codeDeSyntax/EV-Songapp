@@ -341,7 +341,7 @@ const PresentationBackgroundSelector: React.FC = () => {
 
       <div className="flex flex-col h-full">
         {/* Main Content Area - Large iPad Simulation */}
-        <div className="flex-1 overflow-y-auto no-scrollbar bg-[#070707]">
+        <div className="flex-1 overflow-y-auto no-scrollbar bg-white">
           <div className="p-6 h-full">
             <div className="flex items-center justify-center h-full">
               {/* Large iPad Simulation Container */}
@@ -367,7 +367,7 @@ const PresentationBackgroundSelector: React.FC = () => {
                       background: selectedBackground
                         ? `url(${selectedBackground.src})`
                         : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                      backgroundSize: "cover",
+                      backgroundSize: "contain",
                       backgroundPosition: "center",
                       backgroundRepeat: "no-repeat",
                       // imageRendering: "crisp-edges",
@@ -477,7 +477,7 @@ const PresentationBackgroundSelector: React.FC = () => {
                                   ))}
                                 </div>
                               ) : (
-                                <div className="grid grid-cols-3 gap-2">
+                                <div className="grid grid-cols-4 gap-2">
                                   {filteredBackgrounds.map(
                                     (background, index) => (
                                       <motion.div
@@ -488,7 +488,7 @@ const PresentationBackgroundSelector: React.FC = () => {
                                           handleSelectBackground(background)
                                         }
                                         className={`
-                                        relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer
+                                        relative aspect-[5/3] rounded-lg overflow-hidden cursor-pointer
                                         transition-all duration-200 shadow-md hover:shadow-lg
                                         ${
                                           selectedBackground?.src ===

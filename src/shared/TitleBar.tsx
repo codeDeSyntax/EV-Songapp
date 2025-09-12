@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   ArrowLeftFromLine,
-  Clock,
   GalleryHorizontal,
   GalleryThumbnails,
   Group,
@@ -207,21 +206,6 @@ const TitleBar = () => {
               >
                 <Group className="text-primary z-20 size-6" />
                 {currentScreen === "categorize" && (
-                  <div className="absolute -bottom-2 w-1 h-1 rounded-full bg-primary"></div>
-                )}
-              </div>
-              <div
-                onClick={() => dispatch(setCurrentScreen("recents"))}
-                className={`w-4 h-4 rounded-full hover:bg-amber-700 hover:cursor-pointer
-              items-center justify-center flex relative ${
-                currentScreen !== "Songs" &&
-                currentScreen !== "recents" &&
-                "hidden"
-              } ${currentScreen === "recents" ? "bg-primary/10" : ""}`}
-                title="Recent Songs"
-              >
-                <Clock className="text-primary z-20 size-6" />
-                {currentScreen === "recents" && (
                   <div className="absolute -bottom-2 w-1 h-1 rounded-full bg-primary"></div>
                 )}
               </div>

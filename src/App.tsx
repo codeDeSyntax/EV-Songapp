@@ -9,7 +9,6 @@ import SongCollectionManager from "./vmusic/Categorize/Categorize";
 import UserGuidePage from "./vmusic/Userguide";
 import PresentationBackgroundSelector from "./vmusic/BackgroundChoose";
 import SongPresentationDisplay from "./vmusic/components/SongPresentationDisplay";
-import Recents from "./vmusic/Recents";
 import { useAppSelector, useAppDispatch } from "./store";
 import { setCurrentScreen } from "./store/slices/appSlice";
 import { SecretLogsManager } from "./components/SecretLogsManager";
@@ -99,8 +98,6 @@ const App = () => {
           <UserGuidePage />
         ) : currentScreen === "backgrounds" ? (
           <PresentationBackgroundSelector />
-        ) : currentScreen === "recents" ? (
-          <Recents />
         ) : (
           <WorkspaceSelector />
         )}

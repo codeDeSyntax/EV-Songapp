@@ -5,13 +5,14 @@ import TitleBar from "../../shared/TitleBar";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { setCurrentScreen, CurrentScreen } from "@/store/slices/appSlice";
 import { Song } from "@/types";
+import { FolderOpen, Tags, Library } from "lucide-react";
 
 // Import extracted components
 import CategoryHeader from "./components/CategoryHeader";
-import WindowControls from "./components/WindowControls";
 import MobileNavigation from "./components/MobileNavigation";
 import SongListPanel from "./components/SongListPanel";
 import CollectionPanel from "./components/CollectionPanel";
+import { LoadingWrapper } from "./components/SkeletonLoaders";
 
 interface Collection {
   id: string;
@@ -27,6 +28,7 @@ const SongCollectionManager: React.FC = () => {
     selectedSong,
     selectSong,
     presentSong: presentSongViaAPI,
+    loadSongs,
   } = useSongOperations();
   const dispatch = useAppDispatch();
 
@@ -60,10 +62,7 @@ const SongCollectionManager: React.FC = () => {
     };
   }, []);
 
-  // Window controls
-  const handleClose = () => window.api?.closeApp();
-  const handleMinimize = () => window.api?.minimizeApp();
-  const handleMaximize = () => window.api?.maximizeApp();
+  // Helper functions
   const setSelectedSong = (song: Song) => selectSong(song);
   const setAndSaveCurrentScreen = (screen: CurrentScreen) =>
     dispatch(setCurrentScreen(screen));
@@ -78,13 +77,23 @@ const SongCollectionManager: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [showSongList, setShowSongList] = useState(true);
   const [showCollectionPanel, setShowCollectionPanel] = useState(true);
-  const [isHovered, setIsHovered] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState("table"); // Add viewMode state
+
+  // Loading states
+  const [isLoadingSongs, setIsLoadingSongs] = useState(true);
+  const [isLoadingCollections, setIsLoadingCollections] = useState(true);
+
+  // Load songs on component mount (same as BlessedMusic)
+  useEffect(() => {
+    setIsLoadingSongs(true);
+    loadSongs();
+  }, [loadSongs]);
 
   // Sync songs from useSongOperations with local state
   useEffect(() => {
     if (songs && songs.length > 0) {
       setAllMusic(songs);
+      setIsLoadingSongs(false);
     }
   }, [songs]);
 
@@ -121,41 +130,63 @@ const SongCollectionManager: React.FC = () => {
 
   // Load data from localStorage on component mount
   useEffect(() => {
-    const savedCollections = localStorage.getItem("collections");
+    setIsLoadingCollections(true);
 
-    if (savedCollections) {
-      setCollections(JSON.parse(savedCollections));
-    } else {
-      // Sample collections if none exist
-      const sampleCollections: Collection[] = [
-        {
-          id: "c1",
-          name: "Wedding Songs",
-          songIds: [],
-          dateCreated: new Date().toISOString(),
-        },
-        {
-          id: "c2",
-          name: "Favorites",
-          songIds: [],
-          dateCreated: new Date().toISOString(),
-        },
-        {
-          id: "c3",
-          name: "Prayer Songs",
-          songIds: [],
-          dateCreated: new Date().toISOString(),
-        },
-      ];
-      setCollections(sampleCollections);
-      localStorage.setItem("collections", JSON.stringify(sampleCollections));
-    }
+    // Simulate a brief loading delay for better UX
+    const timer = setTimeout(() => {
+      const savedCollections = localStorage.getItem("bmusiccollections");
+
+      if (savedCollections) {
+        setCollections(JSON.parse(savedCollections));
+      } else {
+        // Sample collections if none exist
+        const sampleCollections: Collection[] = [
+          {
+            id: "c1",
+            name: "Wedding Songs",
+            songIds: [],
+            dateCreated: new Date().toISOString(),
+          },
+          {
+            id: "c2",
+            name: "Favorites",
+            songIds: [],
+            dateCreated: new Date().toISOString(),
+          },
+          {
+            id: "c3",
+            name: "Prayer Songs",
+            songIds: [],
+            dateCreated: new Date().toISOString(),
+          },
+        ];
+        setCollections(sampleCollections);
+        localStorage.setItem(
+          "bmusiccollections",
+          JSON.stringify(sampleCollections)
+        );
+      }
+
+      setIsLoadingCollections(false);
+    }, 800); // Small delay to show skeleton
+
+    return () => clearTimeout(timer);
   }, []);
 
   // Save collections to localStorage whenever they change
   useEffect(() => {
     if (collections.length > 0) {
-      localStorage.setItem("collections", JSON.stringify(collections));
+      localStorage.setItem("bmusiccollections", JSON.stringify(collections));
+
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(
+        new CustomEvent("localStorageChange", {
+          detail: {
+            key: "bmusiccollections",
+            newValue: JSON.stringify(collections),
+          },
+        })
+      );
     }
   }, [collections]);
 
@@ -326,7 +357,35 @@ const SongCollectionManager: React.FC = () => {
     >
       <TitleBar />
 
-      <div className="flex gap-3 h-[100vh] overflow-hidden p-4">
+      <div className="flex gap-3 h-[100vh] overflow-hidden p-4 relative">
+        {/* Watermark Icons */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* First watermark icon - top right */}
+          <FolderOpen
+            className="absolute top-16 right-16 opacity-[0.08] rotate-12"
+            size={350}
+            style={{
+              color: theme === "creamy" ? "#8B7355" : "#6B7280",
+            }}
+          />
+          {/* Second watermark icon - bottom left */}
+          <Tags
+            className="absolute bottom-16 left-20 opacity-[0.08] -rotate-12"
+            size={380}
+            style={{
+              color: theme === "creamy" ? "#8B7355" : "#6B7280",
+            }}
+          />
+          {/* Third watermark icon - center area, shifted left to avoid overlap */}
+          <Library
+            className="absolute top-1/2 left-1/2 opacity-[0.08] rotate-6 transform -translate-x-1/2 -translate-y-1/2"
+            size={320}
+            style={{
+              color: theme === "creamy" ? "#8B7355" : "#6B7280",
+            }}
+          />
+        </div>
+
         {/* Categories Sidebar - Similar to BlessedMusic Sidebar */}
         <div
           className={`transition-[width,opacity] duration-300 ease-in-out flex-shrink-0 ${
@@ -342,6 +401,7 @@ const SongCollectionManager: React.FC = () => {
             isAddingCollection={isAddingCollection}
             newCollectionName={newCollectionName}
             theme={theme}
+            isLoadingCollections={isLoadingCollections}
             setIsAddingCollection={setIsAddingCollection}
             setNewCollectionName={setNewCollectionName}
             createCollection={createCollection}
@@ -354,6 +414,7 @@ const SongCollectionManager: React.FC = () => {
             setSelectedSong={setSelectedSong}
             setAndSaveCurrentScreen={setAndSaveCurrentScreen}
             presentSong={presentSong}
+            addSongToCollection={addSongToCollection}
           />
         </div>
 
@@ -367,16 +428,6 @@ const SongCollectionManager: React.FC = () => {
                   backgroundColor: theme === "creamy" ? "#fdf4d0" : "white",
                 }}
               >
-                {/* Window Controls */}
-                <WindowControls
-                  isHovered={isHovered}
-                  setIsHovered={setIsHovered}
-                  handleClose={handleClose}
-                  handleMinimize={handleMinimize}
-                  handleMaximize={handleMaximize}
-                  setAndSaveCurrentScreen={setAndSaveCurrentScreen}
-                />
-
                 {/* Mobile Navigation */}
                 <MobileNavigation
                   isMobile={isMobile}
@@ -386,7 +437,7 @@ const SongCollectionManager: React.FC = () => {
                 />
 
                 {/* Main Songs Table View - Using BlessedMusic Style */}
-                <div className="w-full mt-4 h-[calc(100%-5rem)]">
+                <div className="w-full mt-4 h-[calc(100%-3rem)]">
                   <SongListPanel
                     showSongList={showSongList}
                     isMobile={isMobile}
@@ -396,8 +447,10 @@ const SongCollectionManager: React.FC = () => {
                     collections={collections}
                     theme={theme}
                     viewMode={viewMode}
+                    isLoadingSongs={isLoadingSongs}
                     setSearchTerm={setSearchTerm}
                     handleSongSelection={handleSongSelection}
+                    addSongToCollection={addSongToCollection}
                   />
                 </div>
               </div>

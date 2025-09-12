@@ -10,7 +10,7 @@ import SongProjectionControls from "./components/SongProjectionControls";
 import { useSongOperations } from "@/features/songs/hooks/useSongOperations";
 import { useTheme } from "@/Provider/Theme";
 import { Song } from "@/types";
-import { Music } from "lucide-react";
+import { Music, Mic, Music4 } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/store";
 import { setCurrentScreen } from "@/store/slices/appSlice";
 import { ActiveTab } from "@/store/slices/songSlice";
@@ -301,7 +301,35 @@ const BlessedMusic = () => {
       >
         <TitleBar />
 
-        <div className="flex  gap-3 h-[100vh] overflow-hidden p-4">
+        <div className="flex  gap-3 h-[100vh] overflow-hidden p-4 relative">
+          {/* Watermark Icons */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {/* First watermark icon - top right */}
+            <Music
+              className="absolute top-16 right-16 opacity-[0.08] rotate-12"
+              size={350}
+              style={{
+                color: theme === "creamy" ? "#8B7355" : "#6B7280",
+              }}
+            />
+            {/* Second watermark icon - bottom left */}
+            <Mic
+              className="absolute bottom-16 left-20 opacity-[0.08] -rotate-12"
+              size={380}
+              style={{
+                color: theme === "creamy" ? "#8B7355" : "#6B7280",
+              }}
+            />
+            {/* Third watermark icon - center area */}
+            <Music4
+              className="absolute top-1/2 left-1/2 opacity-[0.08] rotate-6 transform -translate-x-1/2 -translate-y-1/2"
+              size={320}
+              style={{
+                color: theme === "creamy" ? "#8B7355" : "#6B7280",
+              }}
+            />
+          </div>
+
           {/* Sidebar with smooth toggle animation */}
           <div
             className={`transition-[width,opacity]  duration-300 ease-in-out flex-shrink-0 ${

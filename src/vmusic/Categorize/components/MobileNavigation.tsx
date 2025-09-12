@@ -30,7 +30,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
           background:
             theme === "creamy"
               ? "linear-gradient(to right, #d4a574, #c8956f)"
-              : "linear-gradient(to right, #9ca3af, #6b7280)",
+              : "linear-gradient(to right, #d4a574, #c8956f)",
         }}
       >
         {showSongList ? (

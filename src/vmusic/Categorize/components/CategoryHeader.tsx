@@ -10,7 +10,7 @@ const CategoryHeader: React.FC<CategoryHeaderProps> = ({ theme }) => {
     <div
       className="p-4 md:p-6 text-white rounded-t-3xl"
       style={{
-        backgroundColor: theme === "creamy" ? "#d4a574" : "#9ca3af",
+        backgroundColor: theme === "creamy" ? "#d4a574" : "#d4a574",
       }}
     >
       <h1 className="text-2xl md:text-3xl font-bold flex items-center">
