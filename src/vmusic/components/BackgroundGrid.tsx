@@ -39,8 +39,8 @@ const BackgroundGrid: React.FC<BackgroundGridProps> = React.memo(
       // Return positions with minimal computation
       return backgrounds.map((background, index) => {
         // Use simple math to create a grid - avoid trig functions
-        const row = Math.floor(index / 5); // 5 cards per row
-        const col = index % 5;
+        const row = Math.floor(index / 6); // 5 cards per row
+        const col = index % 6;
 
         // Base position - optimized spacing for 5 columns
         const baseX = col * 160; // Tighter spacing

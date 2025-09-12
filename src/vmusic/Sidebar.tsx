@@ -364,7 +364,7 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
                     src={`${
                       localTheme === "creamy"
                         ? "creampaper.jpg"
-                        : "whitescroll.png"
+                        : "wood11.jpg"
                     }`}
                     alt="Scroll background"
                     className="w-full h-full object-cover object-center"
@@ -831,8 +831,8 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
 
   return (
     <div
-      className={`w-72 h-full pt-2 border-r border-stone-300 bg-white/20 backdrop-blur-sm transition-all duration-300 ease-in-out flex flex-col shadow ${
-        localTheme === "creamy" ? "bg-[#f1e3ae]" : "bg-white/20"
+      className={`w-72 h-full pt-2 border-1 border-dashed border-primary/20 bg-white/20 backdrop-blur-sm transition-all duration-300 ease-in-out flex flex-col rounded-t-3xl shadow ${
+        localTheme === "creamy" ? "bg-[#f1e3ae]" : "bg-white"
       }`}
       style={{
         backgroundColor: localTheme === "creamy" ? "#fdf4d0" : "white",

@@ -340,180 +340,312 @@ const PresentationBackgroundSelector: React.FC = () => {
       <TitleBar />
 
       <div className="flex flex-col h-full">
-        {/* Header with Navigation and Categories */}
-        <div className="p-4 border-b border-gray-200 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Tooltip title="Back to Songs">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => dispatch(setCurrentScreen("Songs"))}
-                  className="p-2 bg-[#4d3403] text-white rounded-lg hover:bg-[#5d4413] transition-colors"
+        {/* Main Content Area - Large iPad Simulation */}
+        <div className="flex-1 overflow-y-auto no-scrollbar bg-[#070707]">
+          <div className="p-6 h-full">
+            <div className="flex items-center justify-center h-full">
+              {/* Large iPad Simulation Container */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="relative"
+              >
+                {/* iPad Frame - Much Larger */}
+                <div
+                  className="relative rounded-[3rem] p-6 shadow-2xl"
+                  style={{
+                    width: "900px",
+                    height: "650px",
+                    backgroundColor: "#1d1c1b", // Dark gray/black
+                  }}
                 >
-                  <ArrowLeft className="w-4 h-4" />
-                </motion.button>
-              </Tooltip>
-              <h1 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                <Palette className="w-5 h-5" />
-                Presentation Backgrounds
-              </h1>
-            </div>
+                  {/* iPad Screen with Background */}
+                  <div
+                    className="w-full h-full bg-white rounded-[2rem] overflow-hidden relative"
+                    style={{
+                      background: selectedBackground
+                        ? `url(${selectedBackground.src})`
+                        : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      backgroundRepeat: "no-repeat",
+                      // imageRendering: "crisp-edges",
+                    }}
+                  >
+                    {/* Content Container inside iPad - Fixed Height */}
+                    <div className="relative z-10 p-4 h-full flex flex-col max-h-full">
+                      {/* Top Navigation Bar - Compact */}
+                      <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => dispatch(setCurrentScreen("Songs"))}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-black/20 backdrop-blur-md rounded-full text-white hover:bg-black/30 transition-all text-sm"
+                        >
+                          <ArrowLeft className="w-3 h-3" />
+                          <span className="font-medium">Back</span>
+                        </motion.button>
 
-            {/* Action Buttons, Categories, and Custom Path */}
-            <div className="flex items-center gap-4">
-              {/* Category Pills */}
-              <div className="flex items-center gap-2">
-                {categories.map((category) => {
-                  // Define icons/emojis for each category
-                  const getCategoryIcon = (cat: string) => {
-                    switch (cat) {
-                      case "All":
-                        return "🌟";
-                      case "Nature":
-                        return "🌿";
-                      case "Landscape":
-                        return "🏔️";
-                      case "Abstract":
-                        return "🎨";
-                      case "Texture":
-                        return "🧱";
-                      case "Custom":
-                        return "📁";
-                      default:
-                        return "📷";
-                    }
-                  };
+                        <h1 className="text-lg font-bold text-white drop-shadow-lg text-center">
+                          Background Gallery
+                        </h1>
 
-                  return (
-                    <Tooltip key={category} title={category}>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setSelectedCategory(category)}
-                        className={`
-                          w-8 h-8 rounded-full flex items-center justify-center text-sm
-                          transition-all duration-200 shadow-sm
-                          ${
-                            selectedCategory === category
-                              ? "bg-[#4d3403] text-white shadow-md scale-105"
-                              : "bg-[#4d3403] text-white hover:bg-[#5d4413] hover:shadow-md"
-                          }
-                        `}
-                      >
-                        {getCategoryIcon(category)}
-                      </motion.button>
-                    </Tooltip>
-                  );
-                })}
-              </div>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={handleUploadBackground}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-primary backdrop-blur-md rounded-full text-white hover:bg-yellow-500 transition-all shadow-lg text-sm"
+                        >
+                          <FolderUp className="w-3 h-3" />
+                          <span className="font-medium">Upload</span>
+                        </motion.button>
+                      </div>
 
-              {/* Divider */}
-              <div className="w-px h-6 bg-gray-300"></div>
+                      {/* Category Pills - Compact */}
+                      <div className="flex items-center justify-center gap-2 mb-4 flex-shrink-0 flex-wrap">
+                        {categories.map((category) => {
+                          const getCategoryIcon = (cat: string) => {
+                            switch (cat) {
+                              case "All":
+                                return <Palette className="w-3 h-3" />;
+                              case "Nature":
+                                return (
+                                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                );
+                              case "Landscape":
+                                return (
+                                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                );
+                              case "Abstract":
+                                return (
+                                  <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                                );
+                              case "Texture":
+                                return (
+                                  <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
+                                );
+                              case "Custom":
+                                return <FolderUp className="w-3 h-3" />;
+                              default:
+                                return (
+                                  <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                                );
+                            }
+                          };
 
-              {/* Custom images path display */}
-              {customImagesPath && (
-                <div className="px-3 py-1 text-xs text-gray-500 bg-gray-50 rounded-lg max-w-48">
-                  <span className="font-medium">Custom: </span>
-                  <span className="truncate">
-                    {customImagesPath.split("/").pop() ||
-                      customImagesPath.split("\\").pop()}
-                  </span>
+                          return (
+                            <motion.button
+                              key={category}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => setSelectedCategory(category)}
+                              className={`
+                                px-3 py-1 rounded-full flex items-center gap-1.5 text-xs font-medium
+                                transition-all duration-200 shadow-lg backdrop-blur-md
+                                ${
+                                  selectedCategory === category
+                                    ? "bg-white/90 text-gray-800 shadow-xl"
+                                    : "bg-white/20 text-white hover:bg-white/30"
+                                }
+                              `}
+                            >
+                              {getCategoryIcon(category)}
+                              <span>{category}</span>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Main Content Area - Flex with Overflow Control */}
+                      <div className="flex-1 flex gap-4 min-h-0">
+                        {/* Background Grid - Glass Panel */}
+                        <div className="flex-1 min-w-0">
+                          <div className="h-full backdrop-blur-md bg-black/10 rounded-xl border border-white/20 p-4 shadow-xl flex flex-col">
+                            <h3 className="text-sm font-semibold text-white mb-3 drop-shadow-lg flex items-center gap-2 flex-shrink-0">
+                              <Palette className="w-4 h-4" />
+                              Choose Background
+                            </h3>
+                            <div className="flex-1 overflow-y-auto no-scrollbar rounded-lg">
+                              {isLoadingImages ? (
+                                <div className="grid grid-cols-3 gap-2">
+                                  {Array.from({ length: 9 }).map((_, i) => (
+                                    <div
+                                      key={i}
+                                      className="aspect-[4/3] bg-white/20 backdrop-blur-sm rounded-lg animate-pulse"
+                                    />
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-3 gap-2">
+                                  {filteredBackgrounds.map(
+                                    (background, index) => (
+                                      <motion.div
+                                        key={`${background.src}-${index}`}
+                                        whileHover={{ scale: 1.03 }}
+                                        whileTap={{ scale: 0.97 }}
+                                        onClick={() =>
+                                          handleSelectBackground(background)
+                                        }
+                                        className={`
+                                        relative aspect-[4/3] rounded-lg overflow-hidden cursor-pointer
+                                        transition-all duration-200 shadow-md hover:shadow-lg
+                                        ${
+                                          selectedBackground?.src ===
+                                          background.src
+                                            ? "ring-2 ring-yellow-400 shadow-lg"
+                                            : "hover:shadow-lg"
+                                        }
+                                      `}
+                                      >
+                                        <img
+                                          src={background.src}
+                                          alt={background.name}
+                                          className="w-full h-full object-cover"
+                                          loading="lazy"
+                                          onError={(e) => {
+                                            const target =
+                                              e.target as HTMLImageElement;
+                                            target.style.display = "none";
+                                          }}
+                                        />
+                                        {selectedBackground?.src ===
+                                          background.src && (
+                                          <div className="absolute inset-0 bg-yellow-400/30 flex items-center justify-center">
+                                            <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg">
+                                              <span className="text-black text-xs font-bold">
+                                                ✓
+                                              </span>
+                                            </div>
+                                          </div>
+                                        )}
+                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-1.5">
+                                          <p className="text-white text-xs font-medium truncate drop-shadow-md">
+                                            {background.name}
+                                          </p>
+                                        </div>
+                                      </motion.div>
+                                    )
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Controls Panel - Glass Style */}
+                        <div className="w-60 flex-shrink-0">
+                          <div className="h-full backdrop-blur-md bg-black/10 rounded-xl border border-white/20 p-4 shadow-xl flex flex-col">
+                            {/* Selected Background Info */}
+                            {selectedBackground ? (
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="h-full flex flex-col"
+                              >
+                                <div className="flex-shrink-0">
+                                  <h3 className="text-sm font-bold text-white mb-3 drop-shadow-lg flex items-center gap-2">
+                                    <Monitor className="w-4 h-4" />
+                                    Selected
+                                  </h3>
+                                  <div className="backdrop-blur-sm bg-white/10 rounded-lg p-3 border border-white/20 mb-4">
+                                    <div className="aspect-video rounded-md overflow-hidden mb-2 shadow-md">
+                                      <img
+                                        src={selectedBackground.src}
+                                        alt={selectedBackground.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    <p className="font-medium text-white drop-shadow-md text-sm truncate">
+                                      {selectedBackground.name}
+                                    </p>
+                                    <p className="text-xs text-white/80 drop-shadow-sm">
+                                      {selectedBackground.category}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex-1 flex flex-col justify-end space-y-2">
+                                  <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={projectBackground}
+                                    className="w-full p-3 bg-green-500/80 backdrop-blur-sm text-white rounded-lg hover:bg-green-500 transition-all flex items-center justify-center gap-2 shadow-lg border border-green-400/30 text-sm"
+                                  >
+                                    <Monitor className="w-4 h-4" />
+                                    <span className="font-medium">Project</span>
+                                  </motion.button>
+
+                                  <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => setSelectedBackground(null)}
+                                    className="w-full p-2 text-white backdrop-blur-sm bg-white/10 border border-white/20 rounded-lg hover:bg-white/20 transition-all font-medium text-sm"
+                                  >
+                                    Clear
+                                  </motion.button>
+                                </div>
+                              </motion.div>
+                            ) : (
+                              <div className="h-full flex items-center justify-center">
+                                <div className="text-center text-white">
+                                  <Monitor className="w-12 h-12 mx-auto mb-3 drop-shadow-lg opacity-60" />
+                                  <p className="text-sm font-medium drop-shadow-md">
+                                    Select Background
+                                  </p>
+                                  <p className="text-xs text-white/80 drop-shadow-sm">
+                                    Choose from gallery
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Home Indicator */}
+                    <div className="absolute bottom-3 left-1/2 transform -translate-x-1/2">
+                      <div className="w-32 h-1.5 bg-white/50 rounded-full shadow-lg"></div>
+                    </div>
+                  </div>
+
+                  {/* iPad Physical Details */}
+                  <div className="absolute top-1/2 left-2 transform -translate-y-1/2">
+                    <div
+                      className="w-1.5 h-12 rounded-r shadow-inner"
+                      style={{ backgroundColor: "#374151" }}
+                    ></div>
+                  </div>
+                  <div className="absolute top-1/2 right-2 transform -translate-y-1/2">
+                    <div
+                      className="w-1.5 h-12 rounded-l shadow-inner"
+                      style={{ backgroundColor: "#374151" }}
+                    ></div>
+                  </div>
+                  <div className="absolute top-8 right-2">
+                    <div
+                      className="w-1.5 h-6 rounded-l shadow-inner"
+                      style={{ backgroundColor: "#374151" }}
+                    ></div>
+                  </div>
+
+                  {/* Camera */}
+                  <div className="absolute top-4 left-1/2 transform -translate-x-1/2">
+                    <div
+                      className="w-3 h-3 rounded-full shadow-inner"
+                      style={{ backgroundColor: "#111827" }}
+                    ></div>
+                  </div>
                 </div>
-              )}
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2">
-                <Tooltip title="Upload Background Folder">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleUploadBackground}
-                    className="p-2 bg-[#4d3403] text-white rounded-lg hover:bg-[#5d4413] transition-colors"
-                  >
-                    <FolderUp className="w-4 h-4" />
-                  </motion.button>
-                </Tooltip>
-
-                <Tooltip title="Present Background Preview">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={projectBackground}
-                    disabled={!selectedBackground}
-                    className={`p-2 rounded-lg transition-colors ${
-                      selectedBackground
-                        ? "bg-green-600 text-white hover:bg-green-700"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                  >
-                    <Monitor className="w-4 h-4" />
-                  </motion.button>
-                </Tooltip>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content Area - Scrollable */}
-        <div className="flex-1 overflow-y-auto no-scrollbar bg-white">
-          <div className="p-6">
-            <div className="flex items-center justify-center min-h-full">
-              {isLoadingImages ? (
-                <SkeletonLoader />
-              ) : (
-                <BackgroundGrid
-                  backgrounds={filteredBackgrounds}
-                  selectedBackground={selectedBackground}
-                  onSelectBackground={handleSelectBackground}
-                />
-              )}
+                {/* Device Label */}
+              </motion.div>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Floating Selected Background Avatar */}
-      {selectedBackground && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          className="fixed bottom-6 right-6 z-50"
-        >
-          <Tooltip
-            title={`Selected: ${selectedBackground.name} (${selectedBackground.category})`}
-            placement="left"
-          >
-            <div className="relative">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                className="w-16 h-16 rounded-full border-2 border-dashed border-[#4d3403] bg-white shadow-lg overflow-hidden cursor-pointer"
-                onClick={() => setSelectedBackground(null)}
-              >
-                <img
-                  src={selectedBackground.src}
-                  alt={selectedBackground.name}
-                  className="w-full h-full object-cover"
-                />
-              </motion.div>
-
-              {/* Close button */}
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedBackground(null);
-                }}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600 transition-colors shadow-md"
-              >
-                ×
-              </motion.button>
-            </div>
-          </Tooltip>
-        </motion.div>
-      )}
     </div>
   );
 };

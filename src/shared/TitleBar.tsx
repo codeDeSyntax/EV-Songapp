@@ -26,6 +26,7 @@ import {
   closeApp,
 } from "@/store/slices/appSlice";
 import { ThemeToggle } from "./ThemeToggler";
+import { current } from "@reduxjs/toolkit";
 
 const TitleBar = () => {
   const [isHovered, setIsHovered] = useState<string | null>(null);
@@ -90,7 +91,7 @@ const TitleBar = () => {
 
   return (
     <div
-      className="h-12 w-full  fixed flex z-50 top-0 m-auto bg-opacity-sm backdrop-blur-sm  items-center justify-center px-2 select-none"
+      className="h-6 w-full  fixed flex z-50 top-0 m-auto bg-opacity-sm backdrop-blur-sm  items-center justify-center px-2 select-none"
       style={{ WebkitAppRegion: "drag" } as any} // Make the entire title bar draggable
     >
       <div className="flex w-full  items-center justify-between space-x-2 ">
@@ -169,7 +170,7 @@ const TitleBar = () => {
                 onClick={setThemeChoice}
                 className={`w-4 h-4 rounded-full  hover:scale-105 hover:cursor-pointer  
               items-center justify-center ${
-                currentScreen === "Songs" ? "flex" : "hidden"
+                currentScreen === "Songs" || currentScreen === "categorize" ? "flex" : "hidden"
               }`}
                 title="Mild theme 🟤"
               >
@@ -243,7 +244,7 @@ const TitleBar = () => {
           <img
             src="./evsongsicon.png"
             alt="Description"
-            className="w-8 h-8 animate-bounce"
+            className="w-4 h-4 animate-bounce"
           />
         </div>
       </div>

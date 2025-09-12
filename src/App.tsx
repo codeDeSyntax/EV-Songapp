@@ -5,7 +5,7 @@ import EditSong from "./vmusic/EditForm";
 import WorkspaceSelector from "./vmusic/Welcome";
 import CreateSong from "./vmusic/Form";
 import SongPresentation from "./vmusic/PresentationMode";
-import SongCollectionManager from "./vmusic/Categorize";
+import SongCollectionManager from "./vmusic/Categorize/Categorize";
 import UserGuidePage from "./vmusic/Userguide";
 import PresentationBackgroundSelector from "./vmusic/BackgroundChoose";
 import SongPresentationDisplay from "./vmusic/components/SongPresentationDisplay";

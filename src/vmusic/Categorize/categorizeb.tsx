@@ -19,7 +19,7 @@ import {
   ExternalLinkIcon,
 } from "lucide-react";
 import { useSongOperations } from "@/features/songs/hooks/useSongOperations";
-import TitleBar from "../shared/TitleBar";
+import TitleBar from "../../shared/TitleBar";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { setCurrentScreen, CurrentScreen } from "@/store/slices/appSlice";
 import { Song } from "@/types";
