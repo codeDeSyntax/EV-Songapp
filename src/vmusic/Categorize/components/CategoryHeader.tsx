@@ -13,7 +13,7 @@ const CategoryHeader: React.FC<CategoryHeaderProps> = ({ theme }) => {
         backgroundColor: theme === "creamy" ? "#d4a574" : "#d4a574",
       }}
     >
-      <h1 className="text-2xl md:text-3xl font-bold flex items-center">
+      <h1 className="text-2xl md:text-3xl font-bold  flex items-center">
         <Music className="mr-2" /> Song Collection Manager
       </h1>
       <p className="opacity-90 mt-1">

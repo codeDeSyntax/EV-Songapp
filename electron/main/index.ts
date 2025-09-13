@@ -306,10 +306,14 @@ async function createSongPresentationWindow() {
   songPresentationWin.on("closed", () => {
     songPresentationWin = null;
     isSongPresentationMinimized = false;
-    isProjectionActive = false; // Set projection as inactive when window is closed
-    // Notify main window that projection is no longer active
-    console.log("Sending projection state change: false (closed)");
-    mainWin?.webContents.send("projection-state-changed", false);
+
+    // Only send notification if projection was still active
+    if (isProjectionActive) {
+      isProjectionActive = false; // Set projection as inactive when window is closed
+      // Notify main window that projection is no longer active
+      console.log("Sending projection state change: false (closed)");
+      mainWin?.webContents.send("projection-state-changed", false);
+    }
   });
 
   // Track minimization state - but don't affect projection active state for external displays
@@ -484,6 +488,12 @@ ipcMain.handle("close-projection-window", async () => {
     isProjectionActive = false; // Set projection as inactive before closing
     songPresentationWin.close();
     closed = true;
+
+    // Notify main window that projection is no longer active
+    console.log(
+      "Sending projection state change: false (close-projection-window)"
+    );
+    mainWin?.webContents.send("projection-state-changed", false);
   }
 
   return closed;

@@ -169,7 +169,9 @@ const TitleBar = () => {
                 onClick={setThemeChoice}
                 className={`w-4 h-4 rounded-full  hover:scale-105 hover:cursor-pointer  
               items-center justify-center ${
-                currentScreen === "Songs" || currentScreen === "categorize" ? "flex" : "hidden"
+                currentScreen === "Songs" || currentScreen === "categorize"
+                  ? "flex"
+                  : "hidden"
               }`}
                 title="Mild theme 🟤"
               >

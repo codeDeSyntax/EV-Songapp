@@ -362,7 +362,7 @@ const SongCollectionManager: React.FC = () => {
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           {/* First watermark icon - top right */}
           <FolderOpen
-            className="absolute top-16 right-16 opacity-[0.08] rotate-12"
+            className="absolute top-16 right-16 opacity-[0.08] rotate-12 "
             size={350}
             style={{
               color: theme === "creamy" ? "#8B7355" : "#6B7280",
@@ -378,7 +378,7 @@ const SongCollectionManager: React.FC = () => {
           />
           {/* Third watermark icon - center area, shifted left to avoid overlap */}
           <Library
-            className="absolute top-1/2 left-1/2 opacity-[0.08] rotate-6 transform -translate-x-1/2 -translate-y-1/2"
+            className="absolute top-1/2 animate-spin left-1/2 opacity-[0.08] rotate-6 transform -translate-x-1/2 -translate-y-1/2"
             size={320}
             style={{
               color: theme === "creamy" ? "#8B7355" : "#6B7280",

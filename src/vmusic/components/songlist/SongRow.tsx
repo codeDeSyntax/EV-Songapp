@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import { Song } from "@/types";
-import { Calendar, FileAudio2, Music } from "lucide-react";
+import { Calendar, FileAudio2, FileMusic, Music } from "lucide-react";
+import { Tooltip } from "antd";
 
 interface SongRowProps {
   song: Song;
@@ -36,7 +37,24 @@ const SongRow = React.memo(
 
     if (isTable) {
       return (
-        <tr
+       <Tooltip
+       title={
+         song.path +
+          "\n\n" +
+          `${new Date(song.dateModified).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "2-digit",
+          })}` +
+          "\n\n" +
+          `${new Date(song.dateModified).toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          })}`
+        }
+       >
+         <tr
           className={`border-b z-0 border-stone-200 shadow rounded-md mt-1 flex items-center justify-between transition-colors cursor-pointer ${
             isSelected ? "bg-stone-100" : "hover:bg-stone-100"
           }`}
@@ -45,7 +63,7 @@ const SongRow = React.memo(
           //   borderBottomColor: "#9a674a",
           //   borderBottomStyle: "dashed",
           // }}
-          title={song.path}
+          // title={song.path}
           onClick={handleClick}
           onDoubleClick={handleDoubleClick}
         >
@@ -61,12 +79,29 @@ const SongRow = React.memo(
             {song.dateModified.slice(0, 10)}
           </td>
         </tr>
+       </Tooltip>
       );
     }
 
     // Modern List Item Design - Ultra compact version
     return (
-      <div
+    
+      <Tooltip title={
+         song.path +
+          "\n\n" +
+          `${new Date(song.dateModified).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "2-digit",
+          })}` +
+          "\n\n" +
+          `${new Date(song.dateModified).toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          })}`
+      }>
+          <div
         className="group pr-0.5 relative w-full overflow-hidden rounded transition-all duration-150 cursor-pointer transform hover:scale-[1.002] hover:shadow-sm"
         style={{
           backgroundColor: isSelected
@@ -87,21 +122,21 @@ const SongRow = React.memo(
           }`,
           maxWidth: "100%", // Ensure it doesn't exceed container width
         }}
-        title={
-          song.path +
-          " \n" +
-          `${new Date(song.dateModified).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "2-digit",
-          })}` +
-          "\n" +
-          `${new Date(song.dateModified).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-          })}`
-        }
+        // title={
+        //   song.path +
+        //   " \n" +
+        //   `${new Date(song.dateModified).toLocaleDateString("en-US", {
+        //     month: "short",
+        //     day: "numeric",
+        //     year: "2-digit",
+        //   })}` +
+        //   "\n" +
+        //   `${new Date(song.dateModified).toLocaleTimeString("en-US", {
+        //     hour: "numeric",
+        //     minute: "2-digit",
+        //     hour12: true,
+        //   })}`
+        // }
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
       >
@@ -119,35 +154,35 @@ const SongRow = React.memo(
             <div className="flex items-center space-x-1.5 flex-1 min-w-0 pr-1">
               {/* Ultra compact Icon */}
               <div className="flex-shrink-0">
-                <div
-                  className="w-4 h-4 rounded-sm flex items-center justify-center"
-                  style={{
-                    background:
-                      localTheme === "creamy"
-                        ? "linear-gradient(135deg, #48330d 0%, #d97706 100%)"
-                        : "linear-gradient(135deg, #faeed1 0%, #fffcef 100%)",
-                  }}
-                >
-                  <img
-                    src="./music1.png"
-                    className="w-2.5 h-2.5"
-                    alt="PDF icon"
-                  />
-                </div>
+                <FileMusic className="w-4 h-4 text-primary" />
               </div>
 
               {/* Song Title - Properly constrained */}
               <div className="flex1 min-w-0">
-                <h3
+                <span
                   className="text-xs font-medium truncate group-hover:text-amber-700 transition-colors leading-none"
                   style={{
-                    fontFamily: "Georgia",
-                    color: localTheme === "creamy" ? "#92400e" : "#374151",
+                    fontFamily: "Palatino",
+                    color: localTheme === "creamy" ? "#1a1919" : "#374151",
                   }}
-                  title={song.title + " " + song.dateModified} // Show full title on hover
+                  
+
+                  // title={song.title + " " + song.dateModified} // Show full title on hover
                 >
-                  {song.title}
-                </h3>
+                  {/* // title with every word beginning with uppercase */}
+                  {song.title.toLowerCase().split(" ").map((word) => (
+                    <span
+                      key={word}
+                      className="capitalize"
+                      style={{
+                        fontFamily: "Palatino",
+                        color: localTheme === "creamy" ? "#1a1919" : "#374151",
+                      }}
+                    >
+                      {word}{" "}
+                    </span>
+                  ))}
+                </span>
                 {/* Ultra compact subtitle */}
                 <span
                   className="text-[10px] font-medium whitespace-nowrap block mt-0.5"
@@ -181,6 +216,7 @@ const SongRow = React.memo(
           }}
         ></div>
       </div>
+      </Tooltip>
     );
   }
 );

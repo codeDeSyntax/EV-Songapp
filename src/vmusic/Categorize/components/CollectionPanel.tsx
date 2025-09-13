@@ -122,7 +122,7 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
       >
         <div className="flex justify-between items-center mb-3">
           <h2
-            className="text-lg font-semibold"
+            className="text-lg font-semibold font-oswald"
             style={{
               color: theme === "creamy" ? "#8b6f3d" : "#374151",
             }}
@@ -292,7 +292,7 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                               className="transition-transform duration-300"
                               style={{
                                 color:
-                                  theme === "creamy" ? "#8b6f3d" : "#64748b",
+                                  theme === "creamy" ? "#8b6f3d" : "#8b6f3d",
                               }}
                             />
                           ) : (
@@ -301,7 +301,7 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                               className="transition-transform duration-300 group-hover:translate-x-0.5"
                               style={{
                                 color:
-                                  theme === "creamy" ? "#8b6f3d" : "#64748b",
+                                  theme === "creamy" ? "#8b6f3d" : "#8b6f3d",
                               }}
                             />
                           )}
@@ -316,9 +316,8 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                                 : "text-sm"
                             }`}
                             style={{
-                              color: theme === "creamy" ? "#8b6f3d" : "#1e293b",
-                              fontFamily:
-                                "system-ui, -apple-system, sans-serif",
+                              color: theme === "creamy" ? "#8b6f3d" : "#101010",
+                              fontFamily: "garamond",
                             }}
                           >
                             {collection.name}
@@ -332,7 +331,7 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                               }`}
                               style={{
                                 color:
-                                  theme === "creamy" ? "#a67c5a" : "#64748b",
+                                  theme === "creamy" ? "#a67c5a" : "#141414",
                               }}
                             >
                               {collection.songIds.length} song
@@ -343,7 +342,7 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                                 className="w-1.5 h-1.5 rounded-full"
                                 style={{
                                   backgroundColor:
-                                    theme === "creamy" ? "#d4a574" : "#64748b",
+                                    theme === "creamy" ? "#d4a574" : "#8b6f3d",
                                 }}
                               />
                             )}
@@ -404,7 +403,7 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                                       color:
                                         theme === "creamy"
                                           ? "#8b6f3d"
-                                          : "#374151",
+                                          : "#8b6f3d",
                                     }}
                                   />
                                   <span
@@ -413,7 +412,7 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                                       color:
                                         theme === "creamy"
                                           ? "#8b6f3d"
-                                          : "#374151",
+                                          : "#8b6f3d",
                                     }}
                                   >
                                     {song.title}
@@ -426,7 +425,7 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                                       color:
                                         theme === "creamy"
                                           ? "#a67c5a"
-                                          : "#6b7280",
+                                          : "#8b6f3d",
                                     }}
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -462,7 +461,7 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                                       color:
                                         theme === "creamy"
                                           ? "#a67c5a"
-                                          : "#6b7280",
+                                          : "#8b6f3d",
                                     }}
                                     onClick={(e) => {
                                       e.stopPropagation();

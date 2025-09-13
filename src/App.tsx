@@ -8,7 +8,7 @@ import SongPresentation from "./vmusic/PresentationMode";
 import SongCollectionManager from "./vmusic/Categorize/Categorize";
 import UserGuidePage from "./vmusic/Userguide";
 import PresentationBackgroundSelector from "./vmusic/BackgroundChoose";
-import SongPresentationDisplay from "./vmusic/components/SongPresentationDisplay";
+import SongPresentationDisplay from "./vmusic/components/SongPresentationDisplay/SongPresentationDisplay";
 import { useAppSelector, useAppDispatch } from "./store";
 import { setCurrentScreen } from "./store/slices/appSlice";
 import { SecretLogsManager } from "./components/SecretLogsManager";

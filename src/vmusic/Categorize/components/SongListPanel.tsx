@@ -144,7 +144,7 @@ const SongListPanel: React.FC<SongListPanelProps> = ({
           >
             <div className="flex items-center justify-between mb-3">
               <h2
-                className="text-lg font-semibold"
+                className="text-lg font-semibold font-oswald"
                 style={{
                   color: localTheme === "creamy" ? "#8b6f3d" : "#374151",
                 }}
@@ -173,10 +173,10 @@ const SongListPanel: React.FC<SongListPanelProps> = ({
                 placeholder="Search songs..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-3 w-full rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#9a674a]/30 focus:border-transparent text-sm"
+                className="pl-10 pr-4 py-3 w-[30%] rounded-full border-none focus:outline-none focus:ring-2 focus:ring-[#9a674a]/30 focus:border-transparent text-sm"
                 style={{
                   backgroundColor:
-                    localTheme === "creamy" ? "#faeed1" : "#f9fafb",
+                    localTheme === "creamy" ? "#faeed1" : "#f6f6f6",
                   color: localTheme === "creamy" ? "#8b6f3d" : "#374151",
                 }}
               />
@@ -307,22 +307,14 @@ const SongListPanel: React.FC<SongListPanelProps> = ({
                                   style={{ fontFamily: "Georgia" }}
                                 >
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    <FileAudio2
-                                      className="w-4 h-4 flex-shrink-0"
-                                      style={{
-                                        color:
-                                          localTheme === "creamy"
-                                            ? "#92400e"
-                                            : "#374151",
-                                      }}
-                                    />
+                                    <FileAudio2 className="w-4 h-4 flex-shrink-0 text-primary" />
                                     <span
-                                      className="truncate"
+                                      className="truncate "
                                       style={{
                                         color:
                                           localTheme === "creamy"
-                                            ? "#92400e"
-                                            : "#374151",
+                                            ? "#141413"
+                                            : "#181818",
                                       }}
                                     >
                                       {song.title.charAt(0).toUpperCase() +
@@ -357,7 +349,7 @@ const SongListPanel: React.FC<SongListPanelProps> = ({
                                             ? "#ef4444"
                                             : localTheme === "creamy"
                                             ? "#d4a574"
-                                            : "#667eea",
+                                            : "#d4a574",
                                         }}
                                         onClick={(e) => {
                                           e.stopPropagation();

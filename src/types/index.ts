@@ -1,4 +1,5 @@
 export interface Song {
+  size: any;
   id: string;
   title: string;
   path: string;
