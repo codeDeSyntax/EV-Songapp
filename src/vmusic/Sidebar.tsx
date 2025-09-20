@@ -104,22 +104,22 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
       </button>
       {isOpen && (
         <div
-          className={`absolute z-40 w-full mt-1 flex flex-col items-center gap-1  ${
-            localTheme === "creamy" ? "bg-primary" : "bg-white"
+          className={`absolute z-40 w-full mt-1 flex flex-col items-center gap-1  py-3 ${
+            localTheme === "creamy" ? "bg-[#faeed1]" : "bg-white"
           } rounded-lg shadow-lg border border-stone-200 py-1 max-h-48 overflow-y-auto no-scrollbar`}
         >
           {options.map((option, index) => (
-            <button
+            <div
               key={index}
               onClick={() => {
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-[90%] px-3 py-2 text-left  text-[12px   hover:[#9a674a]/40 hover:text-black  transition-colors ${
+              className={`w-[90%] px-3 border-x-0 cursor-pointer border-t-0 border-b border-solid border-primary/20 text-left  text-[12px   hover:[#9a674a]/40 hover:text-black  transition-colors ${
                 (option.value || option) === value
-                  ? "bg-white/20 text-orange-400"
+                  ? "bg-transparent text-orange-400"
                   : localTheme === "creamy"
-                  ? "bg-vmprim/20 text-white"
+                  ? "bg-transparent text-primary"
                   : "bg-gray-50 border text-stone-500"
               }`}
               style={{
@@ -127,7 +127,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
               }}
             >
               {option.label}
-            </button>
+            </div>
           ))}
         </div>
       )}
@@ -765,7 +765,7 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
                           onClick={() =>
                             selectPresentationBackground(bg.thumbnail)
                           }
-                          className={`relative group transition-all bg-transparent duration-300`}
+                          className={`relative group transition-all duration-300`}
                           initial={{ opacity: 0, scale: 0 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{

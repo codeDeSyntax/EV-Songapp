@@ -340,40 +340,41 @@ const PresentationBackgroundSelector: React.FC = () => {
       <TitleBar />
 
       <div className="flex flex-col h-full">
-        {/* Main Content Area - Large iPad Simulation */}
+        {/* Main Content Area - Sleek Android Tablet Simulation */}
         <div className="flex-1 overflow-y-auto no-scrollbar bg-white">
           <div className="p-6 h-full">
             <div className="flex items-center justify-center h-full">
-              {/* Large iPad Simulation Container */}
+              {/* Sleek Android Tablet Simulation Container */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
                 className="relative"
               >
-                {/* iPad Frame - Much Larger */}
+                {/* Android Tablet Frame - Thin & Sleek */}
                 <div
-                  className="relative rounded-[3rem] p-6 shadow-2xl"
+                  className="relative rounded-lg p-2 shadow-inner shadow-stone-300"
                   style={{
                     width: "900px",
-                    height: "650px",
-                    backgroundColor: "#1d1c1b", // Dark gray/black
+                    height: "600px",
+                    backgroundColor: "#2a2a2a", // Sleek dark gray
+                    border: "1px solid #3a3a3a", // Subtle border for definition
                   }}
                 >
-                  {/* iPad Screen with Background */}
+                  {/* Android Tablet Screen with Background */}
                   <div
-                    className="w-full h-full bg-white rounded-[2rem] overflow-hidden relative"
-                    style={{
-                      background: selectedBackground
-                        ? `url(${selectedBackground.src})`
-                        : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                      backgroundSize: "contain",
-                      backgroundPosition: "center",
-                      backgroundRepeat: "no-repeat",
-                      // imageRendering: "crisp-edges",
-                    }}
+                    className="w-full h-full bg-black rounded-md overflow-hidden relative"
+                    // style={{
+                    //   background: selectedBackground
+                    //     ? `url(${selectedBackground.src})`
+                    //     : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    //   backgroundSize: "contain",
+                    //   backgroundPosition: "center",
+                    //   backgroundRepeat: "no-repeat",
+                    //   // imageRendering: "crisp-edges",
+                    // }}
                   >
-                    {/* Content Container inside iPad - Fixed Height */}
+                    {/* Content Container inside Android Tablet - Fixed Height */}
                     <div className="relative z-10 p-4 h-full flex flex-col max-h-full">
                       {/* Top Navigation Bar - Compact */}
                       <div className="flex items-center justify-between mb-4 flex-shrink-0">

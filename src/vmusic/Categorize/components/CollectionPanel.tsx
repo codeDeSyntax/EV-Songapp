@@ -11,6 +11,8 @@ import {
   FolderPlus,
   Monitor,
   ExternalLinkIcon,
+  Church,
+  HandHeart,
 } from "lucide-react";
 import { Song } from "@/types";
 import { CurrentScreen } from "@/store/slices/appSlice";
@@ -50,6 +52,21 @@ interface CollectionPanelProps {
   presentSong: (song: Song) => void;
   addSongToCollection?: (songId: string, collectionId: string) => void; // Add drag-drop handler
 }
+
+// Helper function to get watermark icon based on collection name
+const getWatermarkIcon = (collectionName: string) => {
+  const name = collectionName.toLowerCase();
+
+  if (name.includes("wedding") || name.includes("weddings")) {
+    return Heart;
+  }
+
+  if (name.includes("prayer") || name.includes("prayers")) {
+    return Church;
+  }
+
+  return null; // No watermark for other collections
+};
 
 const CollectionPanel: React.FC<CollectionPanelProps> = ({
   showCollectionPanel,
@@ -268,6 +285,21 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                         : "opacity-40 group-hover:opacity-60"
                     }`}
                   />
+
+                  {/* Watermark Icon */}
+                  {(() => {
+                    const WatermarkIcon = getWatermarkIcon(collection.name);
+                    return WatermarkIcon ? (
+                      <div className="absolute bottom-2 right-2 opacity-10 group-hover:opacity-15 transition-opacity duration-300">
+                        <WatermarkIcon
+                          size={48}
+                          style={{
+                            color: theme === "creamy" ? "#8b6f3d" : "#6b7280",
+                          }}
+                        />
+                      </div>
+                    ) : null;
+                  })()}
 
                   {/* Main content */}
                   <div
