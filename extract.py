@@ -65,52 +65,34 @@ class SongExtractor:
         return songs
 
     def _format_song_content(self, content: str) -> str:
-        """Formats song content with a simple approach based on line counts."""
+        """Formats song content preserving verse/chorus structure from the original text."""
         try:
             # Split content into lines and remove empty lines
             lines = [line.strip() for line in content.split('\n') if line.strip()]
             
+            if not lines:
+                return ""
+            
             formatted_parts = []
-            verse_count = 1
-            line_count = 0
-            in_chorus = False
+            current_section = None
             
-            # Start with the first verse
-            formatted_parts.append(f'<p>Verse {verse_count}</p>')
+            for line in lines:
+                # Check if this line is a section marker (Verse 1, Verse 2, Chorus, etc.)
+                section_match = re.match(r'^(Verse\s+\d+|Chorus|Refrain|Bridge)$', line.strip(), re.IGNORECASE)
+                
+                if section_match:
+                    # This is a section header - add it as a p tag
+                    current_section = section_match.group(1).title()  # Capitalize properly
+                    formatted_parts.append(f'<p>{current_section}</p>')
+                else:
+                    # This is a content line - add it as a p tag
+                    formatted_parts.append(f'<p>{line}</p>')
             
-            for i, line in enumerate(lines):
-                # Check if this line indicates a chorus
-                if 'CHORUS' in line.upper() or line.upper() == 'REFRAIN':
-                    formatted_parts.append('<p>Chorus</p>')
-                    in_chorus = True
-                    line_count = 0
-                    continue  # Skip the chorus label
-                
-                # Add the current line
-                formatted_parts.append(f'<p>{line}</p>')
-                line_count += 1
-                
-                # Check if we've reached approximately 5 lines (a typical verse/chorus)
-                # Or if the next line might start a new section
-                next_line = lines[i + 1] if i < len(lines) - 1 else None
-                
-                if line_count >= 5 or (next_line and ('CHORUS' in next_line.upper() or next_line.upper() == 'REFRAIN')):
-                    # If we're in a chorus, the next section is likely a verse
-                    # If we're in a verse, the next section might be another verse if no chorus indicator
-                    if in_chorus:
-                        verse_count += 1
-                        if i < len(lines) - 1 and not ('CHORUS' in next_line.upper() or next_line.upper() == 'REFRAIN'):
-                            formatted_parts.append(f'<p>Verse {verse_count}</p>')
-                            in_chorus = False
-                    else:
-                        # If next is not a chorus and we've finished a verse, start a new verse
-                        if i < len(lines) - 1 and not ('CHORUS' in next_line.upper() or next_line.upper() == 'REFRAIN'):
-                            verse_count += 1
-                            formatted_parts.append(f'<p>Verse {verse_count}</p>')
-                    
-                    line_count = 0
+            # If no sections were found, add default "Verse 1" at the beginning
+            if not any('Verse' in part or 'Chorus' in part or 'Refrain' in part for part in formatted_parts):
+                formatted_parts.insert(0, '<p>Verse 1</p>')
             
-            # Join all parts with newlines using template literals
+            # Join all parts with newlines
             return '\n'.join(formatted_parts)
             
         except Exception as e:

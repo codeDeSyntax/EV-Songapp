@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { Song } from "@/types";
 
 export type ViewMode = "table" | "grid" | "list";
-export type ActiveTab = "collections" | "Song" | "favorites";
+export type ActiveTab = "Song" | "create" | "settings" | "collections";
 
 interface SongState {
   songs: Song[];
@@ -26,7 +26,7 @@ const initialState: SongState = {
   favorites: JSON.parse(localStorage.getItem("favorites") || "[]"),
   searchQuery: "",
   viewMode: (localStorage.getItem("bmusiclayout") as ViewMode) || "table",
-  activeTab: "collections",
+  activeTab: "Song",
   songRepo: localStorage.getItem("bmusicsongdir") || "",
   isLoading: false,
   error: null,

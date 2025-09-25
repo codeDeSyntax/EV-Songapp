@@ -15,6 +15,9 @@ import {
   Sun,
   Moon,
   RefreshCw,
+  Plus,
+  Edit,
+  Eye,
 } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import { FolderOpen } from "lucide-react";
@@ -26,6 +29,8 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { setCurrentScreen } from "@/store/slices/appSlice";
 import { setSongRepo } from "@/store/slices/songSlice";
 import { Tooltip } from "antd";
+import SidebarCreateForm from "./components/sidebar-forms/SidebarCreateForm";
+import SidebarEditForm from "./components/sidebar-forms/SidebarEditForm";
 
 interface Option {
   value: string;
@@ -138,6 +143,16 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
 const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
   const { selectedSong } = useSongOperations();
   const dispatch = useAppDispatch();
+
+  // Add state for edit mode toggle in Song tab
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  // Reset edit mode when switching away from Song tab
+  useEffect(() => {
+    if (activeTab !== "Song") {
+      setIsEditMode(false);
+    }
+  }, [activeTab]);
 
   // Remove local functions, use Redux actions instead
   const selectsongDir = async () => {
@@ -380,66 +395,99 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
     switch (activeTab) {
       case "Song":
         return (
-          <div className="flex items-start flex-col px-3">
-            {/* <h3 className="text-lg text-left font-ThePriest underline text-stone-600 font-semibold overflow-hidden mb-1">
-              {selectedSong?.title}
-            </h3> */}
-            {/* clean song content with dangerously html*/}
-            {/* dangerously rendered  html to clean code */}
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1 * 0.1 }}
-              className="relative w-full overflow-hidden "
-            >
-              <div className="relative w-full h-[85vh] rounded-lg shadow-lg overflow-hidden">
-                {/* Fixed scroll background image - completely static */}
-                <div className="absolute inset-0 w-full h-full">
-                  <img
-                    src={`${
-                      localTheme === "creamy" ? "creampaper.jpg" : "wood11.jpg"
+          <div className="flex items-start flex-col ">
+            {/* Header with title and edit toggle */}
+            <div className="flex items-center justify-between w-full mb-2">
+              <h3 className="text-lg text-left font-ThePriest underline text-stone-600 font-semibold overflow-hidden">
+                {selectedSong?.title || "No Song Selected"}
+              </h3>
+              {selectedSong && (
+                <Tooltip title={isEditMode ? "View Mode" : "Edit Mode"}>
+                  <button
+                    onClick={() => setIsEditMode(!isEditMode)}
+                    className={`p-2 rounded-lg transition-all duration-200 ${
+                      isEditMode
+                        ? "bg-vmprim text-white shadow-lg"
+                        : "bg-gray-100 text-stone-600 hover:bg-gray-200"
                     }`}
-                    alt="Scroll background"
-                    className="w-full h-full object-cover object-center"
-                    style={{ position: "sticky", top: 0 }}
-                  />
-                </div>
+                  >
+                    {isEditMode ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <Edit className="h-4 w-4" />
+                    )}
+                  </button>
+                </Tooltip>
+              )}
+            </div>
 
-                {/* Fixed positioned text overlay that doesn't move with scroll */}
-                <div className="absolute inset-0 flex items-start justify-center pointer-events-none">
-                  <div className="w-[90%] h-[80%] relative pointer-events-auto">
-                    {/* Scrollable text content with proper boundaries */}
-                    <h3 className="text-lg text-left font-ThePriest underline text-stone-600 font-semibold overflow-hidden mb-1">
-                      {selectedSong?.title}
-                    </h3>
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: selectedSong?.content || "",
-                      }}
-                      className={`overflow-y-scroll no-scrollbar h-full w-full text-left text-[10px] px-3 leading-relaxed ${
-                        !selectedSong && "hidden"
-                      }`}
-                      style={{
-                        color: localTheme === "creamy" ? "#936a41" : "#2D1810",
-                        backgroundColor: "transparent",
-                        textShadow: "none",
-                        lineHeight: "1.6",
-                        fontFamily: "'Georgia', serif",
-                        fontWeight: "500",
-                        maxHeight: "100%",
-                        overflowWrap: "break-word",
-                        wordWrap: "break-word",
-                      }}
-                    />
+            {selectedSong ? (
+              <motion.div
+                key={isEditMode ? "edit" : "view"}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="relative w-full overflow-hidden"
+              >
+                {isEditMode ? (
+                  // Edit Mode - Use SidebarEditForm with the selected song pre-filled
+                  <div className="w-full h-[75vh]">
+                    <SidebarEditForm />
                   </div>
-                </div>
-              </div>
-            </motion.div>
+                ) : (
+                  // View Mode - Show song content
+                  <div className="relative w-full h-[75vh] rounded-lg shadow-lg overflow-hidden">
+                    {/* Fixed scroll background image */}
+                    <div className="absolute inset-0 w-full h-full">
+                      <img
+                        src={`${
+                          localTheme === "creamy"
+                            ? "creampaper.jpg"
+                            : "wood11.jpg"
+                        }`}
+                        alt="Scroll background"
+                        className="w-full h-full object-cover object-center"
+                        style={{ position: "sticky", top: 0 }}
+                      />
+                    </div>
 
-            {/* <p>{selectedSong?.content}</p> */}
-            {!selectedSong?.content && (
-              <img src="./nosong.png" alt="" className="h-40" />
+                    {/* Text overlay */}
+                    <div className="absolute inset-0 flex items-start justify-center pointer-events-none">
+                      <div className="w-[90%] h-[90%] relative pointer-events-auto mt-4">
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html: selectedSong?.content || "",
+                          }}
+                          className="overflow-y-scroll no-scrollbar h-full w-full text-left text-[10px] px-3 leading-relaxed"
+                          style={{
+                            color:
+                              localTheme === "creamy" ? "#936a41" : "#2D1810",
+                            backgroundColor: "transparent",
+                            textShadow: "none",
+                            lineHeight: "1.6",
+                            fontFamily: "'Georgia', serif",
+                            fontWeight: "500",
+                            maxHeight: "100%",
+                            overflowWrap: "break-word",
+                            wordWrap: "break-word",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+                <img
+                  src="./nosong.png"
+                  alt="No song selected"
+                  className="h-40 opacity-60"
+                />
+                <p className="text-stone-500 mt-4 text-sm">
+                  Select a song to view or edit it here
+                </p>
+              </div>
             )}
           </div>
         );
@@ -976,6 +1024,20 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
           </div>
         );
 
+      case "create":
+        return (
+          <div className="h-[85vh] overflow-hidden">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="h-full"
+            >
+              <SidebarCreateForm />
+            </motion.div>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -1020,13 +1082,13 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
 
       <div className="px-2 flex-shrink-0">
         <div
-          className={`flex space-x-2 ${
+          className={`flex space-x-1 ${
             localTheme === "creamy" ? "bg-[#faeed1]" : "bg-[#ececeb]"
           } p-1 rounded-lg`}
         >
           <button
             onClick={() => setActiveTab("Song")}
-            className={` py-2 rounded-md text-[12px] px-2 font-medium transition-colors flex items-center justify-center ${
+            className={`py-2 rounded-md text-[10px] px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
               activeTab === "Song" && localTheme === "creamy"
                 ? "bg-vmprim text-white"
                 : activeTab === "Song" && localTheme === "white"
@@ -1034,11 +1096,25 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
                 : "text-stone-600 bg-[#fdf4d0]"
             }`}
           >
-            Song <FileMusic className="h-4 w-4" />
+            <FileMusic className="h-3 w-3" />
+            Songs
+          </button>
+          <button
+            onClick={() => setActiveTab("create")}
+            className={`py-2 rounded-md text-[10px] px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
+              activeTab === "create" && localTheme === "creamy"
+                ? "bg-vmprim text-white"
+                : activeTab === "create" && localTheme === "white"
+                ? "bg-vmprim text-white"
+                : "text-stone-600 bg-[#fdf4d0]"
+            }`}
+          >
+            <Plus className="h-3 w-3" />
+            Create
           </button>
           <button
             onClick={() => setActiveTab("settings")}
-            className={` py-2 rounded-md text-[12px] px-2  font-medium transition-colors flex items-center justify-center ${
+            className={`py-2 rounded-md text-[10px] px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
               activeTab === "settings" && localTheme === "creamy"
                 ? "bg-vmprim text-white"
                 : activeTab === "settings" && localTheme === "white"
@@ -1046,11 +1122,12 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
                 : "text-stone-600 bg-[#fdf4d0]"
             }`}
           >
-            Settings <CogIcon className="h-4 w-4" />
+            <CogIcon className="h-3 w-3" />
+            Settings
           </button>
           <button
             onClick={() => setActiveTab("collections")}
-            className={`flex-1 py-2 rounded-md text-[12px] px-2 font-medium transition-colors flex items-center justify-center ${
+            className={`py-2 rounded-md text-[10px] px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
               activeTab === "collections" && localTheme === "creamy"
                 ? "bg-vmprim text-white"
                 : activeTab === "collections" && localTheme === "white"
@@ -1058,7 +1135,8 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
                 : "text-stone-600 bg-[#fdf4d0]"
             }`}
           >
-            collections <Group className="h-4 w-4" />
+            <Group className="h-3 w-3" />
+            Collections
           </button>
         </div>
       </div>

@@ -91,7 +91,7 @@ class TxtSongExtractor:
         return songs
 
     def _format_song_content(self, content: str, title: str) -> str:
-        """Formats song content with Verse 1 delimiter."""
+        """Formats song content preserving verse/chorus structure from the original text."""
         try:
             # Split content into lines and remove empty lines
             lines = [line.strip() for line in content.split('\n') if line.strip()]
@@ -101,13 +101,21 @@ class TxtSongExtractor:
             
             formatted_parts = []
             
-            # Start with Verse 1 delimiter
-            formatted_parts.append('<p>Verse 1</p>')
-            
-            # Add all content lines as paragraph elements
             for line in lines:
-                if line:  # Skip empty lines
+                # Check if this line is a section marker (Verse 1, Verse 2, Chorus, etc.)
+                section_match = re.match(r'^(Verse\s+\d+|Chorus|Refrain|Bridge)$', line.strip(), re.IGNORECASE)
+                
+                if section_match:
+                    # This is a section header - add it as a p tag
+                    current_section = section_match.group(1).title()  # Capitalize properly
+                    formatted_parts.append(f'<p>{current_section}</p>')
+                else:
+                    # This is a content line - add it as a p tag
                     formatted_parts.append(f'<p>{line}</p>')
+            
+            # If no verse markers were found, add default "Verse 1" at the beginning
+            if not any('Verse' in part or 'Chorus' in part or 'Refrain' in part for part in formatted_parts):
+                formatted_parts.insert(0, '<p>Verse 1</p>')
             
             # Join all parts with newlines
             return '\n'.join(formatted_parts)

@@ -68,8 +68,8 @@ const BlessedMusic = () => {
 
   // Memoized split songs calculation for multiple columns - RESTORED ORIGINAL LOGIC
   const columnSongs = useMemo(() => {
-    const songsToDisplay =
-      activeTab === "favorites" ? favorites : filteredSongs;
+    // Since we removed favorites as a main tab, always use filteredSongs
+    const songsToDisplay = filteredSongs;
     const songsPerColumn = Math.ceil(songsToDisplay.length / numberOfColumns);
     const columns: Song[][] = [];
 
@@ -184,9 +184,8 @@ const BlessedMusic = () => {
         return;
       }
 
-      // Get current songs list based on active tab
-      const currentSongs =
-        activeTab === "favorites" ? favorites : filteredSongs;
+      // Get current songs list - now always use filteredSongs since favorites is not a main tab
+      const currentSongs = filteredSongs;
 
       // Arrow key navigation
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
