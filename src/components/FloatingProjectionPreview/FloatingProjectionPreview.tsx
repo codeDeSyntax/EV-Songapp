@@ -157,13 +157,13 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
           width: isMinimized ? "200px" : "200px",
           minWidth: "200px",
         }}
-        className="bg-black border shadow-inner shadow-red-300 border-gray-900 rounded  overflow-hidden"
+        className="bg-black border-4 border-solid shadow-inner  border-gray-900 rounded  overflow-hidden"
       >
         {/* Minimal Draggable Header */}
         <div
           ref={dragRef}
           onMouseDown={handleMouseDown}
-          className={`bg-black shadow-inner border-solid shadow-gray-300 px-2 py-1 flex items-center justify-between cursor-grab active:cursor-grabbing border-b border-gray-900/30 ${
+          className={` border-solid shadow-gray-300 px-2 py-1 flex items-center justify-between cursor-grab active:cursor-grabbing border-b border-gray-900/30 ${
             isDragging ? "cursor-grabbing" : ""
           }`}
         >
@@ -171,23 +171,26 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
             <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
             <span className="text-xs text-gray-400 font-medium">Live</span>
           </div>
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
+          </div>
 
           <div className="flex items-center space-x-1">
             <button
               onClick={() => setIsMinimized(!isMinimized)}
-              className="p-0.5 hover:bg-gray-800 rounded transition-colors"
+              className="p-0.5 hover:bg-gray-800 bg-gray-900 rounded transition-colors"
             >
               {isMinimized ? (
-                <Maximize2 className="w-2.5 h-2.5 text-gray-500" />
+                <Maximize2 className="w-2.5 h-2.5 text-white" />
               ) : (
-                <Minimize2 className="w-2.5 h-2.5 text-gray-500" />
+                <Minimize2 className="w-2.5 h-2.5 text-white" />
               )}
             </button>
             <button
               onClick={onClose}
-              className="p-0.5 hover:bg-red-900/50 rounded transition-colors"
+              className="p-0.5 hover:bg-red-900/50 bg-red-800 rounded transition-colors"
             >
-              <X className="w-2.5 h-2.5 text-gray-500 hover:text-red-400" />
+              <X className="w-2.5 h-2.5 text-white hover:text-red-400" />
             </button>
           </div>
         </div>

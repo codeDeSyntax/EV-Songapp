@@ -141,7 +141,7 @@ const CollectionsTabContent: React.FC<CollectionsTabContentProps> = ({
             className={`px-3 py-2 text-sm rounded transition-colors ${
               newCollectionName.trim()
                 ? "bg-vmprim text-white hover:bg-vmprim/90"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-[#faeed1]/50 text-gray-500 cursor-not-allowed"
             }`}
           >
             Add

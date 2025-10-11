@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { ChevronLeft, ChevronRight, Plus, Minus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ColorPicker } from "antd";
@@ -37,6 +43,10 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
   const [backgroundImage, setBackgroundImage] = useState("");
   const [fontFamily, setFontFamily] = useState("Georgia, serif");
   const [isExternalDisplay, setIsExternalDisplay] = useState(false);
+  const [isFontCalculated, setIsFontCalculated] = useState(false);
+
+  // Font sizing approach: Using line-based approach only
+  // Fast, predictable sizing based purely on line count
 
   // Color picker state
   const [textColor, setTextColor] = useState(() => {
@@ -51,7 +61,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
 
   // Refs
   const contentRef = useRef<HTMLDivElement>(null);
-  const baseFontSize = 30;
+  const baseFontSize = 70;
 
   // Helper functions
   const getLocalStorageItem = (
@@ -114,7 +124,21 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
   // Load settings from localStorage
   useEffect(() => {
     const savedMultiplier = getLocalStorageItem("bmusicFontMultiplier", "1.0");
-    setFontSizeMultiplier(parseFloat(savedMultiplier!) || 1.0);
+    const multiplierValue = parseFloat(savedMultiplier!) || 1.0;
+
+    // Ensure multiplier is not too small (minimum 0.5)
+    const clampedMultiplier = Math.max(0.5, Math.min(3.0, multiplierValue));
+
+    console.log(
+      `🔢 Font multiplier loaded: ${multiplierValue} → clamped to: ${clampedMultiplier}`
+    );
+
+    setFontSizeMultiplier(clampedMultiplier);
+
+    // Update localStorage if we had to clamp the value
+    if (clampedMultiplier !== multiplierValue) {
+      setLocalStorageItem("bmusicFontMultiplier", clampedMultiplier.toString());
+    }
 
     const savedFont = getLocalStorageItem("bmusicfontFamily", "Georgia, serif");
     setFontFamily(savedFont!);
@@ -278,217 +302,6 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
     []
   );
 
-  // Ultra-Aggressive automatic font sizing algorithm - Maximum space utilization
-  const calculateOptimalFontSize = useCallback(
-    (container: HTMLElement, lines: string[]): number => {
-      if (!lines || lines.length === 0) return baseFontSize;
-
-      const containerHeight = container.clientHeight;
-      const containerWidth = container.clientWidth;
-
-      // Use 99% of available height for maximum space utilization
-      const maxAllowedHeight = containerHeight * 0.99;
-      const maxAllowedWidth = containerWidth * 0.98; // Increased from 0.95 to use more width
-
-      // Slightly increased line spacing for 6 lines or less, tighter for more lines
-      const lineSpacing =
-        lines.length === 1
-          ? 0
-          : lines.length === 2
-          ? 0.08 // Increased for better readability
-          : lines.length <= 4
-          ? 0.12 // Increased for better readability
-          : lines.length <= 6
-          ? 0.15 // Increased for better readability
-          : 0.15; // Keep tight for many lines
-
-      // Create temporary element for precise measurements
-      const temp = document.createElement("div");
-      temp.style.position = "absolute";
-      temp.style.visibility = "hidden";
-      temp.style.fontFamily = fontFamily;
-      temp.style.fontWeight = "bold";
-      temp.style.lineHeight = "1";
-      temp.style.textAlign = "center";
-      temp.style.width = maxAllowedWidth + "px";
-      temp.style.padding = "0";
-      temp.style.margin = "0";
-      temp.style.boxSizing = "border-box";
-      temp.style.whiteSpace = "normal";
-      temp.style.wordWrap = "break-word";
-      temp.style.overflowWrap = "break-word";
-      document.body.appendChild(temp);
-
-      // Calculate total spacing needed
-      const totalSpacingHeight = (lines.length - 1) * lineSpacing;
-      const availableHeightForText = maxAllowedHeight;
-
-      // Super aggressive initial size estimation
-      let estimatedSize;
-      if (lines.length === 1) {
-        // For single line, use up to 98% of height
-        estimatedSize = availableHeightForText * 0.98;
-      } else if (lines.length === 2) {
-        // For two lines, very aggressive
-        estimatedSize = (availableHeightForText / 2.05) * 0.99; // Account for minimal spacing
-      } else if (lines.length <= 4) {
-        // For 3-4 lines, still very aggressive
-        estimatedSize =
-          (availableHeightForText / (lines.length + totalSpacingHeight)) * 0.99;
-      } else if (lines.length <= 6) {
-        // For 5-6 lines, aggressive but practical
-        estimatedSize =
-          (availableHeightForText / (lines.length + totalSpacingHeight)) * 0.98;
-      } else {
-        // For many lines, still space-maximizing
-        estimatedSize =
-          (availableHeightForText / (lines.length + totalSpacingHeight)) * 0.97;
-      }
-
-      // Set much more aggressive bounds
-      let maxFontSize = Math.min(1500, estimatedSize * 8); // Even higher upper bound
-      let minFontSize = 12; // Lower minimum for edge cases
-      let optimalSize = estimatedSize;
-      let iterations = 0;
-      const maxIterations = 50; // More iterations for maximum precision
-
-      // Ultra-precise binary search with aggressive sizing
-      while (maxFontSize - minFontSize > 0.2 && iterations < maxIterations) {
-        const testSize = (maxFontSize + minFontSize) / 2;
-        temp.style.fontSize = testSize + "px";
-        temp.innerHTML = "";
-
-        // Build test content
-        lines.forEach((line, index) => {
-          const p = document.createElement("p");
-          p.textContent = line.trim() || " ";
-          p.style.margin = "0";
-          p.style.fontWeight = "bold";
-          p.style.lineHeight = "1";
-          p.style.padding = "0";
-          p.style.whiteSpace = "normal";
-          p.style.wordWrap = "break-word";
-
-          // Add spacing between lines with increased line height for ≤6 lines
-          if (index < lines.length - 1) {
-            p.style.marginBottom = Math.floor(testSize * lineSpacing) + "px";
-          }
-          temp.appendChild(p);
-        });
-
-        const actualHeight = temp.scrollHeight;
-        const actualWidth = temp.scrollWidth;
-
-        // Check both constraints with tighter tolerances
-        const fitsHeight = actualHeight <= maxAllowedHeight;
-        const fitsWidth = actualWidth <= maxAllowedWidth;
-
-        if (fitsHeight && fitsWidth) {
-          minFontSize = testSize;
-          optimalSize = testSize;
-        } else {
-          maxFontSize = testSize;
-        }
-
-        iterations++;
-      }
-
-      // Apply user font size multiplier
-      let finalSize = optimalSize * fontSizeMultiplier;
-
-      // Final validation with user multiplier
-      temp.style.fontSize = finalSize + "px";
-      temp.innerHTML = "";
-
-      lines.forEach((line, index) => {
-        const p = document.createElement("p");
-        p.textContent = line.trim() || " ";
-        p.style.margin = "0";
-        p.style.fontWeight = "bold";
-        p.style.lineHeight = "1";
-        p.style.padding = "0";
-        p.style.whiteSpace = "normal";
-        p.style.wordWrap = "break-word";
-
-        if (index < lines.length - 1) {
-          p.style.marginBottom = Math.floor(finalSize * lineSpacing) + "px";
-        }
-        temp.appendChild(p);
-      });
-
-      const finalHeight = temp.scrollHeight;
-      const finalWidth = temp.scrollWidth;
-
-      // Scale down only if absolutely necessary
-      if (finalHeight > maxAllowedHeight || finalWidth > maxAllowedWidth) {
-        const heightScaleFactor =
-          finalHeight > maxAllowedHeight ? maxAllowedHeight / finalHeight : 1;
-        const widthScaleFactor =
-          finalWidth > maxAllowedWidth ? maxAllowedWidth / finalWidth : 1;
-
-        const scaleFactor = Math.min(heightScaleFactor, widthScaleFactor);
-        finalSize = finalSize * scaleFactor * 0.99; // 99% for minimal safety margin
-      }
-
-      // Higher bounds for better space utilization
-      finalSize = Math.max(12, Math.min(finalSize, 1200));
-
-      document.body.removeChild(temp);
-
-      // Triple validation with even more aggressive approach
-      const validationTemp = document.createElement("div");
-      validationTemp.style.position = "absolute";
-      validationTemp.style.visibility = "hidden";
-      validationTemp.style.fontFamily = fontFamily;
-      validationTemp.style.fontWeight = "bold";
-      validationTemp.style.lineHeight = "1";
-      validationTemp.style.textAlign = "center";
-      validationTemp.style.width = maxAllowedWidth + "px";
-      validationTemp.style.fontSize = finalSize + "px";
-      document.body.appendChild(validationTemp);
-
-      lines.forEach((line, index) => {
-        const p = document.createElement("p");
-        p.textContent = line.trim() || " ";
-        p.style.margin = "0";
-        p.style.fontWeight = "bold";
-        p.style.lineHeight = "1";
-        p.style.whiteSpace = "normal";
-        p.style.wordWrap = "break-word";
-
-        if (index < lines.length - 1) {
-          p.style.marginBottom = Math.floor(finalSize * lineSpacing) + "px";
-        }
-        validationTemp.appendChild(p);
-      });
-
-      const validationHeight = validationTemp.scrollHeight;
-      const validationWidth = validationTemp.scrollWidth;
-
-      // Final micro-adjustment if needed
-      if (
-        validationHeight > maxAllowedHeight ||
-        validationWidth > maxAllowedWidth
-      ) {
-        const heightRatio = maxAllowedHeight / validationHeight;
-        const widthRatio = maxAllowedWidth / validationWidth;
-        finalSize = finalSize * Math.min(heightRatio, widthRatio) * 0.995; // Even smaller safety margin
-      } else if (validationHeight < maxAllowedHeight * 0.85) {
-        // If we're using less than 85% of available height, try to increase
-        const growthFactor = (maxAllowedHeight * 0.95) / validationHeight;
-        if (growthFactor > 1 && growthFactor < 1.3) {
-          // Reasonable growth limit
-          finalSize = finalSize * growthFactor;
-        }
-      }
-
-      document.body.removeChild(validationTemp);
-
-      return Math.floor(Math.max(12, finalSize));
-    },
-    [fontFamily, fontSizeMultiplier]
-  );
-
   // Handle song data
   const handleSongData = useCallback(
     (songData: SongData) => {
@@ -518,18 +331,46 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
       // Test if the new multiplier would cause overflow before applying
       const currentSection = songSections[currentIndex];
       if (contentRef.current && currentSection) {
-        const testFontSize = calculateOptimalFontSize(
-          contentRef.current,
-          currentSection.content
-        );
+        const currentLineHeight =
+          currentSection.content.length === 1
+            ? 1.0
+            : currentSection.content.length === 2
+            ? 1.4
+            : currentSection.content.length === 3
+            ? 1.35
+            : currentSection.content.length === 4
+            ? 1.3
+            : currentSection.content.length <= 6
+            ? 1.25
+            : 1.2;
 
-        const testSize = testFontSize * newMultiplier;
+        // Calculate current font size using line-based approach only
+        const lineCount = currentSection.content.length;
+        let baseTestSize;
+        if (lineCount === 1) {
+          baseTestSize = baseFontSize * 2.5;
+        } else if (lineCount === 2) {
+          baseTestSize = baseFontSize * 2.0;
+        } else if (lineCount === 3) {
+          baseTestSize = baseFontSize * 1.7;
+        } else if (lineCount === 4) {
+          baseTestSize = baseFontSize * 1.5;
+        } else if (lineCount <= 6) {
+          baseTestSize = baseFontSize * 1.3;
+        } else if (lineCount <= 8) {
+          baseTestSize = baseFontSize * 1.1;
+        } else {
+          baseTestSize = baseFontSize * 1.0;
+        }
+        baseTestSize = Math.floor(baseTestSize * fontSizeMultiplier);
+
+        const testSize = baseTestSize * (newMultiplier / fontSizeMultiplier);
 
         // Enhanced overflow test with both dimensions but more permissive margins
         const containerHeight = contentRef.current.clientHeight;
         const containerWidth = contentRef.current.clientWidth;
-        const maxAllowedHeight = containerHeight * 0.97; // Slightly more permissive than algorithm's 0.99
-        const maxAllowedWidth = containerWidth * 0.96; // Slightly more permissive than algorithm's 0.98
+        const maxAllowedHeight = containerHeight * 0.95; // Conservative to match algorithm
+        const maxAllowedWidth = containerWidth * 0.95; // Conservative to match algorithm
 
         // Create comprehensive test element
         const temp = document.createElement("div");
@@ -537,7 +378,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
         temp.style.visibility = "hidden";
         temp.style.fontFamily = fontFamily;
         temp.style.fontWeight = "bold";
-        temp.style.lineHeight = "1";
+        temp.style.lineHeight = currentLineHeight.toString();
         temp.style.textAlign = "center";
         temp.style.width = maxAllowedWidth + "px";
         temp.style.padding = "0";
@@ -565,7 +406,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
           p.textContent = line.trim() || " ";
           p.style.margin = "0";
           p.style.fontWeight = "bold";
-          p.style.lineHeight = "1";
+          p.style.lineHeight = currentLineHeight.toString();
           p.style.padding = "0";
           p.style.whiteSpace = "normal";
           p.style.wordWrap = "break-word";
@@ -592,8 +433,8 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
           ? ((testWidth - maxAllowedWidth) / maxAllowedWidth) * 100
           : 0;
 
-        // Allow increase if overflow is minimal (less than 3%)
-        const allowableOverflow = 3; // 3% overflow tolerance
+        // Allow increase if overflow is minimal (less than 1%)
+        const allowableOverflow = 1; // 1% overflow tolerance - very strict
         const shouldAllow =
           heightOverflowPercent <= allowableOverflow &&
           widthOverflowPercent <= allowableOverflow;
@@ -628,7 +469,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
     currentIndex,
     songSections,
     fontFamily,
-    calculateOptimalFontSize,
+    baseFontSize,
   ]);
 
   const decreaseFontSize = useCallback(() => {
@@ -853,10 +694,271 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
   }, [currentIndex, songSections]);
 
   const currentSection = songSections[currentIndex];
-  const optimalFontSize =
-    contentRef.current && currentSection
-      ? calculateOptimalFontSize(contentRef.current, currentSection.content)
-      : baseFontSize;
+
+  // Calculate dynamic line height for better space utilization - tighter spacing overall
+  const dynamicLineHeight = currentSection
+    ? currentSection.content.length === 1
+      ? 1.0 // Single line - no spacing needed
+      : currentSection.content.length === 2
+      ? 1.1 // Two lines - minimal spacing for better screen usage
+      : currentSection.content.length === 3
+      ? 1.15 // Three lines - slight spacing
+      : currentSection.content.length === 4
+      ? 1.8 // Four lines - comfortable spacing
+      : currentSection.content.length === 6
+      ? 1.3 // Up to 6 lines - standard spacing
+      :currentSection.content.length === 7
+      ? 1.25 // Up to 7 lines - slightly tighter
+      : currentSection.content.length === 8
+      ? 1.4 // Up to 8 lines - tighter spacing
+      : 1.15 // Many lines - tighter spacing for better fit
+    : 1.3;
+
+  // Line-based font size calculation - simple approach based on number of lines
+  const lineBasedFontSize = useMemo(() => {
+    if (!currentSection?.content?.length) {
+      return baseFontSize;
+    }
+
+    const lineCount = currentSection.content.length + 2;
+
+    // Base font size calculation - aggressive sizing for better space utilization
+    // With tighter line spacing, we can use even larger fonts for fewer lines
+    let calculatedSize;
+    if (lineCount === 1) {
+      calculatedSize = baseFontSize * 6.0; // Extra large for single line with tighter spacing
+    } else if (lineCount === 2) {
+      calculatedSize = baseFontSize * 4.8; // Much larger for two lines
+    } else if (lineCount === 3) {
+      calculatedSize = baseFontSize * 4.2; // Larger for three lines
+    } else if (lineCount === 4) {
+      calculatedSize = baseFontSize * 3.8; // Better utilization for four lines
+    } else if (lineCount === 5) {
+      calculatedSize = baseFontSize * 3.4; // Fixed - was incorrectly 1.2
+    } else if (lineCount === 6) {
+      calculatedSize = baseFontSize * 3.0; // Better for six lines
+    } else if (lineCount === 7) {
+      calculatedSize = baseFontSize * 2.7; // Good for seven lines
+    } else if (lineCount === 8) {
+      calculatedSize = baseFontSize * 2.5; // Good for eight lines
+    } else if (lineCount === 9) {
+      calculatedSize = baseFontSize * 2.3; // Good for nine lines
+    } else if (lineCount === 10) {
+      calculatedSize = baseFontSize * 2.2; // Good for ten lines
+    } else if (lineCount <= 12) {
+      calculatedSize = baseFontSize * 2.1; // Better for 11-12 lines
+    } else {
+      calculatedSize = baseFontSize * 2.0; // For very many lines (13+)
+    }
+
+    // Apply user font multiplier
+    let finalSize = Math.floor(calculatedSize * fontSizeMultiplier);
+
+    // Very permissive overflow protection - allow significant overflow
+    if (contentRef.current) {
+      const containerHeight = contentRef.current.clientHeight;
+
+      if (containerHeight > 100) {
+        // Valid container
+        const lineHeight = dynamicLineHeight || 1.2;
+        const estimatedHeight = lineCount * finalSize * lineHeight;
+        const maxAllowedHeight = containerHeight;
+
+        // Only scale down if content is REALLY too big (allow 25% overflow)
+        if (estimatedHeight > maxAllowedHeight * 1.25) {
+          const heightScale = (maxAllowedHeight * 1.1) / estimatedHeight; // Scale to 110% of container
+          const originalSize = finalSize;
+          finalSize = Math.floor(finalSize * heightScale);
+          console.log(
+            `📏 Extreme overflow protection: ${originalSize}px → ${finalSize}px (${lineCount} lines)`
+          );
+        } else {
+          console.log(
+            `✅ Large fonts allowed: ${finalSize}px for ${lineCount} lines`
+          );
+        }
+      }
+    }
+
+    return finalSize;
+  }, [
+    currentSection,
+    baseFontSize,
+    fontSizeMultiplier,
+    contentRef.current,
+    dynamicLineHeight,
+  ]);
+
+  // Using line-based font sizing only
+
+  // Line-based font size with smart overflow protection
+  const optimalFontSize = useMemo(() => {
+    console.log("🚨 OPTIMAL FONT SIZE FUNCTION CALLED!");
+
+    if (!currentSection?.content?.length) {
+      console.log("❌ No current section content, returning base font size");
+      return baseFontSize;
+    }
+
+    // Start with line-based font size
+    let finalSize = lineBasedFontSize;
+    console.log(
+      `🎯 OPTIMAL FONT SIZE: Starting with line-based: ${finalSize}px for ${currentSection.content.length} lines`
+    );
+
+    // ALWAYS apply overflow protection - don't let fonts get huge
+    if (contentRef.current && currentSection) {
+      const containerHeight =
+        contentRef.current.clientHeight || window.innerHeight;
+      const containerWidth =
+        contentRef.current.clientWidth || window.innerWidth;
+
+      console.log(`📦 Container: ${containerWidth}w × ${containerHeight}h`);
+
+      if (containerHeight > 100 && containerWidth > 100) {
+        // Always do a proper DOM test for accuracy
+        const lineHeight = dynamicLineHeight || 1.2;
+        console.log(
+          `🔍 Testing font size ${finalSize}px with DOM measurement...`
+        );
+
+        // Always do the proper test - no estimation
+        {
+          console.log(`⚠️ Potential overflow detected, testing actual size...`);
+
+          // Create test element for accurate measurement
+          const testElement = document.createElement("div");
+          testElement.style.cssText = `
+            position: absolute;
+            visibility: hidden;
+            top: -10000px;
+            font-family: ${fontFamily};
+            font-weight: bold;
+            line-height: ${lineHeight};
+            font-size: ${finalSize}px;
+            width: ${containerWidth * 0.98}px;
+            padding: 0;
+            margin: 0;
+            word-wrap: break-word;
+            text-align: center;
+          `;
+          document.body.appendChild(testElement);
+
+          // Add content
+          currentSection.content.forEach((line, index) => {
+            const lineDiv = document.createElement("div");
+            lineDiv.textContent = line.trim() || " ";
+            lineDiv.style.cssText = "margin: 0; padding: 0;";
+            testElement.appendChild(lineDiv);
+          });
+
+          const actualHeight = testElement.scrollHeight;
+          document.body.removeChild(testElement);
+
+          console.log(`🔍 DETAILED MEASUREMENT:
+            - Lines: ${currentSection.content.length}
+            - Font size: ${finalSize}px  
+            - Container: ${containerHeight}px height
+            - Actual content: ${actualHeight}px height
+            - Line content: ${currentSection.content
+              .map((l) => `"${l}"`)
+              .join(", ")}`);
+
+          const maxAllowedHeight = containerHeight * 0.95; // Use 95% of screen
+          const spaceUtilization = actualHeight / maxAllowedHeight;
+
+          console.log(
+            `📊 SPACE ANALYSIS: Using ${Math.round(
+              spaceUtilization * 100
+            )}% of available space (${actualHeight}px / ${Math.round(
+              maxAllowedHeight
+            )}px)`
+          );
+
+          // If it doesn't fit, scale down
+          if (actualHeight > maxAllowedHeight) {
+            const scale = maxAllowedHeight / actualHeight;
+            const newSize = Math.floor(finalSize * scale);
+            console.log(
+              `📏 SCALING DOWN: ${finalSize}px → ${newSize}px (overflow by ${Math.round(
+                actualHeight - maxAllowedHeight
+              )}px)`
+            );
+            finalSize = newSize;
+          } else {
+            // If it fits with room to spare, try to make it bigger!
+            if (spaceUtilization < 1) {
+              // Lowered threshold to 75%
+              const upscale = 0.9 / spaceUtilization; // Scale up to use 90% of space
+              const newSize = Math.floor(finalSize * upscale);
+              console.log(
+                `📈 SCALING UP for better space: ${finalSize}px → ${newSize}px (${Math.round(
+                  spaceUtilization * 100
+                )}% → 90%) - SHOULD BE BIGGER!`
+              );
+
+              // Actually test the new size to make sure it still fits
+              testElement.style.fontSize = `${newSize}px`;
+              document.body.appendChild(testElement);
+              const newActualHeight = testElement.scrollHeight;
+              document.body.removeChild(testElement);
+
+              if (newActualHeight <= maxAllowedHeight) {
+                finalSize = newSize;
+                console.log(
+                  `✅ UPSCALE SUCCESS: New size ${newSize}px fits (${newActualHeight}px ≤ ${Math.round(
+                    maxAllowedHeight
+                  )}px)`
+                );
+              } else {
+                console.log(
+                  `❌ UPSCALE REJECTED: New size ${newSize}px would overflow (${newActualHeight}px > ${Math.round(
+                    maxAllowedHeight
+                  )}px)`
+                );
+              }
+            } else {
+              console.log(
+                `✅ GOOD SPACE USAGE: ${finalSize}px (using ${Math.round(
+                  spaceUtilization * 100
+                )}% - no upscaling needed)`
+              );
+            }
+          }
+        }
+      }
+    }
+
+    const result = Math.max(20, finalSize);
+    console.log(
+      `🔥 OPTIMAL FONT SIZE RETURNING: ${result}px (from finalSize: ${finalSize}px)`
+    );
+    return result; // Minimum 20px font size
+  }, [
+    lineBasedFontSize,
+    currentSection,
+    contentRef.current,
+    fontFamily,
+    dynamicLineHeight,
+  ]);
+
+  // Reset font calculation state when section changes
+  useEffect(() => {
+    setIsFontCalculated(false);
+  }, [currentIndex]);
+
+  // Track when font calculation is complete to show content immediately
+  useEffect(() => {
+    if (optimalFontSize && currentSection) {
+      const timer = setTimeout(() => {
+        setIsFontCalculated(true);
+      }, 10); // Minimal delay to ensure calculation is complete
+
+      return () => clearTimeout(timer);
+    } else {
+      setIsFontCalculated(false);
+    }
+  }, [optimalFontSize, currentSection]);
 
   // Calculate dynamic line spacing based on content length (with increased spacing for ≤6 lines)
   const dynamicLineSpacing = currentSection
@@ -871,203 +973,19 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
       : 0.15 // Keep consistent for many lines
     : 0.15;
 
-  // Advanced real-time overflow protection with dual-dimension monitoring
+  // REMOVED: Real-time overflow protection to prevent visible resizing
+  // Font sizing is now pre-calculated to be correct from the start
+
+  // Simple resize handler - just force recalculation on window resize
   useEffect(() => {
-    const currentSection = songSections[currentIndex];
-    if (!contentRef.current || !currentSection) return;
-
-    const checkForOverflow = () => {
-      const container = contentRef.current;
-      if (!container) return;
-
-      const containerHeight = container.clientHeight;
-      const containerWidth = container.clientWidth;
-      const maxAllowedHeight = containerHeight * 0.99; // Match ultra-aggressive algorithm
-      const maxAllowedWidth = containerWidth * 0.98; // Match ultra-aggressive algorithm
-
-      const contentElement = container.querySelector(
-        ".content-container"
-      ) as HTMLElement;
-
-      if (contentElement) {
-        const contentHeight = contentElement.scrollHeight;
-        const contentWidth = contentElement.scrollWidth;
-
-        // Check for overflow in either dimension
-        const heightOverflow = contentHeight > maxAllowedHeight;
-        const widthOverflow = contentWidth > maxAllowedWidth;
-
-        if (heightOverflow || widthOverflow) {
-          // Calculate scale factors for both dimensions
-          const heightScaleFactor = heightOverflow
-            ? maxAllowedHeight / contentHeight
-            : 1;
-          const widthScaleFactor = widthOverflow
-            ? maxAllowedWidth / contentWidth
-            : 1;
-
-          // Use the more restrictive scale factor
-          const scaleFactor = Math.min(heightScaleFactor, widthScaleFactor);
-          const adjustedMultiplier = fontSizeMultiplier * scaleFactor * 0.985; // 98.5% for safety
-
-          // Reduce by exactly 1% increments for consistency with manual controls
-          const targetMultiplier =
-            Math.floor(fontSizeMultiplier * 100 - 1) / 100;
-          const finalMultiplier = Math.max(0.2, targetMultiplier);
-
-          if (finalMultiplier < fontSizeMultiplier) {
-            setFontSizeMultiplier(finalMultiplier);
-            setLocalStorageItem(
-              "bmusicFontMultiplier",
-              finalMultiplier.toString()
-            );
-            console.log(
-              "Auto-adjusted font size by 1% to prevent overflow:",
-              finalMultiplier,
-              "Height overflow:",
-              heightOverflow,
-              "Width overflow:",
-              widthOverflow
-            );
-          }
-        }
-      }
-    };
-
-    // Check immediately and after a brief delay for layout completion
-    const timeoutId = setTimeout(checkForOverflow, 120);
-
-    // Enhanced resize handler with debouncing
-    let resizeTimeoutId: NodeJS.Timeout;
     const handleResize = () => {
-      clearTimeout(resizeTimeoutId);
-      resizeTimeoutId = setTimeout(checkForOverflow, 150);
+      console.log("� Window resized - font will recalculate automatically");
+      // The useMemo will automatically recalculate when contentRef dimensions change
     };
 
     window.addEventListener("resize", handleResize);
-
-    return () => {
-      clearTimeout(timeoutId);
-      clearTimeout(resizeTimeoutId);
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [currentIndex, songSections, fontSizeMultiplier]);
-
-  // Enhanced window resize handler with comprehensive font size recalculation
-  useEffect(() => {
-    let resizeTimeoutId: NodeJS.Timeout;
-
-    const handleResize = () => {
-      const currentSection = songSections[currentIndex];
-      if (!contentRef.current || !currentSection) return;
-
-      clearTimeout(resizeTimeoutId);
-
-      // Debounced resize handling with enhanced calculation
-      resizeTimeoutId = setTimeout(() => {
-        const container = contentRef.current;
-        if (!container) return;
-
-        const containerHeight = container.clientHeight;
-        const containerWidth = container.clientWidth;
-        const maxAllowedHeight = containerHeight * 0.99; // Match ultra-aggressive algorithm
-        const maxAllowedWidth = containerWidth * 0.98; // Match ultra-aggressive algorithm
-
-        // Recalculate optimal font size for new dimensions
-        const newOptimalSize = calculateOptimalFontSize(
-          container,
-          currentSection.content
-        );
-        const proposedSize = newOptimalSize * fontSizeMultiplier;
-
-        // Create test element to verify the proposed size works
-        const temp = document.createElement("div");
-        temp.style.position = "absolute";
-        temp.style.visibility = "hidden";
-        temp.style.fontFamily = fontFamily;
-        temp.style.fontWeight = "bold";
-        temp.style.lineHeight = "1";
-        temp.style.textAlign = "center";
-        temp.style.width = maxAllowedWidth + "px";
-        temp.style.fontSize = proposedSize + "px";
-        temp.style.padding = "0";
-        temp.style.margin = "0";
-        temp.style.boxSizing = "border-box";
-        temp.style.whiteSpace = "normal";
-        temp.style.wordWrap = "break-word";
-        document.body.appendChild(temp);
-
-        // Dynamic line spacing (with increased spacing for ≤6 lines)
-        const lineSpacing =
-          currentSection.content.length === 1
-            ? 0
-            : currentSection.content.length === 2
-            ? 0.08 // Increased for better readability
-            : currentSection.content.length <= 4
-            ? 0.12 // Increased for better readability
-            : currentSection.content.length <= 6
-            ? 0.15 // Increased for better readability
-            : 0.15; // Keep consistent for many lines
-
-        currentSection.content.forEach((line, index) => {
-          const p = document.createElement("p");
-          p.textContent = line.trim() || " ";
-          p.style.margin = "0";
-          p.style.fontWeight = "bold";
-          p.style.lineHeight = "1";
-          p.style.padding = "0";
-          p.style.whiteSpace = "normal";
-          p.style.wordWrap = "break-word";
-
-          if (index < currentSection.content.length - 1) {
-            p.style.marginBottom =
-              Math.floor(proposedSize * lineSpacing) + "px";
-          }
-          temp.appendChild(p);
-        });
-
-        const testHeight = temp.scrollHeight;
-        const testWidth = temp.scrollWidth;
-        document.body.removeChild(temp);
-
-        // If content overflows after resize, adjust font size multiplier by 1% increments
-        if (testHeight > maxAllowedHeight || testWidth > maxAllowedWidth) {
-          // Reduce by exactly 1% for consistency with manual controls
-          const targetMultiplier =
-            Math.floor(fontSizeMultiplier * 100 - 1) / 100;
-          const finalMultiplier = Math.max(0.2, targetMultiplier);
-
-          if (finalMultiplier < fontSizeMultiplier) {
-            setFontSizeMultiplier(finalMultiplier);
-            setLocalStorageItem(
-              "bmusicFontMultiplier",
-              finalMultiplier.toString()
-            );
-            console.log(
-              "Font size auto-adjusted by 1% after window resize:",
-              finalMultiplier,
-              "Height constraint:",
-              testHeight > maxAllowedHeight,
-              "Width constraint:",
-              testWidth > maxAllowedWidth
-            );
-          }
-        }
-      }, 180); // Slightly longer debounce for more stable results
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => {
-      clearTimeout(resizeTimeoutId);
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [
-    currentIndex,
-    songSections,
-    fontSizeMultiplier,
-    fontFamily,
-    calculateOptimalFontSize,
-  ]); // Real-time localStorage updates
+    return () => window.removeEventListener("resize", handleResize);
+  }, []); // Real-time localStorage updates
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "bmusicfontFamily" && e.newValue) {
@@ -1129,7 +1047,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
   }, [fontFamily, backgroundImage]);
 
   return (
-    <div className="w-full h-screen relative overflow-x-hidden overflow-y-scroll no-scrollbar bg-black">
+    <div className="w-full h-screen relative overflow-hidden bg-black">
       {/* Live Red Border - Solid border around entire window */}
       <div className="absolute inset-0 z-50 pointer-events-none">
         {/* Main red border */}
@@ -1240,13 +1158,18 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
       </div>
 
       {/* Main Content Container */}
-      <div className="relative z-20 h-full flex flex-col ">
-        {/* Enhanced Main Content Area - Minimal padding for maximum space */}
-        <div className="flex-1 flex items-center justify-center p-2 lg:p-4">
+      <div className="relative z-20 h-full flex flex-col">
+        {/* Enhanced Main Content Area - ZERO padding for MAXIMUM text space */}
+        <div className="flex-1 flex items-center justify-center">
           <div
             ref={contentRef}
-            className="w-full h-full max-h-screen flex flex-col items-center justify-center text-center text-white font-bold overflow-hidden relative "
-            style={{ fontFamily }}
+            className="w-full h-full flex flex-col items-center justify-center text-center text-white font-bold overflow-hidden relative"
+            style={{
+              fontFamily,
+              padding: 0,
+              margin: 0,
+              boxSizing: "border-box",
+            }}
           >
             {/* Content with Enhanced Animations */}
             <AnimatePresence mode="wait">
@@ -1273,39 +1196,49 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
                   {/* Content Background Blur Effect */}
                   <div className="absolute inset-0 -m-8  rounded-3xl border border-white/10" />
 
-                  {currentSection.content.map((line, index) => (
-                    <motion.p
-                      key={index}
-                      initial={{ opacity: 0, y: 20, filter: "blur(4px)" }}
-                      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                      transition={{
-                        delay: index * 0.15 + 0.3,
-                        duration: 0.2,
-                        ease: [0.25, 0.46, 0.45, 0.94],
-                      }}
-                      onClick={handleTextClick}
-                      style={{
-                        fontSize: `${optimalFontSize}px`,
-                        fontFamily: fontFamily,
-                        // lineHeight: 1.2,
-                        color: textColor,
-                        textShadow:
-                          "0 4px 20px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.6)",
-                        filter: "drop-shadow(0 0 20px rgba(255,255,255,0.1))",
-                        cursor: "pointer",
-                        wordWrap: "break-word",
-                        overflowWrap: "break-word",
-                        hyphens: "auto",
-                        maxWidth: "100%",
-                        // transform: "scaleY(1.5)",
-                        // transformOrigin: "top left",
-                      }}
-                      className="m-0 relative z-10 transition-all duration-300 hover:scale-105"
-                      // style={{ transform: 'scaleY(1.5)', transformOrigin: 'top left' }}
-                    >
-                      {line}
-                    </motion.p>
-                  ))}
+                  {currentSection.content.map((line, index) => {
+                    // ABSOLUTE MINIMAL spacing - match algorithm exactly
+                    const marginBottom =
+                      index < currentSection.content.length - 1 &&
+                      currentSection.content.length > 1
+                        ? "1px" // Exactly match the 1px from algorithm
+                        : "0px";
+
+                    return (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: isFontCalculated ? 1 : 0 }}
+                        transition={{
+                          duration: 0.1,
+                          ease: "easeOut",
+                        }}
+                        onClick={handleTextClick}
+                        style={{
+                          fontSize: `${optimalFontSize}px`,
+                          fontFamily: fontFamily,
+                          lineHeight: dynamicLineHeight,
+                          color: textColor,
+                          textShadow:
+                            "0 4px 20px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.6)",
+                          filter: "drop-shadow(0 0 20px rgba(255,255,255,0.1))",
+                          cursor: "pointer",
+                          wordWrap: "break-word",
+                          overflowWrap: "break-word",
+                          hyphens: "auto",
+                          maxWidth: "100%",
+                          margin: 0,
+                          padding: 0,
+                          marginBottom: marginBottom,
+                          textAlign: "center",
+                          fontWeight: "bold",
+                        }}
+                        className="relative z-10 transition-all duration-300 hover:scale-105"
+                      >
+                        {line.trim() || " "}
+                      </motion.div>
+                    );
+                  })}
                 </motion.div>
               ) : (
                 <motion.div
