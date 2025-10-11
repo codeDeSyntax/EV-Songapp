@@ -27,13 +27,9 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isMinimized, setIsMinimized] = useState(false);
 
-  // Current song data
-  const [currentSection, setCurrentSection] = useState<SongSection | null>(
-    null
-  );
+  // Current song data - simplified to just show section name
+  const [currentSectionName, setCurrentSectionName] = useState<string>("");
   const [songTitle, setSongTitle] = useState("");
-  const [sectionIndex, setSectionIndex] = useState(0);
-  const [totalSections, setTotalSections] = useState(0);
 
   // Refs
   const previewRef = useRef<HTMLDivElement>(null);
@@ -99,108 +95,46 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
     }
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
-  // Listen to projection commands to update current section
+  // Listen to main window messages to get current section info
   useEffect(() => {
-    const handleProjectionCommand = (data: any) => {
-      console.log("🎵 Floating preview received projection command:", data);
+    const handleMainWindowMessage = (data: any) => {
+      console.log("🎵 Floating preview received main window message:", data);
 
-      if (data.type === "song" && data.song) {
-        setSongTitle(data.song.title || "Unknown Song");
+      // Handle song projection updates that contain current section info
+      if (data.type === "SONG_PROJECTION_UPDATE" && data.data) {
+        const { currentSection, sectionNumber } = data.data;
 
-        // Parse song sections if available
-        if (data.song.content) {
-          try {
-            const sections = parseSongSections(data.song.content);
-            setTotalSections(sections.length);
-          } catch (error) {
-            console.error("Error parsing song sections:", error);
-          }
+        if (currentSection) {
+          // Create section display name
+          const sectionName = sectionNumber
+            ? `${currentSection} ${sectionNumber}`
+            : currentSection;
+
+          console.log("🎵 Updating current section:", sectionName);
+          setCurrentSectionName(sectionName);
         }
       }
 
-      if (data.type === "navigate" && data.section) {
-        setCurrentSection(data.section);
-        setSectionIndex(data.sectionIndex || 0);
-      }
-
-      if (data.type === "section") {
-        setCurrentSection(data.section);
-        setSectionIndex(data.sectionIndex || 0);
+      // Handle song updates
+      if (data.type === "SONG_UPDATE" && data.song) {
+        setSongTitle(data.song.title || "Unknown Song");
       }
     };
 
-    // Listen to song projection commands
-    const cleanup = window.api?.onSongProjectionCommand?.(
-      handleProjectionCommand
-    );
+    // Listen to main window messages
+    const cleanup = window.api?.onMainWindowMessage?.(handleMainWindowMessage);
 
     return () => {
       cleanup?.();
     };
   }, []);
 
-  // Function to parse song sections (simplified version)
-  const parseSongSections = (content: string): SongSection[] => {
-    const sections: SongSection[] = [];
-    const lines = content.split("\n").filter((line) => line.trim());
-
-    let currentSection: SongSection | null = null;
-
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-
-      // Check if it's a section header
-      if (trimmedLine.match(/^(Verse|Chorus|Bridge|Intro|Outro|Pre-Chorus)/i)) {
-        // Save previous section if exists
-        if (currentSection) {
-          sections.push(currentSection);
-        }
-
-        // Start new section
-        const match = trimmedLine.match(
-          /^(Verse|Chorus|Bridge|Intro|Outro|Pre-Chorus)\s*(\d*)/i
-        );
-        if (match) {
-          currentSection = {
-            type: match[1],
-            content: [],
-            number: match[2] ? parseInt(match[2]) : undefined,
-          };
-        }
-      } else if (currentSection && trimmedLine) {
-        // Add content to current section
-        currentSection.content.push(trimmedLine);
-      }
-    }
-
-    // Add the last section
-    if (currentSection) {
-      sections.push(currentSection);
-    }
-
-    return sections;
-  };
-
-  // Get section display text
+  // Get section display text - simplified to just show section name
   const getSectionDisplayText = () => {
-    if (!currentSection) {
-      return {
-        title: "No Section",
-        preview: "No section active",
-      };
+    if (!currentSectionName) {
+      return "No Section";
     }
-
-    const sectionName = currentSection.number
-      ? `${currentSection.type} ${currentSection.number}`
-      : currentSection.type;
-
-    const firstLine = currentSection.content[0] || "";
-
-    return {
-      title: sectionName,
-      preview:
-        firstLine.length > 40 ? firstLine.substring(0, 40) + "..." : firstLine,
-    };
+    return currentSectionName;
   };
 
   if (!isVisible) return null;
@@ -223,13 +157,13 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
           width: isMinimized ? "200px" : "200px",
           minWidth: "200px",
         }}
-        className="bg-black border border-gray-900/50 rounded shadow-2xl overflow-hidden"
+        className="bg-black border shadow-inner shadow-red-300 border-gray-900 rounded  overflow-hidden"
       >
         {/* Minimal Draggable Header */}
         <div
           ref={dragRef}
           onMouseDown={handleMouseDown}
-          className={`bg-black px-2 py-1 flex items-center justify-between cursor-grab active:cursor-grabbing border-b border-gray-900/30 ${
+          className={`bg-black shadow-inner border-solid shadow-gray-300 px-2 py-1 flex items-center justify-between cursor-grab active:cursor-grabbing border-b border-gray-900/30 ${
             isDragging ? "cursor-grabbing" : ""
           }`}
         >
@@ -273,33 +207,21 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
                 <div className="bg-black border border-gray-900/40 rounded-sm p-3 min-h-[80px] flex flex-col justify-center">
                   {/* Song title - minimal */}
                   {songTitle && (
-                    <div className="text-xs text-gray-500 mb-1 text-left truncate">
+                    <div className="text-xs text-gray-500 mb-2 text-center truncate">
                       {songTitle}
                     </div>
                   )}
 
-                  {/* Main content area - landscape layout */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="text-sm font-medium text-white mb-1">
-                        {sectionDisplay.title}
-                      </div>
-                      <div className="text-xs text-gray-400 leading-tight">
-                        {sectionDisplay.preview}
-                      </div>
+                  {/* Current section display - centered and simplified */}
+                  <div className="text-center">
+                    <div className="text-lg font-impact font-medium text-white">
+                      {sectionDisplay || "No Section"}
                     </div>
-
-                    {/* Section indicator on the right */}
-                    {totalSections > 0 && (
-                      <div className="text-xs text-gray-600 ml-3 text-right">
-                        {sectionIndex + 1}/{totalSections}
-                      </div>
-                    )}
                   </div>
 
                   {/* Minimal scan line effect */}
                   <div className="absolute inset-0 pointer-events-none">
-                    <div className="w-full h-full bg-gradient-to-r from-transparent via-white/[0.01] to-transparent"></div>
+                    <div className="w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
                   </div>
                 </div>
               </div>

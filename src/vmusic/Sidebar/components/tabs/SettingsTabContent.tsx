@@ -128,7 +128,7 @@ const SettingsTabContent: React.FC<SettingsTabContentProps> = ({
   }, [fontSize, fontFamily, selectedBg]);
 
   return (
-    <div className="space-y-6 ">
+    <div className="space-y-6" style={{ fontFamily: '"Crimson Pro", serif' }}>
       <div className="space-y-4 ">
         <h3 className="text-lg font-semibold" style={{ fontFamily: "Georgia" }}>
           Display Settings

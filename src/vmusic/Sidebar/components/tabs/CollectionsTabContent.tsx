@@ -120,7 +120,7 @@ const CollectionsTabContent: React.FC<CollectionsTabContentProps> = ({
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" style={{ fontFamily: '"Crimson Pro", serif' }}>
       {/* Add new collection input field */}
       <div className="space-y-2 p-1 border border-stone-200 rounded-lg">
         <label className="text-sm font-medium text-stone-700">

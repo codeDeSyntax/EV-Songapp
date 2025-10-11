@@ -26,7 +26,10 @@ const SongTabContent: React.FC<SongTabContentProps> = ({
   }, [activeTab]);
 
   return (
-    <div className="flex items-start flex-col ">
+    <div
+      className="flex items-start flex-col"
+      style={{ fontFamily: '"Crimson Pro", serif' }}
+    >
       {/* Header with title and edit toggle */}
       <div className="flex items-center justify-between w-full mb-2">
         <h3 className="text-sm text-left font-oswald underline text-stone-600 font-semibold overflow-hidden">

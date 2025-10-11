@@ -11,7 +11,8 @@ import {
   Copy,
   Loader2,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { theme } from "antd";
 // Enhanced API types
 
 interface Display {
@@ -69,6 +70,24 @@ const DisplayTabContent: React.FC<DisplayTabContentProps> = ({
   });
   const [isLoading, setIsLoading] = useState(false);
   const [testingDisplay, setTestingDisplay] = useState<number | null>(null);
+
+  // Notification state
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    message: string;
+    type: "success" | "error" | "info";
+  }>({ show: false, message: "", type: "info" });
+
+  // Show notification helper
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "info"
+  ) => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification((prev) => ({ ...prev, show: false }));
+    }, 3000);
+  };
 
   // Display mode configurations
   const displayModes = [
@@ -283,7 +302,7 @@ const DisplayTabContent: React.FC<DisplayTabContentProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       {/* Notification */}
       {testingDisplay && (
         <motion.div
@@ -298,26 +317,20 @@ const DisplayTabContent: React.FC<DisplayTabContentProps> = ({
       )}
 
       {/* Header */}
-      <div className="space-y-2">
-        <h3
-          className="text-lg font-semibold flex items-center gap-2"
-          style={{ fontFamily: "Georgia" }}
-        >
-          <MonitorSpeaker className="w-5 h-5" />
-          Display Configuration
-        </h3>
-        <p className="text-sm text-stone-500 leading-relaxed">
-          Configure which display to use for song projection. This solves issues
-          where projection appears on the wrong screen.
-        </p>
-        <hr className="h-0 border-[#9a674a]/20" />
-      </div>
+
+      <span
+        className="text-lg font-semibold flex items-center gap-2"
+        //   style={{ fontFamily: "Georgia" }}
+      >
+        <MonitorSpeaker className="w-5 h-5" />
+        Display Configuration
+      </span>
 
       {/* Refresh Button */}
       <div className="flex justify-between items-center">
-        <h4 className="text-sm font-medium text-stone-700">
+        <span className="text-sm font-medium text-stone-700">
           Available Displays
-        </h4>
+        </span>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -355,7 +368,7 @@ const DisplayTabContent: React.FC<DisplayTabContentProps> = ({
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleDisplaySelect(display.id)}
-                  className={`px-3 py-1 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                  className={`px-3 py-1 font-[garamond] rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                     isSelected
                       ? localTheme === "creamy"
                         ? "bg-[#faeed1] border-[#9a674a] border-dashed"
@@ -413,8 +426,8 @@ const DisplayTabContent: React.FC<DisplayTabContentProps> = ({
 
       {/* Windows Display Mode */}
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-stone-700">
-          Windows Display Mode (like Windows + P)
+        <h4 className="text-sm font-bold font-[garamond] text-stone-700">
+          System display ( Windows + P)
         </h4>
         <div className="grid grid-cols-2 gap-3">
           {displayModes.map((mode) => {
@@ -426,7 +439,7 @@ const DisplayTabContent: React.FC<DisplayTabContentProps> = ({
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleWindowsDisplayMode(mode.key)}
                 disabled={isLoading}
-                className={`p-3 rounded-xl border-2 transition-all text-left ${
+                className={`p-3 font-[garamond] rounded-xl border-2 transition-all text-left ${
                   mode.isActive
                     ? localTheme === "creamy"
                       ? "bg-[#faeed1] border-dashed border-[#9a674a]/20 shadow-md"
@@ -436,8 +449,12 @@ const DisplayTabContent: React.FC<DisplayTabContentProps> = ({
                     : "bg-gray-50 border-gray-200 hover:border-gray-300"
                 } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                <IconComponent className="w-5 h-5 mb-2 mx-auto" />
-                <div className="text-sm font-medium">{mode.title}</div>
+                <div className={`bg-gray-300 dark:bg-transparent shadow ${localTheme === "creamy" ? "text-[#9a674a]" : "text-[#9a674a]"} flex items-center justify-center w-8 h-8 rounded-full`}>
+                  <IconComponent className="w-5 h-5  mx-auto" />
+                </div>
+                <div className={` ${localTheme === "creamy" ? "bg-[#ffedd5] text-black" : "bg-gray-200"} rounded-full px-2 mt-1 text-sm font-medium`}>
+                  {mode.title}
+                </div>
                 <div className="text-xs text-stone-500">{mode.description}</div>
               </motion.button>
             );
@@ -450,21 +467,61 @@ const DisplayTabContent: React.FC<DisplayTabContentProps> = ({
         whileHover={{ scale: preferences.preferredDisplayId ? 1.02 : 1 }}
         whileTap={{ scale: preferences.preferredDisplayId ? 0.98 : 1 }}
         onClick={async () => {
-          if (preferences.preferredDisplayId) {
-            // Validate that the display still exists
-            const selectedDisplay = displays.find(
-              (d) => d.id === preferences.preferredDisplayId
-            );
-            if (!selectedDisplay) {
-              console.warn(
-                "Selected display no longer available, please refresh displays"
-              );
-              await loadDisplays();
-              return;
-            }
+          console.log("Apply button clicked", {
+            hasPreferredDisplay: !!preferences.preferredDisplayId,
+            preferredDisplayId: preferences.preferredDisplayId,
+            displays: displays.length,
+          });
 
-            // Test the display
-            testDisplay(preferences.preferredDisplayId);
+          if (preferences.preferredDisplayId) {
+            try {
+              // Validate that the display still exists
+              const selectedDisplay = displays.find(
+                (d) => d.id === preferences.preferredDisplayId
+              );
+              if (!selectedDisplay) {
+                console.log("Selected display not found");
+                showNotification(
+                  "Selected display no longer available. Please refresh displays.",
+                  "error"
+                );
+                await loadDisplays();
+                return;
+              }
+
+              console.log("Saving display preferences...");
+              // Save display preferences
+              const result = await window.api?.saveDisplayPreferences?.({
+                displayId: preferences.preferredDisplayId,
+                mode: (preferences as any).projectionMode || "extend",
+              });
+
+              console.log("Save result:", result);
+
+              if (result?.success) {
+                showNotification(
+                  `✅ Display preferences saved successfully! Using Display ${preferences.preferredDisplayId}`,
+                  "success"
+                );
+              } else {
+                showNotification(
+                  "Failed to save display preferences. Please try again.",
+                  "error"
+                );
+              }
+            } catch (error) {
+              console.error("Error saving display preferences:", error);
+              showNotification(
+                "An error occurred while saving display preferences.",
+                "error"
+              );
+            }
+          } else {
+            console.log("No display selected");
+            showNotification(
+              "Please select a display before applying settings.",
+              "info"
+            );
           }
         }}
         disabled={!preferences.preferredDisplayId || testingDisplay !== null}
@@ -484,10 +541,42 @@ const DisplayTabContent: React.FC<DisplayTabContentProps> = ({
         ) : (
           <>
             <Settings className="w-4 h-4" />
-            Apply & Test Configuration
+            Apply
           </>
         )}
       </motion.button>
+
+      {/* Notification */}
+      <AnimatePresence>
+        {notification.show && (
+          <motion.div
+            key="notification"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`mt-4 p-3 rounded-lg border-l-4 ${
+              notification.type === "success"
+                ? "bg-green-50 border-green-400 text-green-700"
+                : notification.type === "error"
+                ? "bg-red-50 border-red-400 text-red-700"
+                : "bg-blue-50 border-blue-400 text-blue-700"
+            }`}
+          >
+            <div className="flex items-center">
+              {notification.type === "success" ? (
+                <CheckCircle className="w-4 h-4 mr-2" />
+              ) : notification.type === "error" ? (
+                <AlertCircle className="w-4 h-4 mr-2" />
+              ) : (
+                <AlertCircle className="w-4 h-4 mr-2" />
+              )}
+              <span className="text-sm font-medium">
+                {notification.message}
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
