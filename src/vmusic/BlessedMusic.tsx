@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import TitleBar from "../shared/TitleBar";
-import Sidebar from "./Sidebar";
+import ModularSidebar from "./Sidebar/ModularSidebar";
 import DeletePopup from "./DeletePopup";
 import HeaderControls from "./components/songlist/HeaderControls";
 import VirtualSongList from "./components/songlist/VirtualSongList";
@@ -337,7 +337,7 @@ const BlessedMusic = () => {
             data-tour="sidebar"
             style={{ transform: "none" }}
           >
-            <Sidebar
+            <ModularSidebar
               activeTab={activeTab}
               setActiveTab={handleTabChange}
               savedFavorites={favorites}

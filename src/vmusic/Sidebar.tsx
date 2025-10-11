@@ -18,6 +18,13 @@ import {
   Plus,
   Edit,
   Eye,
+  MonitorSpeaker,
+  Tv,
+  ArrowRightLeft,
+  Copy,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
 } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 import { FolderOpen } from "lucide-react";
@@ -398,7 +405,7 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
           <div className="flex items-start flex-col ">
             {/* Header with title and edit toggle */}
             <div className="flex items-center justify-between w-full mb-2">
-              <h3 className="text-lg text-left font-ThePriest underline text-stone-600 font-semibold overflow-hidden">
+              <h3 className="text-sm text-left font-oswald underline text-stone-600 font-semibold overflow-hidden">
                 {selectedSong?.title || "No Song Selected"}
               </h3>
               {selectedSong && (
@@ -1038,6 +1045,9 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
           </div>
         );
 
+      case "display":
+        return <DisplayConfiguration />;
+
       default:
         return null;
     }
@@ -1088,7 +1098,7 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
         >
           <button
             onClick={() => setActiveTab("Song")}
-            className={`py-2 rounded-md text-[10px] px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
+            className={`py-2 rounded-md shadow text-[10px] px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
               activeTab === "Song" && localTheme === "creamy"
                 ? "bg-vmprim text-white"
                 : activeTab === "Song" && localTheme === "white"
@@ -1096,12 +1106,12 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
                 : "text-stone-600 bg-[#fdf4d0]"
             }`}
           >
-            <FileMusic className="h-3 w-3" />
+            <FileMusic className="h-4 w-4" />
             Songs
           </button>
           <button
             onClick={() => setActiveTab("create")}
-            className={`py-2 rounded-md text-[10px] px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
+            className={`py-2 rounded-md shadow text-[10px] px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
               activeTab === "create" && localTheme === "creamy"
                 ? "bg-vmprim text-white"
                 : activeTab === "create" && localTheme === "white"
@@ -1109,12 +1119,12 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
                 : "text-stone-600 bg-[#fdf4d0]"
             }`}
           >
-            <Plus className="h-3 w-3" />
-            Create
+            <Plus className="h-4 w-4" />
+            {/* Create */}
           </button>
           <button
             onClick={() => setActiveTab("settings")}
-            className={`py-2 rounded-md text-[10px] px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
+            className={`py-2 rounded-md shadow text-[10px] px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
               activeTab === "settings" && localTheme === "creamy"
                 ? "bg-vmprim text-white"
                 : activeTab === "settings" && localTheme === "white"
@@ -1122,12 +1132,12 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
                 : "text-stone-600 bg-[#fdf4d0]"
             }`}
           >
-            <CogIcon className="h-3 w-3" />
-            Settings
+            <CogIcon className="h-4 w-4" />
+            {/* Settings */}
           </button>
           <button
             onClick={() => setActiveTab("collections")}
-            className={`py-2 rounded-md text-[10px] px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
+            className={`py-2 rounded-md shadow text-[10px] px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
               activeTab === "collections" && localTheme === "creamy"
                 ? "bg-vmprim text-white"
                 : activeTab === "collections" && localTheme === "white"
@@ -1135,8 +1145,21 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
                 : "text-stone-600 bg-[#fdf4d0]"
             }`}
           >
-            <Group className="h-3 w-3" />
+            <Group className="h-4 w-4" />
             Collections
+          </button>
+          <button
+            onClick={() => setActiveTab("display")}
+            className={`py-2 rounded-md shadow text-[10px] px-2 font-medium transition-colors flex items-center justify-center gap-1 ${
+              activeTab === "display" && localTheme === "creamy"
+                ? "bg-vmprim text-white"
+                : activeTab === "display" && localTheme === "white"
+                ? "bg-vmprim text-white"
+                : "text-stone-600 bg-[#fdf4d0]"
+            }`}
+          >
+            <MonitorSpeaker className="h-4 w-4" />
+            Display
           </button>
         </div>
       </div>
@@ -1147,5 +1170,428 @@ const Sidebar = React.memo(({ activeTab, setActiveTab }: SideBarProps) => {
     </div>
   );
 });
+
+// Display Configuration Component
+const DisplayConfiguration: React.FC = () => {
+  const [displayInfo, setDisplayInfo] = useState<any>(null);
+  const [selectedDisplayId, setSelectedDisplayId] = useState<number | null>(
+    null
+  );
+  const [projectionMode, setProjectionMode] = useState<"extend" | "duplicate">(
+    "extend"
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const [notification, setNotification] = useState<{
+    show: boolean;
+    message: string;
+    type: "success" | "error" | "info";
+  }>({ show: false, message: "", type: "success" });
+
+  const [localTheme] = useState(localStorage.getItem("bmusictheme") || "white");
+
+  // Load display information
+  const loadDisplayInfo = async () => {
+    try {
+      setIsLoading(true);
+      const response = await window.api?.getDisplayInfo?.();
+      if (response?.success && response.data) {
+        setDisplayInfo(response.data);
+        // Set primary display as default selection if none selected
+        if (!selectedDisplayId && response.data.primaryDisplay) {
+          setSelectedDisplayId(response.data.primaryDisplay.id);
+        }
+      } else {
+        showNotification("Failed to load display information", "error");
+      }
+    } catch (error) {
+      console.error("Failed to load display info:", error);
+      showNotification("Error loading display information", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load saved preferences
+  const loadSavedPreferences = async () => {
+    try {
+      const response = await window.api?.loadDisplayPreferences?.();
+      if (response?.success && response.data) {
+        setSelectedDisplayId(response.data.displayId);
+        setProjectionMode(response.data.mode as "extend" | "duplicate");
+        showNotification(
+          `Loaded saved display configuration for Display ${response.data.displayId}`,
+          "info"
+        );
+      }
+    } catch (error) {
+      console.error("Failed to load saved preferences:", error);
+    }
+  };
+
+  // Show notification
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "info" = "info"
+  ) => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification((prev) => ({ ...prev, show: false }));
+    }, 3000);
+  };
+
+  // Apply display configuration
+  const applyConfiguration = async () => {
+    if (!selectedDisplayId || !displayInfo) return;
+
+    try {
+      setIsApplying(true);
+
+      // Save preferences to system-wide config file
+      const response = await window.api?.saveDisplayPreferences?.({
+        displayId: selectedDisplayId,
+        mode: projectionMode,
+      });
+
+      if (response?.success) {
+        showNotification(`Display preferences saved successfully!`, "success");
+
+        // Test projection on selected display
+        const testSong = {
+          title: "✨ Display Configuration Test",
+          content: `🖥️ Display ID: ${selectedDisplayId}\n🔀 Mode: ${projectionMode}\n✅ Configuration Applied Successfully!\n\nThis projection will now always appear on your selected display.`,
+          fontSize: 28,
+          backgroundImage: null,
+        };
+
+        await window.api.projectSong(testSong);
+        showNotification(
+          `Projection test launched on Display ${selectedDisplayId}`,
+          "info"
+        );
+      } else {
+        showNotification("Failed to save display preferences", "error");
+      }
+    } catch (error) {
+      console.error("Failed to apply configuration:", error);
+      showNotification("Failed to apply display configuration", "error");
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  // Handle Windows display mode changes (like Windows + P)
+  const handleWindowsDisplayMode = async (
+    mode: "extend" | "duplicate" | "internal" | "external"
+  ) => {
+    try {
+      setIsApplying(true);
+      showNotification(`Setting Windows display mode to: ${mode}...`, "info");
+
+      const result = await window.api?.setWindowsDisplayMode?.(mode);
+
+      if (result?.success) {
+        setProjectionMode(mode === "duplicate" ? "duplicate" : "extend");
+        showNotification(`✅ Windows display mode set to: ${mode}`, "success");
+
+        // Wait a moment for display change, then reload display info
+        setTimeout(() => {
+          loadDisplayInfo();
+        }, 2000);
+      } else {
+        showNotification(
+          `❌ Failed to set display mode: ${result?.error || "Unknown error"}`,
+          "error"
+        );
+      }
+    } catch (error) {
+      console.error("Failed to set Windows display mode:", error);
+      showNotification("Failed to set Windows display mode", "error");
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  // Load data on mount
+  useEffect(() => {
+    loadDisplayInfo();
+    loadSavedPreferences();
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      {/* Notification */}
+      {notification.show && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className={`p-3 rounded-lg border flex items-center gap-2 text-sm ${
+            notification.type === "success"
+              ? "bg-green-50 border-green-200 text-green-800"
+              : notification.type === "error"
+              ? "bg-red-50 border-red-200 text-red-800"
+              : "bg-[#faeed1]/50 border-[#e6d3b7] text-[#8b6f3d]"
+          }`}
+        >
+          {notification.type === "success" ? (
+            <CheckCircle className="w-4 h-4" />
+          ) : notification.type === "error" ? (
+            <AlertCircle className="w-4 h-4" />
+          ) : (
+            <Monitor className="w-4 h-4" />
+          )}
+          {notification.message}
+        </motion.div>
+      )}
+
+      {/* Header */}
+      <div className="space-y-2">
+        <h3
+          className="text-lg font-semibold flex items-center gap-2"
+          style={{ fontFamily: "Georgia" }}
+        >
+          <MonitorSpeaker className="w-5 h-5" />
+          Display Configuration
+        </h3>
+        <p className="text-sm text-stone-500 leading-relaxed">
+          Configure which display to use for song projection. This solves issues
+          where projection appears on the wrong screen.
+        </p>
+      </div>
+
+      {/* Refresh Button */}
+      <div className="flex justify-between items-center">
+        <h4 className="text-sm font-medium text-stone-700">
+          Available Displays
+        </h4>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={loadDisplayInfo}
+          disabled={isLoading}
+          className={`p-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-xs ${
+            localTheme === "creamy"
+              ? "bg-[#faeed1] border border-[#e6d3b7] text-[#8b6f3d] hover:bg-[#f7e6c4]"
+              : "bg-gray-50 border border-gray-200 text-gray-600 hover:bg-gray-100"
+          }`}
+        >
+          <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
+          Refresh
+        </motion.button>
+      </div>
+
+      {/* Display List */}
+      <div className="space-y-3">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-2 text-sm text-stone-500">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Loading displays...
+            </div>
+          </div>
+        ) : displayInfo && displayInfo.allDisplays ? (
+          <div className="space-y-2">
+            {displayInfo.allDisplays.map((display: any) => (
+              <motion.div
+                key={display.id}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSelectedDisplayId(display.id)}
+                className={`p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                  selectedDisplayId === display.id
+                    ? localTheme === "creamy"
+                      ? "bg-[#faeed1] border-[#9a674a] shadow-md"
+                      : "bg-[#faeed1] border-[#9a674a] shadow-md"
+                    : localTheme === "creamy"
+                    ? "bg-white border-[#e6d3b7] hover:border-[#d4c5a9]"
+                    : "bg-gray-50 border-gray-200 hover:border-gray-300"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`p-1 rounded-lg ${
+                        selectedDisplayId === display.id
+                          ? localTheme === "creamy"
+                            ? "bg-[#9a674a]/10 border border-[#9a674a]"
+                            : "bg-[#faeed1]/30 border border-[#9a674a]"
+                          : "bg-gray-100 border border-gray-200"
+                      }`}
+                    >
+                      <img
+                        src={
+                          display.isPrimary ? "/laptop.png" : "/flatscreen.png"
+                        }
+                        alt={display.isPrimary ? "Laptop" : "External Display"}
+                        className="w-6 h-6 object-contain"
+                      />
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm">
+                        {display.isPrimary
+                          ? "Main Display"
+                          : "External Monitor"}
+                        {display.isPrimary && (
+                          <span className="text-xs ml-1 px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
+                            Primary
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-stone-500">
+                        {display.bounds.width} × {display.bounds.height}
+                      </div>
+                    </div>
+                  </div>
+                  {selectedDisplayId === display.id && (
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-stone-500 text-sm">
+            No display information available. Click refresh to try again.
+          </div>
+        )}
+      </div>
+
+      {/* Projection Mode */}
+      <div className="space-y-3">
+        <h4 className="text-sm font-medium text-stone-700">Projection Mode</h4>
+        <div className="grid grid-cols-2 gap-3">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleWindowsDisplayMode("extend")}
+            disabled={isApplying}
+            className={`p-3 rounded-xl border-2 transition-all text-left ${
+              projectionMode === "extend"
+                ? localTheme === "creamy"
+                  ? "bg-[#faeed1] border-[#9a674a] shadow-md"
+                  : "bg-[#faeed1] border-[#9a674a] shadow-md"
+                : localTheme === "creamy"
+                ? "bg-white border-[#e6d3b7] hover:border-[#d4c5a9]"
+                : "bg-gray-50 border-gray-200 hover:border-gray-300"
+            } ${isApplying ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <ArrowRightLeft className="w-5 h-5 mb-2 mx-auto" />
+            <div className="text-sm font-medium">Extend</div>
+            <div className="text-xs text-stone-500">Separate screens</div>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleWindowsDisplayMode("duplicate")}
+            disabled={isApplying}
+            className={`p-3 rounded-xl border-2 transition-all text-left ${
+              projectionMode === "duplicate"
+                ? localTheme === "creamy"
+                  ? "bg-[#faeed1] border-[#9a674a] shadow-md"
+                  : "bg-[#faeed1] border-[#9a674a] shadow-md"
+                : localTheme === "creamy"
+                ? "bg-white border-[#e6d3b7] hover:border-[#d4c5a9]"
+                : "bg-gray-50 border-gray-200 hover:border-gray-300"
+            } ${isApplying ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <Copy className="w-5 h-5 mb-2 mx-auto" />
+            <div className="text-sm font-medium">Duplicate</div>
+            <div className="text-xs text-stone-500">
+              Mirror screens (Windows + P)
+            </div>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleWindowsDisplayMode("internal")}
+            disabled={isApplying}
+            className={`p-3 rounded-xl border-2 transition-all text-left ${
+              localTheme === "creamy"
+                ? "bg-white border-[#e6d3b7] hover:border-[#d4c5a9]"
+                : "bg-gray-50 border-gray-200 hover:border-gray-300"
+            } ${isApplying ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <Monitor className="w-5 h-5 mb-2 mx-auto" />
+            <div className="text-sm font-medium">PC Only</div>
+            <div className="text-xs text-stone-500">Primary screen only</div>
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleWindowsDisplayMode("external")}
+            disabled={isApplying}
+            className={`p-3 rounded-xl border-2 transition-all text-left ${
+              localTheme === "creamy"
+                ? "bg-white border-[#e6d3b7] hover:border-[#d4c5a9]"
+                : "bg-gray-50 border-gray-200 hover:border-gray-300"
+            } ${isApplying ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <ExternalLink className="w-5 h-5 mb-2 mx-auto" />
+            <div className="text-sm font-medium">External Only</div>
+            <div className="text-xs text-stone-500">Second screen only</div>
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Apply Button */}
+      <motion.button
+        whileHover={{ scale: selectedDisplayId ? 1.02 : 1 }}
+        whileTap={{ scale: selectedDisplayId ? 0.98 : 1 }}
+        onClick={applyConfiguration}
+        disabled={!selectedDisplayId || isApplying}
+        className={`w-full py-3 px-4 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
+          selectedDisplayId && !isApplying
+            ? localTheme === "creamy"
+              ? "bg-[#9a674a] text-white hover:bg-[#8a5739] shadow-lg"
+              : "bg-[#9a674a] text-white hover:bg-[#8a5739] shadow-lg"
+            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+        }`}
+      >
+        {isApplying ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Applying...
+          </>
+        ) : (
+          <>
+            <Settings className="w-4 h-4" />
+            Apply & Test Configuration
+          </>
+        )}
+      </motion.button>
+
+      {/* Info Box */}
+      <div
+        className={`p-3 rounded-lg border text-sm ${
+          localTheme === "creamy"
+            ? "bg-[#faeed1]/50 border-[#e6d3b7] text-[#8b6f3d]"
+            : "bg-[#faeed1]/50 border-[#e6d3b7] text-[#8b6f3d]"
+        }`}
+      >
+        <div className="flex items-start gap-2">
+          <Monitor className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <div>
+            <div className="font-medium mb-1">How it works:</div>
+            <ul className="space-y-1 text-xs leading-relaxed">
+              <li>• Select your preferred display for projection</li>
+              <li>
+                • Choose extend mode for separate displays or duplicate to
+                mirror
+              </li>
+              <li>
+                • Click "Apply & Test" to save settings and test projection
+              </li>
+              <li>• Settings are saved automatically for future sessions</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default Sidebar;

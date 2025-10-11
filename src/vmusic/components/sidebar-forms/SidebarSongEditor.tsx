@@ -131,12 +131,12 @@ const SidebarSongEditor: React.FC<SidebarSongEditorProps> = ({
     content: content,
     editorProps: {
       attributes: {
-        class: `prose prose-sm max-w-none px-3 py-2 leading-relaxed w-full h-full no-scrollbar focus:outline-none text-sm min-h-[200px] ${
+        class: `prose prose-sm max-w-none px-2 py-2 leading-3 font-[garamond] w-full h-full no-scrollbar focus:outline-none text-sm min-h-[200px] ${
           theme === "creamy" ? "text-[#9a674a]" : "text-gray-700"
         }`,
         "data-placeholder": "Start writing your lyrics...",
         spellcheck: "false",
-        style: "font-family: 'EB Garamond', 'Times New Roman', serif;",
+        style: "font-family: 'Garamond', serif; font-size: 14px;",
       },
     },
     onUpdate: ({ editor }) => {
@@ -174,7 +174,7 @@ const SidebarSongEditor: React.FC<SidebarSongEditorProps> = ({
         isActive
           ? theme === "creamy"
             ? "bg-[#9a674a] text-white shadow-sm"
-            : "bg-blue-500 text-white shadow-sm"
+            : "bg-stone-50 text-white shadow-sm"
           : theme === "creamy"
           ? "bg-[#faeed1] shadow hover:bg-[#9a674a]/10 text-[#9a674a] border border-[#9a674a]/20"
           : "bg-white hover:bg-gray-100 text-gray-600 border border-gray-200"
@@ -309,7 +309,7 @@ const SidebarSongEditor: React.FC<SidebarSongEditorProps> = ({
         transition={{ delay: 0.1 }}
         className={`flex-1 overflow-y-auto ${
           theme === "creamy"
-            ? "bg-gradient-to-br from-[#fdf4d0]/30 to-[#fdf4d0]/10"
+            ? "bg-transparent"
             : "bg-white"
         }`}
       >

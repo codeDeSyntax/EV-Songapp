@@ -57,6 +57,66 @@ interface ElectronAPI {
     data?: DetailedDisplayInfo;
     error?: string;
   }>;
+  saveDisplayPreferences: (preferences: {
+    displayId: number;
+    mode: string;
+  }) => Promise<{ success: boolean; data?: any; error?: string }>;
+  loadDisplayPreferences: () => Promise<{
+    success: boolean;
+    data?: { displayId: number; mode: string; timestamp: number } | null;
+    error?: string;
+  }>;
+  setProjectionPreferences: (preferences: {
+    displayId: number;
+    mode: string;
+  }) => Promise<{
+    success: boolean;
+    data?: { displayId: number; mode: string; timestamp: number };
+    error?: string;
+  }>;
+
+  // Enhanced Projection APIs
+  projectSongWithSettings: (data: {
+    song: any;
+    settings?: any;
+  }) => Promise<{ success: boolean; error?: string }>;
+  getProjectionSettings: () => Promise<any>;
+  updateProjectionSettings: (
+    settings: any
+  ) => Promise<{ success: boolean; error?: string }>;
+  previewSongOnDisplay: (data: {
+    song: any;
+    displayId: number;
+  }) => Promise<{ success: boolean; error?: string }>;
+  testDisplayProjection: (
+    displayId: number,
+    testMessage: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  getProjectionStatus: () => Promise<{
+    success: boolean;
+    status?: any;
+    error?: string;
+  }>;
+  setProjectionTheme: (
+    theme: string
+  ) => Promise<{ success: boolean; error?: string }>;
+  detectDisplayChanges: () => Promise<{
+    success: boolean;
+    displays?: any[];
+    error?: string;
+  }>;
+  validateDisplayConfiguration: () => Promise<{
+    success: boolean;
+    validation?: any;
+    error?: string;
+  }>;
+  optimizeProjectionPerformance: () => Promise<{
+    success: boolean;
+    optimizations?: any;
+    error?: string;
+  }>;
+  onDisplayConfigChanged: (callback: (displays: any[]) => void) => () => void;
+
   // Add other API methods as needed
 }
 

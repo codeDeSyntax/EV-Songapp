@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Send, Type, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Send, Type, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSongProjectionNavigation } from "@/features/songs/hooks/useSongProjectionNavigation";
 
@@ -10,6 +10,8 @@ const SongProjectionControls: React.FC = () => {
     totalPages,
     goToNext,
     goToPrevious,
+    goToChorus,
+    goToVerse,
     canGoNext,
     canGoPrevious,
     sendFontSizeUpdate,
@@ -82,9 +84,7 @@ const SongProjectionControls: React.FC = () => {
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.8, y: 10 }}
                     className="absolute bottom-16 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl border border-white/50 ring-1 ring-black/5"
-                  >
-                    
-                  </motion.div>
+                  ></motion.div>
                 )}
               </AnimatePresence>
             </div>
@@ -106,45 +106,42 @@ const SongProjectionControls: React.FC = () => {
             </motion.button>
 
             <div className="flex flex-col items-center gap-3 min-w-[140px]">
-                     
-                      <div className="flex items-center gap-3">
-                        <span className="text-yellow-700 text-xs font-medium">
-                          A
-                        </span>
-                        <input
-                          type="range"
-                          min="24"
-                          max="96"
-                          value={fontSize}
-                          onChange={(e) =>
-                            handleFontSizeChange(parseInt(e.target.value))
-                          }
-                          className="slider w-20 h-2 bg-yellow-100 rounded-full appearance-none cursor-pointer backdrop-blur-sm"
-                          style={{
-                            background: `linear-gradient(to right, #9a674a 0%, #9a674a ${
-                              ((fontSize - 24) / (96 - 24)) * 100
-                            }%, #fef3c7 ${
-                              ((fontSize - 24) / (96 - 24)) * 100
-                            }%, #fef3c7 100%)`,
-                            
-                          }}
-                        />
-                        <span className="text-yellow-700 text-sm font-medium">
-                          A
-                        </span>
-                         <span className="text-yellow-900 font-semibold text-xs bg-yellow-50 px-2 py-1 rounded-lg backdrop-blur-sm border border-yellow-200">
-                        {fontSize}px
-                      </span>
-                      </div>
-                     
-                    </div>
-            
+              <div className="flex items-center gap-3">
+                <span className="text-yellow-700 text-xs font-medium">A</span>
+                <input
+                  type="range"
+                  min="24"
+                  max="96"
+                  value={fontSize}
+                  onChange={(e) =>
+                    handleFontSizeChange(parseInt(e.target.value))
+                  }
+                  className="slider w-20 h-2 bg-yellow-100 rounded-full appearance-none cursor-pointer backdrop-blur-sm"
+                  style={{
+                    background: `linear-gradient(to right, #9a674a 0%, #9a674a ${
+                      ((fontSize - 24) / (96 - 24)) * 100
+                    }%, #fef3c7 ${
+                      ((fontSize - 24) / (96 - 24)) * 100
+                    }%, #fef3c7 100%)`,
+                  }}
+                />
+                <span className="text-yellow-700 text-sm font-medium">A</span>
+                <span className="text-yellow-900 font-semibold text-xs bg-yellow-50 px-2 py-1 rounded-lg backdrop-blur-sm border border-yellow-200">
+                  {fontSize}px
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Keyboard hint */}
-          <div className="absolute -top-10 left-1/2 transform -translate-x-1/2">
+          <div className="absolute -top-12 left-1/2 transform -translate-x-1/2">
             <div className="bg-yellow-900/90 backdrop-blur-md text-yellow-50 text-xs px-3 py-1.5 rounded-lg whitespace-nowrap border border-yellow-700/30 shadow-lg">
-              Use ← → arrow keys
+              <div className="flex flex-col items-center gap-1">
+                <div>← → arrow keys | C for chorus | 1-9 for verses</div>
+                <div className="text-yellow-300/80">
+                  Fast navigation for faster control
+                </div>
+              </div>
             </div>
           </div>
         </div>

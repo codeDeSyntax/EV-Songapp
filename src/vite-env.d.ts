@@ -132,5 +132,30 @@ interface Window {
     onSongProjectionCommand: (callback: (data: any) => void) => () => void;
     onFontSizeUpdate: (callback: (fontSize: number) => void) => () => void;
     onMainWindowMessage: (callback: (data: any) => void) => () => void;
+    // Display preferences methods
+    saveDisplayPreferences: (preferences: {
+      displayId: number;
+      mode: string;
+    }) => Promise<{ success: boolean; data?: any; error?: string }>;
+    loadDisplayPreferences: () => Promise<{
+      success: boolean;
+      data?: { displayId: number; mode: string; timestamp: number } | null;
+      error?: string;
+    }>;
+    // Windows Display Mode Control (like Windows + P)
+    setWindowsDisplayMode: (
+      mode: "extend" | "duplicate" | "internal" | "external"
+    ) => Promise<{
+      success: boolean;
+      mode?: string;
+      error?: string;
+    }>;
+    getWindowsDisplayMode: () => Promise<{
+      success: boolean;
+      mode?: string;
+      activeMonitors?: number;
+      totalMonitors?: number;
+      error?: string;
+    }>;
   };
 }

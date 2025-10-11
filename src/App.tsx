@@ -9,14 +9,19 @@ import SongCollectionManager from "./vmusic/Categorize/Categorize";
 import UserGuidePage from "./vmusic/Userguide";
 import PresentationBackgroundSelector from "./vmusic/BackgroundChoose";
 import SongPresentationDisplay from "./vmusic/components/SongPresentationDisplay/SongPresentationDisplay";
+import FloatingProjectionPreview from "./components/FloatingProjectionPreview";
 import { useAppSelector, useAppDispatch } from "./store";
 import { setCurrentScreen } from "./store/slices/appSlice";
 import { SecretLogsManager } from "./components/SecretLogsManager";
+import { useProjectionState } from "./hooks/useProjectionState";
 
 const App = () => {
   const currentScreen = useAppSelector((state) => state.app.currentScreen);
   const dispatch = useAppDispatch();
   const [currentRoute, setCurrentRoute] = useState(window.location.hash);
+
+  // Projection state for floating preview
+  const { isActive, isVisible, hideFloatingPreview } = useProjectionState();
 
   // Handle hash-based routing for special pages like Bible presentation
   useEffect(() => {
@@ -81,7 +86,7 @@ const App = () => {
         className={`flex flex-col h-screen w-screen thin-scrollbar no-scrollbar bg-white dark:bg-ltgray `}
         style={{ fontFamily: "Palatino" }}
       >
-        {/* <BlessedMusic /> */}
+        {/* Main App Content */}
         {currentScreen === "Home" ? (
           <WorkspaceSelector />
         ) : currentScreen === "create" ? (
@@ -101,7 +106,16 @@ const App = () => {
         ) : (
           <WorkspaceSelector />
         )}
-        {/* <SongPresentation/> */}
+
+        {/* Floating Projection Preview - Only show when projection is active and not on projection display page */}
+        {isVisible &&
+          currentRoute !== "#/song-presentation-display" &&
+          currentRoute !== "#song-presentation-display" && (
+            <FloatingProjectionPreview
+              isVisible={isVisible}
+              onClose={hideFloatingPreview}
+            />
+          )}
       </div>
     </SecretLogsManager>
   );

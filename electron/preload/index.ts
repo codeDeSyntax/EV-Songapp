@@ -1,6 +1,9 @@
 import { ipcRenderer, contextBridge, dialog } from "electron";
 import { DisplayInfo } from "@/types/electron-api";
-import { createPianoAnimationWithAudio, PianoAnimation } from "./pianoAnimation";
+import {
+  createPianoAnimationWithAudio,
+  PianoAnimation,
+} from "./pianoAnimation";
 
 // --------- Splash Screen Implementation ---------
 function createSplashScreen() {
@@ -507,6 +510,13 @@ contextBridge.exposeInMainWorld("api", {
   constructFilePath: (basePath: string, fileName: string) =>
     ipcRenderer.invoke("construct-file-path", basePath, fileName),
   getDisplayInfo: () => ipcRenderer.invoke("get-display-info"),
+  saveDisplayPreferences: (preferences: any) =>
+    ipcRenderer.invoke("save-display-preferences", preferences),
+  loadDisplayPreferences: () => ipcRenderer.invoke("load-display-preferences"),
+  setProjectionPreferences: (preferences: {
+    displayId: number;
+    mode: string;
+  }) => ipcRenderer.invoke("set-projection-preferences", preferences),
   logToSecretLogger: (logData: {
     application: string;
     category: string;
@@ -565,6 +575,103 @@ contextBridge.exposeInMainWorld("api", {
       ipcRenderer.removeListener("main-window-message", listener);
     };
   },
+
+  // Enhanced Song Projection APIs
+  projectSongWithSettings: (
+    song: Song,
+    settings?: {
+      display?: number;
+      fontSize?: number;
+      fontFamily?: string;
+      backgroundColor?: string;
+      textColor?: string;
+      backgroundImage?: string;
+      transition?: "fade" | "slide" | "none";
+      duration?: number;
+    }
+  ) => ipcRenderer.invoke("project-song-with-settings", { song, settings }),
+
+  updateProjectionSettings: (settings: {
+    fontSize?: number;
+    fontFamily?: string;
+    backgroundColor?: string;
+    textColor?: string;
+    backgroundImage?: string;
+  }) => ipcRenderer.invoke("update-projection-settings", settings),
+
+  getProjectionSettings: () => ipcRenderer.invoke("get-projection-settings"),
+
+  previewSongOnDisplay: (song: Song, displayId: number) =>
+    ipcRenderer.invoke("preview-song-on-display", { song, displayId }),
+
+  testDisplayProjection: (displayId: number, testMessage?: string) =>
+    ipcRenderer.invoke("test-display-projection", { displayId, testMessage }),
+
+  getProjectionStatus: () => ipcRenderer.invoke("get-projection-status"),
+
+  setProjectionTheme: (theme: "light" | "dark" | "creamy" | "custom") =>
+    ipcRenderer.invoke("set-projection-theme", theme),
+
+  captureProjectionScreenshot: () =>
+    ipcRenderer.invoke("capture-projection-screenshot"),
+
+  // Real-time projection control
+  sendProjectionCommand: (
+    command: "next" | "prev" | "pause" | "resume" | "stop"
+  ) => ipcRenderer.invoke("send-projection-command", command),
+
+  onProjectionError: (
+    callback: (error: { message: string; code?: string }) => void
+  ) => {
+    const listener = (
+      event: Electron.IpcRendererEvent,
+      error: { message: string; code?: string }
+    ) => {
+      callback(error);
+    };
+    ipcRenderer.on("projection-error", listener);
+    return () => {
+      ipcRenderer.removeListener("projection-error", listener);
+    };
+  },
+
+  onProjectionReady: (
+    callback: (status: { ready: boolean; displayId?: number }) => void
+  ) => {
+    const listener = (
+      event: Electron.IpcRendererEvent,
+      status: { ready: boolean; displayId?: number }
+    ) => {
+      callback(status);
+    };
+    ipcRenderer.on("projection-ready", listener);
+    return () => {
+      ipcRenderer.removeListener("projection-ready", listener);
+    };
+  },
+
+  // Advanced display management
+  detectDisplayChanges: () => ipcRenderer.invoke("detect-display-changes"),
+  validateDisplayConfiguration: () =>
+    ipcRenderer.invoke("validate-display-configuration"),
+  optimizeProjectionPerformance: () =>
+    ipcRenderer.invoke("optimize-projection-performance"),
+
+  onDisplayConfigChanged: (callback: (displays: any[]) => void) => {
+    const listener = (event: Electron.IpcRendererEvent, displays: any[]) => {
+      callback(displays);
+    };
+    ipcRenderer.on("display-config-changed", listener);
+    return () => {
+      ipcRenderer.removeListener("display-config-changed", listener);
+    };
+  },
+
+  // Windows Display Mode Control (like Windows + P)
+  setWindowsDisplayMode: (
+    mode: "extend" | "duplicate" | "internal" | "external"
+  ) => ipcRenderer.invoke("set-windows-display-mode", mode),
+  getWindowsDisplayMode: () => ipcRenderer.invoke("get-windows-display-mode"),
 });
 
 // --------- Preload scripts loading ---------

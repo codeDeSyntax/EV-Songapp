@@ -315,7 +315,7 @@ const SidebarEditForm: React.FC = () => {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={selectDirectory}
-              className={`w-full px-4 py-2 border-2 rounded-xl transition-all duration-300 text-sm
+              className={`w-full px-4 py-2 border-2 rounded-xl italic transition-all duration-300 text-sm
                        flex items-center justify-between shadow-sm hover:shadow-md ${
                          localTheme === "creamy"
                            ? " bg-primary text-white shadow focus:ring-[#9a674a]/30"
@@ -335,7 +335,7 @@ const SidebarEditForm: React.FC = () => {
             className={` rounded-xl border backdrop-blur-sm shadow-sm ${
               localTheme === "creamy"
                 ? "bg-transparent border-[#9a674a]/20"
-                : "bg-gradient-to-br from-white/90 to-blue-50/30 border-gray-200/60"
+                : "bg-stone-50 border-gray-200/60"
             }`}
           >
             <label
@@ -388,48 +388,6 @@ const SidebarEditForm: React.FC = () => {
             />
           </motion.div>
 
-          {/* Meta info */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className={`rounded-xl p-4 border backdrop-blur-sm shadow-sm ${
-              localTheme === "creamy"
-                ? "bg-gradient-to-br from-[#9a674a]/5 to-[#9a674a]/10 border-[#9a674a]/20"
-                : "bg-gradient-to-br from-blue-50/80 to-blue-100/40 border-gray-200/60"
-            }`}
-          >
-            <div
-              className={`space-y-2 text-sm ${
-                localTheme === "creamy" ? "text-[#9a674a]/80" : "text-gray-700"
-              }`}
-            >
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-2">
-                  <Folder className="w-4 h-4" />
-                  File:
-                </span>
-                <span className="font-mono text-right flex-1 ml-2 truncate">
-                  {selectedSong.path?.split("/").pop() || selectedSong.title}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Modified:
-                </span>
-                <span className="font-mono">{getLastModified()}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="flex items-center gap-2">
-                  <Hash className="w-4 h-4" />
-                  Words:
-                </span>
-                <span className="font-mono font-medium">{getWordCount()}</span>
-              </div>
-            </div>
-          </motion.div>
-
           {/* Save Button */}
           <motion.button
             initial={{ opacity: 0, y: 20 }}
@@ -439,11 +397,11 @@ const SidebarEditForm: React.FC = () => {
             whileTap={{ scale: isSaving ? 1 : 0.98 }}
             type="submit"
             disabled={isSaving}
-            className={`w-full py-4 rounded-xl transition-all duration-300 
+            className={`w-full py-2 rounded-xl transition-all duration-300 
                    flex items-center justify-center gap-3 shadow-lg hover:shadow-xl
-                   font-medium text-base border-2 backdrop-blur-sm ${
+                   font-medium text-sm border backdrop-blur-sm ${
                      localTheme === "creamy"
-                       ? "bg-gradient-to-r from-[#9a674a] to-[#8a5739] hover:from-[#8a5739] hover:to-[#7a4729] text-white border-[#9a674a]/30"
+                       ? "bg-transparent border-primary border-solid  text-primary border-[#9a674a]/30"
                        : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white border-blue-600/30"
                    } ${isSaving ? "opacity-70 cursor-not-allowed" : ""}`}
           >

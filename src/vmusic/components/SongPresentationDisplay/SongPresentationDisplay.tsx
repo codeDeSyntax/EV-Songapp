@@ -750,6 +750,46 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
     }
   }, [handleSongData, initialSong]);
 
+  // Function to jump to specific section
+  const jumpToSection = (sectionType: string, sectionNumber?: number) => {
+    console.log("🎯 Jumping to section:", { sectionType, sectionNumber });
+    console.log(
+      "📋 Available sections:",
+      songSections.map(
+        (s, i) => `${i}: ${s.type}${s.number ? ` ${s.number}` : ""}`
+      )
+    );
+
+    let targetIndex = -1;
+
+    if (sectionType.toLowerCase() === "chorus") {
+      // Find first chorus
+      targetIndex = songSections.findIndex(
+        (section) =>
+          section.type.toLowerCase() === "chorus" ||
+          section.type.toLowerCase().includes("chorus") ||
+          section.type.toLowerCase().includes("refrain")
+      );
+    } else if (sectionType.toLowerCase() === "verse" && sectionNumber) {
+      // Find specific verse number
+      targetIndex = songSections.findIndex(
+        (section) =>
+          section.type.toLowerCase() === "verse" &&
+          section.number === sectionNumber
+      );
+    }
+
+    if (targetIndex !== -1) {
+      console.log("✅ Found section at index:", targetIndex, "- jumping to it");
+      setCurrentIndex(targetIndex);
+    } else {
+      console.log("❌ Section not found:", { sectionType, sectionNumber });
+      console.log("💡 Available section types:", [
+        ...new Set(songSections.map((s) => s.type.toLowerCase())),
+      ]);
+    }
+  };
+
   // Listen for navigation commands from main window
   useEffect(() => {
     if (typeof window !== "undefined" && window.api?.onSongProjectionCommand) {
@@ -759,12 +799,14 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
           goToNext();
         } else if (data.command === "previous") {
           goToPrevious();
+        } else if (data.command === "goto-section" && data.data) {
+          jumpToSection(data.data.sectionType, data.data.sectionNumber);
         }
       });
 
       return cleanup;
     }
-  }, [goToNext, goToPrevious]);
+  }, [goToNext, goToPrevious, songSections]);
 
   // Listen for font size updates from main window
   useEffect(() => {

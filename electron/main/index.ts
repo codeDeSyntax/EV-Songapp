@@ -24,6 +24,15 @@ import {
   logSongFileOp,
   logSongError,
 } from "../../src/utils/SecretLogger";
+// Import projection module
+import {
+  createSongPresentationWindow,
+  getProjectionState,
+  setProjectionActive,
+  setProjectionMinimized,
+  registerProjectionHandlers,
+  cleanupProjection,
+} from "./projection";
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -62,10 +71,7 @@ if (!app.requestSingleInstanceLock()) {
 
 let mainWin: BrowserWindow | null = null;
 let projectionWin: BrowserWindow | null = null;
-let songPresentationWin: BrowserWindow | null = null;
 let isProjectionMinimized = false;
-let isSongPresentationMinimized = false;
-let isProjectionActive = false; // Track projection state separately
 const preload = path.join(__dirname, "../preload/index.mjs");
 const indexHtml = path.join(RENDERER_DIST, "index.html");
 const projectionHtml = path.join(RENDERER_DIST, "projection.html");
@@ -126,6 +132,8 @@ async function createMainWindow() {
 
   // Handle main window close event to cleanup all child windows
   mainWin.on("closed", () => {
+    const { songPresentationWin } = getProjectionState();
+
     logSystemInfo("Main application window closed", {
       songPresentationActive: !!(
         songPresentationWin && !songPresentationWin.isDestroyed()
@@ -134,18 +142,13 @@ async function createMainWindow() {
     });
 
     // Close all projection windows when main window closes
-    if (songPresentationWin && !songPresentationWin.isDestroyed()) {
-      songPresentationWin.close();
-      songPresentationWin = null;
-    }
+    cleanupProjection();
     if (projectionWin && !projectionWin.isDestroyed()) {
       projectionWin.close();
       projectionWin = null;
     }
 
     // Reset projection states
-    isProjectionActive = false;
-    isSongPresentationMinimized = false;
     isProjectionMinimized = false;
 
     // Clear main window reference
@@ -158,6 +161,7 @@ async function createMainWindow() {
 // Handle the escape key minimize functionality from the renderer
 ipcMain.on("minimizeProjection", () => {
   // UPDATED: Now handles both static projection (disabled) and React-based song presentation
+  const { songPresentationWin } = getProjectionState();
   if (songPresentationWin && !songPresentationWin.isDestroyed()) {
     songPresentationWin.minimize();
 
@@ -168,178 +172,12 @@ ipcMain.on("minimizeProjection", () => {
   }
 });
 
-async function createSongPresentationWindow() {
-  const displays = screen.getAllDisplays();
-  console.log("🖥️ Song Presentation - All displays detected:", displays.length);
-
-  // Log detailed display information
-  logSystemInfo("Display detection completed", {
-    displayCount: displays.length,
-    displays: displays.map((display, index) => ({
-      index,
-      id: display.id,
-      bounds: display.bounds,
-      workArea: display.workArea,
-      scaleFactor: display.scaleFactor,
-      rotation: display.rotation,
-      internal: display.internal,
-    })),
-  });
-
-  displays.forEach((display, index) => {
-    console.log(`🖥️ Display ${index}:`, {
-      id: display.id,
-      bounds: display.bounds,
-      workArea: display.workArea,
-      scaleFactor: display.scaleFactor,
-      rotation: display.rotation,
-      internal: display.internal,
-    });
-  });
-
-  let presentationDisplay = displays[0]; // Default to primary display
-  let isExternalDisplay = false;
-
-  // Find external display (projector) if available
-  if (displays.length > 1) {
-    // Improved external display detection
-    const externalDisplay = displays.find(
-      (display) =>
-        !display.internal || display.bounds.x !== 0 || display.bounds.y !== 0
-    );
-    if (externalDisplay) {
-      presentationDisplay = externalDisplay;
-      isExternalDisplay = true;
-      console.log("🎯 Song Presentation - Using external display:", {
-        id: externalDisplay.id,
-        bounds: externalDisplay.bounds,
-        internal: externalDisplay.internal,
-      });
-    } else {
-      console.log(
-        "⚠️ Song Presentation - No external display found, using primary"
-      );
-    }
-  } else {
-    console.log(
-      "⚠️ Song Presentation - Only one display detected, using primary"
-    );
-  }
-
-  // Create Song presentation window
-  songPresentationWin = new BrowserWindow({
-    title: "Song Presentation",
-    x: isExternalDisplay ? presentationDisplay.bounds.x : undefined,
-    y: isExternalDisplay ? presentationDisplay.bounds.y : undefined,
-    width: isExternalDisplay ? presentationDisplay.bounds.width : 1024,
-    height: isExternalDisplay ? presentationDisplay.bounds.height : 768,
-    frame: false,
-    show: true,
-    fullscreen: !isExternalDisplay, // Use fullscreen for primary display
-    alwaysOnTop: false,
-    skipTaskbar: true,
-    icon: path.join(process.env.VITE_PUBLIC || "", "evv.png"),
-    webPreferences: {
-      preload,
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
-  });
-
-  console.log("🪟 Song Presentation Window created with:", {
-    x: songPresentationWin.getBounds().x,
-    y: songPresentationWin.getBounds().y,
-    width: songPresentationWin.getBounds().width,
-    height: songPresentationWin.getBounds().height,
-    isExternalDisplay,
-    targetDisplay: presentationDisplay.bounds,
-  });
-
-  // Log detailed window creation info
-  logSongProjection("Projection window created", {
-    windowBounds: songPresentationWin.getBounds(),
-    isExternalDisplay,
-    targetDisplay: {
-      id: presentationDisplay.id,
-      bounds: presentationDisplay.bounds,
-      internal: presentationDisplay.internal,
-    },
-    displayCount: screen.getAllDisplays().length,
-  });
-
-  // For external displays, manually set bounds after creation to ensure proper coverage
-  if (isExternalDisplay) {
-    console.log("🔧 Setting manual bounds for external display...");
-    songPresentationWin.setBounds({
-      x: presentationDisplay.bounds.x,
-      y: presentationDisplay.bounds.y,
-      width: presentationDisplay.bounds.width,
-      height: presentationDisplay.bounds.height,
-    });
-    const finalBounds = songPresentationWin.getBounds();
-    console.log("✅ Manual bounds set:", finalBounds);
-
-    logSongProjection("External display bounds configured", {
-      originalBounds: presentationDisplay.bounds,
-      finalBounds,
-      displayId: presentationDisplay.id,
-    });
-  } else {
-    console.log("📱 Using primary display - no manual bounds needed");
-    logSongProjection("Using primary display for projection", {
-      bounds: songPresentationWin.getBounds(),
-    });
-  }
-
-  // Load the React-based song presentation display page
-  if (VITE_DEV_SERVER_URL) {
-    songPresentationWin.loadURL(
-      `${VITE_DEV_SERVER_URL}/#/song-presentation-display`
-    );
-    // songPresentationWin.webContents.openDevTools();
-  } else {
-    songPresentationWin.loadFile(indexHtml, {
-      hash: "song-presentation-display",
-    });
-  }
-
-  songPresentationWin.on("closed", () => {
-    songPresentationWin = null;
-    isSongPresentationMinimized = false;
-
-    // Only send notification if projection was still active
-    if (isProjectionActive) {
-      isProjectionActive = false; // Set projection as inactive when window is closed
-      // Notify main window that projection is no longer active
-      console.log("Sending projection state change: false (closed)");
-      mainWin?.webContents.send("projection-state-changed", false);
-    }
-  });
-
-  // Track minimization state - but don't affect projection active state for external displays
-  songPresentationWin.on("minimize", () => {
-    isSongPresentationMinimized = true;
-    // Only consider projection inactive if user explicitly minimized (not auto-minimize to external display)
-    // We'll keep projection active even when minimized to external display
-    console.log(
-      "Window minimized - keeping projection active for external display"
-    );
-  });
-
-  songPresentationWin.on("restore", () => {
-    isSongPresentationMinimized = false;
-    // Ensure projection is marked as active when restored
-    if (isProjectionActive) {
-      console.log("Sending projection state change: true (restored)");
-      mainWin?.webContents.send("projection-state-changed", true);
-    }
-  });
-
-  return songPresentationWin;
-}
-
 app.whenReady().then(() => {
   createMainWindow();
+
+  // Register projection handlers
+  registerProjectionHandlers();
+
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
   });
@@ -358,18 +196,13 @@ app.on("before-quit", (event) => {
   console.log("App is quitting - cleaning up all windows...");
 
   // Close all projection windows
-  if (songPresentationWin && !songPresentationWin.isDestroyed()) {
-    songPresentationWin.close();
-    songPresentationWin = null;
-  }
+  cleanupProjection();
   if (projectionWin && !projectionWin.isDestroyed()) {
     projectionWin.close();
     projectionWin = null;
   }
 
-  // Reset all projection states
-  isProjectionActive = false;
-  isSongPresentationMinimized = false;
+  // Reset projection states
   isProjectionMinimized = false;
 });
 
@@ -391,9 +224,8 @@ app.on("will-quit", () => {
 
   // Reset all variables
   mainWin = null;
-  songPresentationWin = null;
-
   projectionWin = null;
+  cleanupProjection();
 });
 
 ipcMain.handle("project-song", async (event, songData) => {
@@ -408,7 +240,10 @@ ipcMain.handle("project-song", async (event, songData) => {
   });
 
   // Set projection as active
-  isProjectionActive = true;
+  setProjectionActive(true);
+
+  const { songPresentationWin, isSongPresentationMinimized } =
+    getProjectionState();
 
   // Check if window exists but is minimized
   if (
@@ -417,7 +252,7 @@ ipcMain.handle("project-song", async (event, songData) => {
     isSongPresentationMinimized
   ) {
     songPresentationWin.restore();
-    isSongPresentationMinimized = false;
+    setProjectionMinimized(false);
     setTimeout(() => {
       songPresentationWin?.webContents.send("display-song", songData);
       songPresentationWin?.focus();
@@ -431,14 +266,14 @@ ipcMain.handle("project-song", async (event, songData) => {
 
   // If window doesn't exist or was destroyed, create a new one
   if (!songPresentationWin || songPresentationWin.isDestroyed()) {
-    await createSongPresentationWindow();
+    const newWindow = await createSongPresentationWindow(mainWin || undefined);
     // Wait for window to be ready before sending data
-    songPresentationWin?.once("ready-to-show", () => {
-      songPresentationWin?.webContents.send("display-song", songData);
+    newWindow?.once("ready-to-show", () => {
+      newWindow?.webContents.send("display-song", songData);
       // Ensure window is properly focused and visible
-      songPresentationWin?.show();
-      songPresentationWin?.focus();
-      songPresentationWin?.moveTop();
+      newWindow?.show();
+      newWindow?.focus();
+      newWindow?.moveTop();
       // Notify main window about projection state change
       console.log("Sending projection state change: true (new window)");
       mainWin?.webContents.send("projection-state-changed", true);
@@ -457,6 +292,7 @@ ipcMain.handle("project-song", async (event, songData) => {
 
 // Add handler to check if projection window is open
 ipcMain.handle("is-projection-active", async () => {
+  const { songPresentationWin, isProjectionActive } = getProjectionState();
   const isSongActive =
     isProjectionActive &&
     songPresentationWin &&
@@ -483,9 +319,10 @@ ipcMain.handle("is-projection-active", async () => {
 ipcMain.handle("close-projection-window", async () => {
   let closed = false;
 
+  const { songPresentationWin } = getProjectionState();
   // Close song presentation window if it exists
   if (songPresentationWin && !songPresentationWin.isDestroyed()) {
-    isProjectionActive = false; // Set projection as inactive before closing
+    setProjectionActive(false); // Set projection as inactive before closing
     songPresentationWin.close();
     closed = true;
 
@@ -827,6 +664,72 @@ ipcMain.handle("get-display-info", async () => {
   }
 });
 
+// Enhanced Projection API Configuration
+// =====================================
+// Note: Projection handlers moved to projection.ts module
+
+// Note: Test display and projection metrics handlers moved to projection.ts module
+
+// Note: Enhanced projection handlers moved to projection.ts module
+
+// Display Configuration Handlers
+ipcMain.handle("save-display-preferences", async (_, preferences) => {
+  try {
+    const prefsPath = path.join(
+      os.homedir(),
+      ".ev-songapp-display-config.json"
+    );
+    const prefsData = {
+      displayId: preferences.displayId,
+      mode: preferences.mode,
+      timestamp: Date.now(),
+    };
+
+    fs.writeFileSync(prefsPath, JSON.stringify(prefsData, null, 2));
+
+    logSystemInfo("Display preferences saved", prefsData);
+    console.log("💾 Display preferences saved:", prefsData);
+
+    return { success: true, data: prefsData };
+  } catch (error) {
+    console.error("Error saving display preferences:", error);
+    logSystemError("Failed to save display preferences", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+});
+
+ipcMain.handle("load-display-preferences", async () => {
+  try {
+    const prefsPath = path.join(
+      os.homedir(),
+      ".ev-songapp-display-config.json"
+    );
+
+    if (!fs.existsSync(prefsPath)) {
+      return { success: true, data: null };
+    }
+
+    const prefsData = JSON.parse(fs.readFileSync(prefsPath, "utf8"));
+    console.log("📖 Display preferences loaded:", prefsData);
+
+    return { success: true, data: prefsData };
+  } catch (error) {
+    console.error("Error loading display preferences:", error);
+    logSystemError("Failed to load display preferences", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+});
+
 // Secret Logging System Handlers
 ipcMain.handle(
   "log-to-secret-logger",
@@ -1006,150 +909,11 @@ function sanitizeFilename(title: string): string {
     .toLowerCase();
 }
 
-// New function to create React-based song projection window
-async function createSongProjectionWindow() {
-  const displays = screen.getAllDisplays();
-  let songProjectionDisplay = null;
-  let useMainDisplay = false;
+// Note: createSongProjectionWindow moved to projection.ts module
 
-  // Find external display (projector)
-  // if (displays.length > 1) {
-  //   songProjectionDisplay = displays.find(display =>
-  //     display.bounds.x !== 0 || display.bounds.y !== 0
-  //   );
-  // } else {
-  //   // Fallback to main display if no external display is found
-  //   useMainDisplay = true;
-  //   songProjectionDisplay = displays[0];
-  // }
+// Note: create-song-projection-window handler moved to projection.ts module
 
-  // Create a new song projection window
-  songPresentationWin = new BrowserWindow({
-    title: "Song Projection",
-    // x: useMainDisplay ? undefined : songProjectionDisplay?.bounds.x,
-    // y: useMainDisplay ? undefined : songProjectionDisplay?.bounds.y,
-    // width: songProjectionDisplay?.bounds.width || 800,
-    // height: songProjectionDisplay?.bounds.height || 600,
-    frame: false,
-    show: true,
-    minimizable: true,
-    fullscreen: true, // Only go fullscreen on external display
-    alwaysOnTop: false,
-    skipTaskbar: false, // Show in taskbar for easier access
-    icon: path.join(process.env.VITE_PUBLIC || "", "evv.png"),
-    webPreferences: {
-      preload,
-      nodeIntegration: false,
-      contextIsolation: true,
-      zoomFactor: 1.0,
-    },
-  });
-
-  if (VITE_DEV_SERVER_URL) {
-    songPresentationWin.loadURL(
-      `${VITE_DEV_SERVER_URL}/#/song-presentation-display`
-    );
-  } else {
-    songPresentationWin.loadFile(indexHtml, {
-      hash: "song-presentation-display",
-    });
-  }
-
-  // Track window state changes
-  songPresentationWin.on("minimize", () => {
-    isProjectionMinimized = true;
-  });
-
-  songPresentationWin.on("restore", () => {
-    isProjectionMinimized = false;
-  });
-
-  songPresentationWin.on("closed", () => {
-    songPresentationWin = null;
-    isProjectionMinimized = false;
-  });
-
-  return songPresentationWin;
-}
-
-// ipcMain handler for creating song projection window
-ipcMain.handle("create-song-projection-window", async (event, data) => {
-  try {
-    if (!songPresentationWin || songPresentationWin.isDestroyed()) {
-      await createSongProjectionWindow();
-
-      // Wait for window to be ready before sending initial data
-      songPresentationWin?.once("ready-to-show", () => {
-        if (data.songData) {
-          songPresentationWin?.webContents.send("display-song", data.songData);
-        }
-        songPresentationWin?.focus();
-      });
-    } else {
-      // Window exists, just focus it and update data
-      if (data.songData) {
-        songPresentationWin.webContents.send("display-song", data.songData);
-      }
-      songPresentationWin.focus();
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error("Error creating song projection window:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
-});
-
-// Song projection navigation and font size IPC handlers
-ipcMain.handle(
-  "send-to-song-projection",
-  async (event, { command, data, fontSize }) => {
-    try {
-      console.log("🎵 Main process received song projection command:", {
-        command,
-        data,
-        fontSize,
-      });
-
-      if (!songPresentationWin || songPresentationWin.isDestroyed()) {
-        console.log("❌ Song projection window not available");
-        return { success: false, error: "No projection window available" };
-      }
-
-      // Send command to the song presentation window
-      if (command) {
-        console.log("📤 Sending command to projection window:", {
-          command,
-          data,
-        });
-        songPresentationWin.webContents.send("song-projection-command", {
-          command,
-          data,
-        });
-      }
-
-      // Send font size update if provided
-      if (fontSize !== undefined) {
-        console.log(
-          "📤 Sending font size update to projection window:",
-          fontSize
-        );
-        songPresentationWin.webContents.send("font-size-update", fontSize);
-      }
-
-      return { success: true };
-    } catch (error) {
-      console.error("❌ Error sending to song projection:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
-    }
-  }
-);
+// Note: send-to-song-projection handler moved to projection.ts module
 
 ipcMain.handle("send-to-main-window", async (event, { type, data }) => {
   try {
@@ -1170,6 +934,13 @@ ipcMain.handle("send-to-main-window", async (event, { type, data }) => {
     };
   }
 });
+
+// ============== Enhanced Song Projection APIs ==============
+// All projection handlers have been moved to projection.ts module for better organization
+
+// Note: Display configuration and performance optimization handlers moved to projection.ts module
+
+// ============== End Enhanced APIs ==============
 
 // Register custom protocol for local images
 app.whenReady().then(() => {

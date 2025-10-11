@@ -186,7 +186,7 @@ const SidebarCreateForm: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col font-[garamond]">
+    <div className="h-full flex flex-col font-[garamond] ">
       <AnimatePresence>
         {notification.show && (
           <Notification
