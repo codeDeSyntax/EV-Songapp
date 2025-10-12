@@ -134,7 +134,11 @@ const ModularSidebar: React.FC<ModularSidebarProps> = ({
     >
       {/* Header */}
       <div className="p-4 flex items-center justify-between flex-shrink-0">
-        <h2 className="font-ThePriest text-[15px] s font-bold text-vmprim border-vmprim flex items-center gap-2">
+        <h2 className="font-ThePriest text-[15px] s font-bold text-vmprim border-vmprim flex items-center gap-2"
+        style={{
+          fontFamily:"ThePriest"
+        }}
+        >
           <Music className="w-5 h-5 animate-bounce" />
           Soul healing music
           <Music className="w-5 h-5 animate-bounce" />

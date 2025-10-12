@@ -390,7 +390,7 @@ const DisplayTabContent: React.FC<DisplayTabContentProps> = ({
                         }`}
                       >
                         <img
-                          src={isPrimary ? "/laptop.png" : "/flatscreen.png"}
+                          src={isPrimary ? "./laptop.png" : "./flatscreen.png"}
                           alt={isPrimary ? "Laptop" : "External Display"}
                           className="w-14 h-10 object-cover"
                         />
