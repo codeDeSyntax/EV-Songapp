@@ -27,33 +27,10 @@ const SongTabContent: React.FC<SongTabContentProps> = ({
 
   return (
     <div
-      className="flex items-start flex-col"
+      className="flex  items-start flex-col"
       style={{ fontFamily: '"Crimson Pro", serif' }}
     >
       {/* Header with title and edit toggle */}
-      <div className="flex items-center justify-between w-full mb-2">
-        <h3 className="text-sm text-left font-oswald underline text-stone-600 font-semibold overflow-hidden">
-          {selectedSong?.title || "No Song Selected"}
-        </h3>
-        {selectedSong && (
-          <Tooltip title={isEditMode ? "View Mode" : "Edit Mode"}>
-            <button
-              onClick={() => setIsEditMode(!isEditMode)}
-              className={`p-2 rounded-lg transition-all duration-200 ${
-                isEditMode
-                  ? "bg-vmprim text-white shadow-lg"
-                  : "bg-gray-100 text-stone-600 hover:bg-gray-200"
-              }`}
-            >
-              {isEditMode ? (
-                <Eye className="h-4 w-4" />
-              ) : (
-                <Edit className="h-4 w-4" />
-              )}
-            </button>
-          </Tooltip>
-        )}
-      </div>
 
       {selectedSong ? (
         <motion.div
@@ -61,18 +38,33 @@ const SongTabContent: React.FC<SongTabContentProps> = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="relative w-full overflow-hidden"
+          className=" w-full overflow-hidden"
         >
+          <div className="flex  items-center justify-between w-full "></div>
           {isEditMode ? (
             // Edit Mode - Use SidebarEditForm with the selected song pre-filled
-            <div className="w-full h-[75vh]">
+            <div className="w-full h-[75vh] relative">
+              <button
+                onClick={() => setIsEditMode(!isEditMode)}
+                className={`h-8 z-50 right-0 top-2 w-8 flex items-center justify-center absolute ml-[80%] rounded-lg transition-all duration-200 ${
+                  isEditMode
+                    ? "bg-yellow-100 text-black shadow "
+                    : "bg-yellow-100 text-stone-600 hover:bg-yellow-200"
+                }`}
+              >
+                {isEditMode ? (
+                  <Eye className="h-6 w-6" />
+                ) : (
+                  <Edit className="h-6 w-6" />
+                )}
+              </button>
               <SidebarEditForm />
             </div>
           ) : (
             // View Mode - Show song content
             <div className="relative w-full h-[75vh] rounded-lg shadow-lg overflow-hidden">
               {/* Fixed scroll background image */}
-              <div className="absolute inset-0 w-full h-full">
+              {/* <div className="absolute inset-0 w-full h-full">
                 <img
                   src={`${
                     localTheme === "creamy" ? "creampaper.jpg" : "wood11.jpg"
@@ -81,18 +73,34 @@ const SongTabContent: React.FC<SongTabContentProps> = ({
                   className="w-full h-full object-cover object-center"
                   style={{ position: "sticky", top: 0 }}
                 />
-              </div>
+              </div> */}
 
               {/* Text overlay */}
-              <div className="absolute inset-0 flex items-start justify-center pointer-events-none">
+              <div className="absolute inset-0 flex items-start justify-center pointerevents-none">
+                <Tooltip title={isEditMode ? "View Mode" : "Edit Mode"}>
+                  <button
+                    onClick={() => setIsEditMode(!isEditMode)}
+                    className={`h-8 w-8 flex items-center justify-center absolute ml-[80%] rounded-lg transition-all duration-200 ${
+                      isEditMode
+                        ? "bg-vmprim text-white shadow shadow-black"
+                        : "bg-yellow-100 text-stone-600 hover:bg-yellow-200"
+                    }`}
+                  >
+                    {isEditMode ? (
+                      <Eye className="h-6 w-6" />
+                    ) : (
+                      <Edit className="h-6 w-6" />
+                    )}
+                  </button>
+                </Tooltip>
                 <div className="w-[90%] h-[90%] relative pointer-events-auto mt-4">
-                  <div
+                  <p
                     dangerouslySetInnerHTML={{
                       __html: selectedSong?.content || "",
                     }}
                     className="overflow-y-scroll no-scrollbar h-full w-full text-left text-[10px] px-3 leading-relaxed"
                     style={{
-                      color: localTheme === "creamy" ? "#936a41" : "#2D1810",
+                      color: localTheme === "creamy" ? "#1e1d1d" : "#2D1810",
                       backgroundColor: "transparent",
                       textShadow: "none",
                       lineHeight: "1.6",

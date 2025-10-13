@@ -175,17 +175,12 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
             <div className="w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
           </div>
 
+           <div className="text-lg font-impact font-medium text-white">
+                      {sectionDisplay || "No Section"}
+                    </div>
+
           <div className="flex items-center space-x-1">
-            <button
-              onClick={() => setIsMinimized(!isMinimized)}
-              className="p-0.5 hover:bg-gray-800 bg-gray-900 rounded transition-colors"
-            >
-              {isMinimized ? (
-                <Maximize2 className="w-2.5 h-2.5 text-white" />
-              ) : (
-                <Minimize2 className="w-2.5 h-2.5 text-white" />
-              )}
-            </button>
+           
             <button
               onClick={onClose}
               className="p-0.5 hover:bg-red-900/50 bg-red-800 rounded transition-colors"
@@ -195,42 +190,7 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
           </div>
         </div>
 
-        {/* Content Area - Landscape Format */}
-        <AnimatePresence>
-          {!isMinimized && (
-            <motion.div
-              initial={{ height: 0 }}
-              animate={{ height: "auto" }}
-              exit={{ height: 0 }}
-              className="bg-black"
-            >
-              {/* Sleek Black Screen - Landscape */}
-              <div className="relative bg-black p-3">
-                {/* Screen content in landscape format */}
-                <div className="bg-black border border-gray-900/40 rounded-sm p-3 min-h-[80px] flex flex-col justify-center">
-                  {/* Song title - minimal */}
-                  {songTitle && (
-                    <div className="text-xs text-gray-500 mb-2 text-center truncate">
-                      {songTitle}
-                    </div>
-                  )}
-
-                  {/* Current section display - centered and simplified */}
-                  <div className="text-center">
-                    <div className="text-lg font-impact font-medium text-white">
-                      {sectionDisplay || "No Section"}
-                    </div>
-                  </div>
-
-                  {/* Minimal scan line effect */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+    
       </motion.div>
     </AnimatePresence>
   );

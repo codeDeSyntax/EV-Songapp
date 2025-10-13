@@ -57,6 +57,28 @@ interface ElectronAPI {
     data?: DetailedDisplayInfo;
     error?: string;
   }>;
+  testVisualSongBookOverride: () => Promise<{
+    success: boolean;
+    data?: {
+      displayCount: number;
+      windowsMainDisplay: number;
+      controlTarget: {
+        id: number;
+        bounds: { x: number; y: number; width: number; height: number };
+        internal: boolean;
+        isOverridingWindowsMain: boolean;
+      };
+      projectionTarget: {
+        id: number;
+        bounds: { x: number; y: number; width: number; height: number };
+        internal: boolean;
+        isOverridingWindowsMain: boolean;
+      };
+      scenarios: string[];
+      visualSongBookModeActive: boolean;
+    };
+    error?: string;
+  }>;
   saveDisplayPreferences: (preferences: {
     displayId: number;
     mode: string;

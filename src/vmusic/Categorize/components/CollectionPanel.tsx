@@ -235,8 +235,14 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                   key={collection.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  whileHover={{ scale: 1.01, y: -1 }}
-                  whileTap={{ scale: 0.99 }}
+                  whileHover={
+                    selectedCollection !== collection.id
+                      ? { scale: 1.01, y: -1 }
+                      : {}
+                  }
+                  whileTap={
+                    selectedCollection !== collection.id ? { scale: 0.99 } : {}
+                  }
                   onDragOver={(e) => handleDragOver(e, collection.id)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, collection.id)}
@@ -264,17 +270,6 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                         : theme === "creamy"
                         ? "linear-gradient(135deg, #faeed1 0%, #f7e6c4 100%)"
                         : "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
-                  }}
-                  onClick={() => {
-                    setSelectedCollection(
-                      collection.id === selectedCollection
-                        ? null
-                        : collection.id
-                    );
-                    if (isMobile && collection.id !== selectedCollection) {
-                      setShowSongList(true);
-                      setShowCollectionPanel(false);
-                    }
                   }}
                 >
                   {/* Subtle gradient overlay for depth */}
@@ -306,6 +301,17 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                     className={`relative ${
                       selectedCollection === collection.id ? "p-4" : "p-3"
                     }`}
+                    onClick={() => {
+                      setSelectedCollection(
+                        collection.id === selectedCollection
+                          ? null
+                          : collection.id
+                      );
+                      if (isMobile && collection.id !== selectedCollection) {
+                        setShowSongList(true);
+                        setShowCollectionPanel(false);
+                      }
+                    }}
                   >
                     <div className="flex items-center justify-between">
                       {/* Left section - Icon and details */}
@@ -414,6 +420,9 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                         className=" px-4 pb-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
                       >
                         <div className="space-y-1 pt-1 max-h-32 overflow-y-auto no-scrollbar shadow-inner shadow-amber-900/10">
                           {getCollectionSongs()
@@ -425,6 +434,10 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                                 style={{
                                   backgroundColor:
                                     theme === "creamy" ? "#f5e6c8" : "#f3f4f6",
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  e.preventDefault();
                                 }}
                               >
                                 <div className="flex items-center flex-1 min-w-0">
@@ -450,9 +463,9 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                                     {song.title}
                                   </span>
                                 </div>
-                                <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex items-center opacity-60 group-hover:opacity-100 transition-opacity relative z-10">
                                   <button
-                                    className="p-0.5 h-4 w-4 flex items-center justify-center rounded hover:bg-red-100"
+                                    className="p-1 h-6 w-6 flex items-center justify-center rounded hover:bg-red-100 hover:shadow-sm relative z-20"
                                     style={{
                                       color:
                                         theme === "creamy"
@@ -461,16 +474,21 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                                     }}
                                     onClick={(e) => {
                                       e.stopPropagation();
+                                      e.preventDefault();
+                                      console.log(
+                                        "Remove song clicked:",
+                                        song.title
+                                      );
                                       removeSongFromCollection(
                                         song.id,
                                         collection.id
                                       );
                                     }}
                                   >
-                                    <X size={8} />
+                                    <X size={12} />
                                   </button>
                                   <button
-                                    className="p-0.5 h-4 w-4 flex items-center justify-center rounded hover:bg-gray-100 ml-1"
+                                    className="p-1 h-6 w-6 flex items-center justify-center rounded hover:bg-gray-100 hover:shadow-sm ml-1"
                                     title="present here"
                                     style={{
                                       color:
@@ -480,14 +498,19 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                                     }}
                                     onClick={(e) => {
                                       e.stopPropagation();
+                                      e.preventDefault();
+                                      console.log(
+                                        "Present here clicked:",
+                                        song.title
+                                      );
                                       setSelectedSong(song);
                                       setAndSaveCurrentScreen("Presentation");
                                     }}
                                   >
-                                    <Monitor size={8} />
+                                    <Monitor size={12} />
                                   </button>
                                   <button
-                                    className="p-0.5 h-4 w-4 flex items-center justify-center rounded hover:bg-green-100 ml-1"
+                                    className="p-1 h-6 w-6 flex items-center justify-center rounded hover:bg-green-100 hover:shadow-sm ml-1"
                                     title="external screen"
                                     style={{
                                       color:
@@ -497,10 +520,15 @@ const CollectionPanel: React.FC<CollectionPanelProps> = ({
                                     }}
                                     onClick={(e) => {
                                       e.stopPropagation();
+                                      e.preventDefault();
+                                      console.log(
+                                        "Present external clicked:",
+                                        song.title
+                                      );
                                       presentSong(song);
                                     }}
                                   >
-                                    <ExternalLinkIcon size={8} />
+                                    <ExternalLinkIcon size={12} />
                                   </button>
                                 </div>
                               </div>

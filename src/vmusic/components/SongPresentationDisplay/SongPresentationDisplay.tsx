@@ -6,8 +6,6 @@ import React, {
   useMemo,
 } from "react";
 import { ChevronLeft, ChevronRight, Plus, Minus } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ColorPicker } from "antd";
 
 interface SongSection {
   type: string;
@@ -48,17 +46,6 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
   // Font sizing approach: Using line-based approach only
   // Fast, predictable sizing based purely on line count
 
-  // Color picker state
-  const [textColor, setTextColor] = useState(() => {
-    const saved = localStorage.getItem("songPresentationTextColor");
-    return saved || "#ffffff";
-  });
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [colorPickerPosition, setColorPickerPosition] = useState({
-    x: 0,
-    y: 0,
-  });
-
   // Refs
   const contentRef = useRef<HTMLDivElement>(null);
   const baseFontSize = 70;
@@ -84,42 +71,6 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
       console.error(`Error setting localStorage for key ${key}:`, error);
     }
   };
-
-  // Color picker handlers
-  const handleTextColorChange = (color: string) => {
-    setTextColor(color);
-    setLocalStorageItem("songPresentationTextColor", color);
-  };
-
-  const handleTextClick = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    const rect = event.currentTarget.getBoundingClientRect();
-    setColorPickerPosition({
-      x: rect.left + rect.width / 2,
-      y: rect.top - 10,
-    });
-    setShowColorPicker(true);
-  };
-
-  const closeColorPicker = () => {
-    setShowColorPicker(false);
-  };
-
-  // Close color picker when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest(".color-picker-container")) {
-        closeColorPicker();
-      }
-    };
-
-    if (showColorPicker) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [showColorPicker]);
 
   // Load settings from localStorage
   useEffect(() => {
@@ -523,27 +474,8 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
         case "F":
           // Font controls are now always visible in compact mode
           break;
-        case "c":
-        case "C":
-          // Toggle color picker
-          if (showColorPicker) {
-            closeColorPicker();
-          } else {
-            // Position color picker in center of screen if opened via keyboard
-            setColorPickerPosition({
-              x: window.innerWidth / 2,
-              y: window.innerHeight / 2,
-            });
-            setShowColorPicker(true);
-          }
-          break;
         case "Escape":
-          if (showColorPicker) {
-            closeColorPicker();
-          } else if (
-            typeof window !== "undefined" &&
-            window.api?.minimizeProjection
-          ) {
+          if (typeof window !== "undefined" && window.api?.minimizeProjection) {
             window.api.minimizeProjection();
           }
           break;
@@ -552,13 +484,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    goToNext,
-    goToPrevious,
-    increaseFontSize,
-    decreaseFontSize,
-    showColorPicker,
-  ]);
+  }, [goToNext, goToPrevious, increaseFontSize, decreaseFontSize]);
 
   // Listen for song data from Electron
   useEffect(() => {
@@ -704,10 +630,12 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
       : currentSection.content.length === 3
       ? 1.15 // Three lines - slight spacing
       : currentSection.content.length === 4
-      ? 1.8 // Four lines - comfortable spacing
+      ? 1.6 // Four lines - comfortable spacing
+      : currentSection.content.length === 5
+      ? 1.5 // Up to 5 lines - standard spacing
       : currentSection.content.length === 6
-      ? 1.3 // Up to 6 lines - standard spacing
-      :currentSection.content.length === 7
+      ? 1.4 // Up to 6 lines - standard spacing
+      : currentSection.content.length === 7
       ? 1.25 // Up to 7 lines - slightly tighter
       : currentSection.content.length === 8
       ? 1.4 // Up to 8 lines - tighter spacing
@@ -732,7 +660,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
     } else if (lineCount === 3) {
       calculatedSize = baseFontSize * 4.2; // Larger for three lines
     } else if (lineCount === 4) {
-      calculatedSize = baseFontSize * 3.8; // Better utilization for four lines
+      calculatedSize = baseFontSize * 4.2; // Better utilization for four lines
     } else if (lineCount === 5) {
       calculatedSize = baseFontSize * 3.4; // Fixed - was incorrectly 1.2
     } else if (lineCount === 6) {
@@ -740,7 +668,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
     } else if (lineCount === 7) {
       calculatedSize = baseFontSize * 2.7; // Good for seven lines
     } else if (lineCount === 8) {
-      calculatedSize = baseFontSize * 2.5; // Good for eight lines
+      calculatedSize = baseFontSize * 2.6; // Good for eight lines
     } else if (lineCount === 9) {
       calculatedSize = baseFontSize * 2.3; // Good for nine lines
     } else if (lineCount === 10) {
@@ -1145,18 +1073,6 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20" />
       </div>
 
-      {/* Subtle Animated Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div
-          className="w-full h-full bg-repeat animate-pulse"
-          style={{
-            backgroundImage: `radial-gradient(circle at 25% 25%, white 2px, transparent 2px)`,
-            backgroundSize: "60px 60px",
-            animationDuration: "8s",
-          }}
-        />
-      </div>
-
       {/* Main Content Container */}
       <div className="relative z-20 h-full flex flex-col">
         {/* Enhanced Main Content Area - ZERO padding for MAXIMUM text space */}
@@ -1172,115 +1088,87 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
             }}
           >
             {/* Content with Enhanced Animations */}
-            <AnimatePresence mode="wait">
-              {currentSection ? (
-                <motion.div
-                  key={currentIndex}
-                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -30, scale: 0.95 }}
-                  transition={{
-                    duration: 0.1,
-                    ease: [0.25, 0.46, 0.45, 0.94],
-                    staggerChildren: 0.1,
-                  }}
-                  className="content-container relative"
+            {currentSection ? (
+              <div
+                className="content-container relative"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  // gap: `${Math.floor(
+                  //   optimalFontSize * dynamicLineSpacing
+                  // )}px`, // Enhanced dynamic spacing
+                }}
+              >
+                {/* Content Background Blur Effect */}
+                <div className="absolute inset-0 -m-8  rounded-3xl border border-white/10" />
+
+                {currentSection.content.map((line, index) => {
+                  // ABSOLUTE MINIMAL spacing - match algorithm exactly
+                  const marginBottom =
+                    index < currentSection.content.length - 1 &&
+                    currentSection.content.length > 1
+                      ? "1px" // Exactly match the 1px from algorithm
+                      : "0px";
+
+                  return (
+                    <div
+                      key={index}
+                      style={{
+                        fontSize: `${optimalFontSize}px`,
+                        fontFamily: fontFamily,
+                        lineHeight: dynamicLineHeight,
+                        color: "#ffffff",
+                        textShadow:
+                          "0 4px 20px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.6)",
+                        filter: "drop-shadow(0 0 20px rgba(255,255,255,0.1))",
+                        wordWrap: "break-word",
+                        overflowWrap: "break-word",
+                        hyphens: "auto",
+                        maxWidth: "100%",
+                        margin: 0,
+                        padding: 0,
+                        marginBottom: marginBottom,
+                        textAlign: "center",
+                        fontWeight: "bold",
+                      }}
+                      className="relative z-10 transition-all duration-300 hover:scale-105"
+                    >
+                      {line.trim() || " "}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center relative">
+                {/* Welcome Screen Enhancement */}
+                <div className="absolute inset-0 -m-16 bg-gradient-to-br from-white/5 to-transparent rounded-full blur-xl" />
+                <h1
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    // gap: `${Math.floor(
-                    //   optimalFontSize * dynamicLineSpacing
-                    // )}px`, // Enhanced dynamic spacing
+                    fontSize: "84px",
+                    fontFamily: fontFamily,
+                    textShadow:
+                      "0 6px 30px rgba(0,0,0,0.9), 0 3px 12px rgba(0,0,0,0.7)",
+                    background:
+                      "linear-gradient(135deg, #ffffff 0%, #f0f9ff 50%, #dbeafe 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
                   }}
+                  className="font-bold drop-shadow-2xl relative z-10"
                 >
-                  {/* Content Background Blur Effect */}
-                  <div className="absolute inset-0 -m-8  rounded-3xl border border-white/10" />
-
-                  {currentSection.content.map((line, index) => {
-                    // ABSOLUTE MINIMAL spacing - match algorithm exactly
-                    const marginBottom =
-                      index < currentSection.content.length - 1 &&
-                      currentSection.content.length > 1
-                        ? "1px" // Exactly match the 1px from algorithm
-                        : "0px";
-
-                    return (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: isFontCalculated ? 1 : 0 }}
-                        transition={{
-                          duration: 0.1,
-                          ease: "easeOut",
-                        }}
-                        onClick={handleTextClick}
-                        style={{
-                          fontSize: `${optimalFontSize}px`,
-                          fontFamily: fontFamily,
-                          lineHeight: dynamicLineHeight,
-                          color: textColor,
-                          textShadow:
-                            "0 4px 20px rgba(0,0,0,0.8), 0 2px 8px rgba(0,0,0,0.6)",
-                          filter: "drop-shadow(0 0 20px rgba(255,255,255,0.1))",
-                          cursor: "pointer",
-                          wordWrap: "break-word",
-                          overflowWrap: "break-word",
-                          hyphens: "auto",
-                          maxWidth: "100%",
-                          margin: 0,
-                          padding: 0,
-                          marginBottom: marginBottom,
-                          textAlign: "center",
-                          fontWeight: "bold",
-                        }}
-                        className="relative z-10 transition-all duration-300 hover:scale-105"
-                      >
-                        {line.trim() || " "}
-                      </motion.div>
-                    );
-                  })}
-                </motion.div>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="text-center relative"
-                >
-                  {/* Welcome Screen Enhancement */}
-                  <div className="absolute inset-0 -m-16 bg-gradient-to-br from-white/5 to-transparent rounded-full blur-xl" />
-                  <h1
-                    style={{
-                      fontSize: "84px",
-                      fontFamily: fontFamily,
-                      textShadow:
-                        "0 6px 30px rgba(0,0,0,0.9), 0 3px 12px rgba(0,0,0,0.7)",
-                      background:
-                        "linear-gradient(135deg, #ffffff 0%, #f0f9ff 50%, #dbeafe 100%)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                    }}
-                    className="font-bold drop-shadow-2xl relative z-10 animate-pulse"
-                  >
-                    Blessed Music
-                  </h1>
-                  {/* Decorative Elements */}
-                  <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-white/40 to-transparent rounded-full" />
-                  <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-white/40 to-transparent rounded-full" />
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  Blessed Music
+                </h1>
+                {/* Decorative Elements */}
+                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-white/40 to-transparent rounded-full" />
+                <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-white/40 to-transparent rounded-full" />
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Compact Control Panel - Top Right */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="absolute top-4 right-4 z-30"
-      >
+      <div className="absolute top-4 right-4 z-30">
         <div className="bg-black/40 backdrop-blur-sm rounded-lg border border-white/10 p-2 shadow-lg">
           <div className="flex items-center space-x-2">
             {/* Section Indicator (Compact) */}
@@ -1329,29 +1217,25 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
             {/* Font Size Control (Compact) */}
             <div className="bg-black/50 rounded-md border border-white/10">
               <div className="flex items-center">
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                <button
                   onClick={decreaseFontSize}
-                  className="p-1 text-red-300 hover:text-red-100 hover:bg-red-500/20 rounded-l-md transition-all duration-200"
+                  className="p-1 text-red-300 hover:text-red-100 hover:bg-red-500/20 rounded-l-md transition-all duration-200 hover:scale-110 active:scale-90"
                   aria-label="Decrease font size"
                 >
                   <Minus size={12} />
-                </motion.button>
+                </button>
 
                 <div className="text-white text-xs font-mono px-2 py-1 min-w-[32px] text-center border-x border-white/10">
                   {Math.round(fontSizeMultiplier * 100)}%
                 </div>
 
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
+                <button
                   onClick={increaseFontSize}
-                  className="p-1 text-green-300 hover:text-green-100 hover:bg-green-500/20 rounded-r-md transition-all duration-200"
+                  className="p-1 text-green-300 hover:text-green-100 hover:bg-green-500/20 rounded-r-md transition-all duration-200 hover:scale-110 active:scale-90"
                   aria-label="Increase font size"
                 >
                   <Plus size={12} />
-                </motion.button>
+                </button>
               </div>
             </div>
 
@@ -1359,12 +1243,10 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
             {songSections.length > 0 && (
               <div className="bg-black/50 rounded-md border border-white/10">
                 <div className="flex items-center">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                  <button
                     onClick={goToPrevious}
                     disabled={currentIndex === 0}
-                    className={`p-1 rounded-l-md transition-all duration-200 ${
+                    className={`p-1 rounded-l-md transition-all duration-200 hover:scale-110 active:scale-90 ${
                       currentIndex === 0
                         ? "text-gray-500 cursor-not-allowed"
                         : "text-blue-300 hover:text-blue-100 hover:bg-blue-500/20"
@@ -1372,14 +1254,12 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
                     aria-label="Previous section"
                   >
                     <ChevronLeft size={12} />
-                  </motion.button>
+                  </button>
 
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                  <button
                     onClick={goToNext}
                     disabled={currentIndex === songSections.length - 1}
-                    className={`p-1 rounded-r-md transition-all duration-200 ${
+                    className={`p-1 rounded-r-md transition-all duration-200 hover:scale-110 active:scale-90 ${
                       currentIndex === songSections.length - 1
                         ? "text-gray-500 cursor-not-allowed"
                         : "text-blue-300 hover:text-blue-100 hover:bg-blue-500/20"
@@ -1387,111 +1267,12 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
                     aria-label="Next section"
                   >
                     <ChevronRight size={12} />
-                  </motion.button>
+                  </button>
                 </div>
               </div>
             )}
           </div>
         </div>
-      </motion.div>
-
-      {/* Keyboard Hints - Bottom Left */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1 }}
-        className="absolute bottom-4 left-4 z-30"
-      >
-        <div className="bg-black/30 backdrop-blur-sm rounded-lg border border-white/10 p-2">
-          <div className="text-white text-xs font-mono space-y-1">
-            <div>C = Color Picker</div>
-            <div>Click Text = Color</div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Floating Color Picker */}
-      <AnimatePresence>
-        {showColorPicker && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 10 }}
-            className="fixed z-50 backdrop-blur-xl rounded-2xl p-4 shadow-2xl border color-picker-container"
-            style={{
-              left: colorPickerPosition.x - 120,
-              top: colorPickerPosition.y - 80,
-              background:
-                "linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)",
-              borderColor: "rgba(255, 255, 255, 0.2)",
-              boxShadow:
-                "0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)",
-            }}
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <div className="text-center mb-3">
-              <h4 className="text-sm font-semibold text-gray-800 dark:text-white">
-                Song Text Color
-              </h4>
-            </div>
-
-            {/* Color Picker */}
-            <div className="mb-4">
-              <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-2">
-                Text Color
-              </label>
-              <ColorPicker
-                value={textColor}
-                onChange={(color) => {
-                  handleTextColorChange(color.toHexString());
-                }}
-                size="large"
-                showText
-                format="hex"
-                placement="bottom"
-                presets={[
-                  {
-                    label: "Common",
-                    colors: [
-                      "#ffffff",
-                      "#000000",
-                      "#ff4d4f",
-                      "#52c41a",
-                      "#1890ff",
-                      "#faad14",
-                      "#722ed1",
-                      "#eb2f96",
-                      "#ffd700",
-                      "#ff6b35",
-                      "#4ecdc4",
-                      "#95e1d3",
-                    ],
-                  },
-                ]}
-              />
-            </div>
-
-            {/* Close Button */}
-            <div className="text-center">
-              <button
-                onClick={closeColorPicker}
-                className="px-3 py-1 text-xs bg-gray-600/50 text-white rounded-md hover:bg-gray-500/50 transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Ambient Light Effects */}
-      <div className="absolute inset-0 pointer-events-none z-10">
-        <div className="absolute top-0 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
-        <div
-          className="absolute bottom-0 right-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "2s" }}
-        />
       </div>
     </div>
   );

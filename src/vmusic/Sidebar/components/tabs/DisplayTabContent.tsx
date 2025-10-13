@@ -191,13 +191,55 @@ const DisplayTabContent: React.FC<DisplayTabContentProps> = ({
     }
   };
 
-  const handleDisplaySelect = (displayId: number) => {
+  const handleDisplaySelect = async (displayId: number) => {
     const newPrefs = {
       ...preferences,
       preferredDisplayId: displayId,
       lastUpdated: new Date().toISOString(),
     };
     savePreferences(newPrefs);
+
+    // Immediately apply display settings
+    try {
+      console.log("Immediately applying display selection...");
+
+      // Validate that the display exists
+      const selectedDisplay = displays.find((d) => d.id === displayId);
+      if (!selectedDisplay) {
+        console.log("Selected display not found");
+        showNotification(
+          "Selected display no longer available. Please refresh displays.",
+          "error"
+        );
+        return;
+      }
+
+      // Save display preferences immediately
+      const result = await window.api?.saveDisplayPreferences?.({
+        displayId: displayId,
+        mode: (preferences as any).projectionMode || "extend",
+      });
+
+      console.log("Immediate save result:", result);
+
+      if (result?.success) {
+        showNotification(
+          `✅ Display switched to Display ${displayId} immediately!`,
+          "success"
+        );
+
+        // Note: Projection window will use the new display setting on next projection
+        // or the existing projection should automatically update based on the saved preferences
+      } else {
+        showNotification(
+          "Failed to switch display. Please try again.",
+          "error"
+        );
+      }
+    } catch (error) {
+      console.error("Error switching display immediately:", error);
+      showNotification("An error occurred while switching display.", "error");
+    }
   };
 
   const handleFallbackToggle = () => {
@@ -424,6 +466,17 @@ const DisplayTabContent: React.FC<DisplayTabContentProps> = ({
         )}
       </div>
 
+      {/* Auto-save Info */}
+      {/* <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <div className="flex items-center gap-2 text-blue-700">
+          <CheckCircle className="w-4 h-4" />
+          <span className="text-sm font-medium">Auto-save enabled</span>
+        </div>
+        <p className="text-xs text-blue-600 mt-1">
+          Display preferences are saved automatically when you make selections. Changes take effect immediately during projection.
+        </p>
+      </div> */}
+
       {/* Windows Display Mode */}
       <div className="space-y-3">
         <h4 className="text-sm font-bold font-[garamond] text-stone-700">
@@ -449,10 +502,22 @@ const DisplayTabContent: React.FC<DisplayTabContentProps> = ({
                     : "bg-gray-50 border-gray-200 hover:border-gray-300"
                 } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
               >
-                <div className={`bg-gray-300 dark:bg-transparent shadow ${localTheme === "creamy" ? "text-[#9a674a]" : "text-[#9a674a]"} flex items-center justify-center w-8 h-8 rounded-full`}>
+                <div
+                  className={`bg-gray-300 dark:bg-transparent shadow ${
+                    localTheme === "creamy"
+                      ? "text-[#9a674a]"
+                      : "text-[#9a674a]"
+                  } flex items-center justify-center w-8 h-8 rounded-full`}
+                >
                   <IconComponent className="w-5 h-5  mx-auto" />
                 </div>
-                <div className={` ${localTheme === "creamy" ? "bg-[#ffedd5] text-black" : "bg-gray-200"} rounded-full px-2 mt-1 text-sm font-medium`}>
+                <div
+                  className={` ${
+                    localTheme === "creamy"
+                      ? "bg-[#ffedd5] text-black"
+                      : "bg-gray-200"
+                  } rounded-full px-2 mt-1 text-sm font-medium`}
+                >
                   {mode.title}
                 </div>
                 <div className="text-xs text-stone-500">{mode.description}</div>
@@ -461,90 +526,6 @@ const DisplayTabContent: React.FC<DisplayTabContentProps> = ({
           })}
         </div>
       </div>
-
-      {/* Apply Button */}
-      <motion.button
-        whileHover={{ scale: preferences.preferredDisplayId ? 1.02 : 1 }}
-        whileTap={{ scale: preferences.preferredDisplayId ? 0.98 : 1 }}
-        onClick={async () => {
-          console.log("Apply button clicked", {
-            hasPreferredDisplay: !!preferences.preferredDisplayId,
-            preferredDisplayId: preferences.preferredDisplayId,
-            displays: displays.length,
-          });
-
-          if (preferences.preferredDisplayId) {
-            try {
-              // Validate that the display still exists
-              const selectedDisplay = displays.find(
-                (d) => d.id === preferences.preferredDisplayId
-              );
-              if (!selectedDisplay) {
-                console.log("Selected display not found");
-                showNotification(
-                  "Selected display no longer available. Please refresh displays.",
-                  "error"
-                );
-                await loadDisplays();
-                return;
-              }
-
-              console.log("Saving display preferences...");
-              // Save display preferences
-              const result = await window.api?.saveDisplayPreferences?.({
-                displayId: preferences.preferredDisplayId,
-                mode: (preferences as any).projectionMode || "extend",
-              });
-
-              console.log("Save result:", result);
-
-              if (result?.success) {
-                showNotification(
-                  `✅ Display preferences saved successfully! Using Display ${preferences.preferredDisplayId}`,
-                  "success"
-                );
-              } else {
-                showNotification(
-                  "Failed to save display preferences. Please try again.",
-                  "error"
-                );
-              }
-            } catch (error) {
-              console.error("Error saving display preferences:", error);
-              showNotification(
-                "An error occurred while saving display preferences.",
-                "error"
-              );
-            }
-          } else {
-            console.log("No display selected");
-            showNotification(
-              "Please select a display before applying settings.",
-              "info"
-            );
-          }
-        }}
-        disabled={!preferences.preferredDisplayId || testingDisplay !== null}
-        className={`w-full py-3 px-4 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
-          preferences.preferredDisplayId && testingDisplay === null
-            ? localTheme === "creamy"
-              ? "bg-[#9a674a] text-white hover:bg-[#8a5739] shadow-lg"
-              : "bg-[#9a674a] text-white hover:bg-[#8a5739] shadow-lg"
-            : "bg-gray-200 text-gray-400 cursor-not-allowed"
-        }`}
-      >
-        {testingDisplay !== null ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Testing...
-          </>
-        ) : (
-          <>
-            <Settings className="w-4 h-4" />
-            Apply
-          </>
-        )}
-      </motion.button>
 
       {/* Notification */}
       <AnimatePresence>

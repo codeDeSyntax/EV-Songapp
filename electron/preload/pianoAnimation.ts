@@ -37,16 +37,13 @@ export class PianoAnimation {
       blackKeyHeight: options.blackKeyHeight || 35,
       animationSpeed: options.animationSpeed || 800, // Much slower for quality chromatic scale
       glowColor: options.glowColor || "rgba(255, 215, 0, 0.6)",
-      enableAudio:
-        options.enableAudio !== undefined ? options.enableAudio : true,
+      enableAudio: false, // Sound disabled - keeping only visual animations
       audioVolume: options.audioVolume || 0.25, // Softer volume for church atmosphere
       audioType: options.audioType || "generated",
     };
 
     this.initializePiano();
-    if (this.options.enableAudio) {
-      this.initializeAudio();
-    }
+    // Audio disabled - keeping only visual animations
   }
 
   private initializePiano(): void {
@@ -93,17 +90,17 @@ export class PianoAnimation {
 
     // Add elegant "EVSONGAPP" text on the piano body
     const pianoText = document.createElement("div");
-    pianoText.textContent = "EVSONGAPP";
+    pianoText.textContent = "SONGS OF ZION";
     pianoText.style.cssText = `
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) rotate(-15deg);
-      color: rgba(139, 69, 19, 0.6);
-      font-family: 'Georgia', serif;
-      font-size: 24px;
-      font-weight: bold;
-      letter-spacing: 3px;
+      color: rgb(247, 247, 247);
+      font-family: 'Impact', serif;
+      font-size: 28px;
+      font-weight: 900;
+      text-wrap:no-wrap;
       text-shadow: 
         0 1px 2px rgba(0, 0, 0, 0.1),
         0 0 8px rgba(139, 69, 19, 0.2);
@@ -114,8 +111,9 @@ export class PianoAnimation {
         rgba(160, 82, 45, 0.8) 50%, 
         rgba(139, 69, 19, 0.7) 100%);
       -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    
+      -webkit-text-stroke: 1px rgba(255, 255, 255, 1);
+     
     `;
 
     this.container.appendChild(pianoBody);
@@ -461,14 +459,8 @@ export class PianoAnimation {
   }
 
   private playKeySound(noteIndex: number): void {
-    if (!this.options.enableAudio) return;
-
-    const frequency = this.getChromaticScaleFrequency(noteIndex);
-
-    // Longer duration for each note to let it breathe and be heard clearly
-    const duration = 2.0; // Much longer sustain for quality sound
-
-    this.generateGrandPianoTone(frequency, duration);
+    // Sound disabled - keeping only visual animation
+    return;
   }
 
   public playKey(index: number): void {
@@ -578,11 +570,7 @@ export class PianoAnimation {
         if (keyIndex < this.keyElements.length) {
           this.playKey(keyIndex);
 
-          // Play the chord tones - C major chord
-          if (this.options.enableAudio) {
-            const frequencies = [261.63, 329.63, 392.0]; // C4, E4, G4
-            this.generateGrandPianoTone(frequencies[index], 2.5); // Long sustain for finale
-          }
+          // Sound disabled - keeping only visual animation
         }
       }, index * 150); // Gentle arpeggiation for beautiful effect
     });

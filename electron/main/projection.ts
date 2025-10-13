@@ -21,6 +21,15 @@ let songPresentationWin: BrowserWindow | null = null;
 let isSongPresentationMinimized = false;
 let isProjectionActive = false;
 
+// Export functions to access projection state
+export function getSongPresentationWindow() {
+  return songPresentationWin;
+}
+
+export function getIsProjectionActive() {
+  return isProjectionActive;
+}
+
 // Global projection settings storage
 let globalProjectionSettings = {
   fontSize: 28,
@@ -247,23 +256,51 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
     )
   ) {
     if (displays.length > 1) {
-      // Improved external display detection
-      const externalDisplay = displays.find(
-        (display) =>
-          !display.internal || display.bounds.x !== 0 || display.bounds.y !== 0
-      );
+      // Visual Song Book-style display detection - Override Windows main display logic
+      // Priority 1: Use non-internal (external) display for projection, regardless of main display setting
+      let externalDisplay = displays.find((display) => !display.internal);
+
       if (externalDisplay) {
         presentationDisplay = externalDisplay;
         isExternalDisplay = true;
-        console.log("🎯 Song Presentation - Auto-detected external display:", {
-          id: externalDisplay.id,
-          bounds: externalDisplay.bounds,
-          internal: externalDisplay.internal,
+        console.log(
+          "🎯 Visual Song Book Mode - Using external display for projection (overriding Windows main display):",
+          {
+            id: externalDisplay.id,
+            bounds: externalDisplay.bounds,
+            internal: externalDisplay.internal,
+            isPrimary: externalDisplay.id === screen.getPrimaryDisplay().id,
+            windowsMainDisplay: screen.getPrimaryDisplay().id,
+          }
+        );
+
+        logSongProjection("Visual Song Book mode - External display selected", {
+          displayId: externalDisplay.id,
+          isExternal: true,
+          overridingWindowsMain:
+            externalDisplay.id === screen.getPrimaryDisplay().id,
+          windowsMainDisplayId: screen.getPrimaryDisplay().id,
         });
       } else {
-        console.log(
-          "⚠️ Song Presentation - No external display found, using primary"
+        // Priority 2: If no external display, use non-primary display
+        const nonPrimaryDisplay = displays.find(
+          (display) => display.id !== screen.getPrimaryDisplay().id
         );
+
+        if (nonPrimaryDisplay) {
+          presentationDisplay = nonPrimaryDisplay;
+          isExternalDisplay = true;
+          console.log("🎯 Using non-primary display for projection:", {
+            id: nonPrimaryDisplay.id,
+            bounds: nonPrimaryDisplay.bounds,
+            internal: nonPrimaryDisplay.internal,
+          });
+        } else {
+          // Priority 3: Fallback to primary display if only one display
+          console.log(
+            "⚠️ Song Presentation - No external display found, using primary"
+          );
+        }
       }
     } else {
       console.log(

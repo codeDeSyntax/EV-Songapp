@@ -206,7 +206,7 @@ const HeaderControls = React.memo(
               placeholder="Search hymns..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-3 w-64 rounded-full border-none border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#9a674a]/30 focus:border-transparent"
+              className="pl-10 pr-4 py-3 w-64 rounded-full border-none font-teko border-stone-300 focus:outline-none focus:ring-2 focus:ring-[#9a674a]/30 focus:border-transparent"
               style={{
                 backgroundColor:
                   localTheme === "creamy" ? "#faeed1" : "#f9fafb",

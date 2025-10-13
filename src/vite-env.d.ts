@@ -64,6 +64,11 @@ interface Window {
       data?: any;
       error?: string;
     }>;
+    testVisualSongBookOverride: () => Promise<{
+      success: boolean;
+      data?: any;
+      error?: string;
+    }>;
     logToSecretLogger: (logData: {
       application: "SONGS" | "BIBLE" | "EVPRESENTER" | "SYSTEM";
       category:

@@ -510,6 +510,8 @@ contextBridge.exposeInMainWorld("api", {
   constructFilePath: (basePath: string, fileName: string) =>
     ipcRenderer.invoke("construct-file-path", basePath, fileName),
   getDisplayInfo: () => ipcRenderer.invoke("get-display-info"),
+  testVisualSongBookOverride: () =>
+    ipcRenderer.invoke("test-visual-songbook-override"),
   saveDisplayPreferences: (preferences: any) =>
     ipcRenderer.invoke("save-display-preferences", preferences),
   loadDisplayPreferences: () => ipcRenderer.invoke("load-display-preferences"),
