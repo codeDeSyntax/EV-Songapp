@@ -21,7 +21,7 @@
     "package": "electron-packager . evsongapp --platform=win32 --arch=x64  --icon=J:\\electron\\songsapp\\public\\evsongsicon.ico --out=release/ --overwrite --asar"
   },
   "dependencies": {
-    "@ant-design/icons": "^5.4.0",
+    "@ant-design/icons": "^6.1.0",
     "@electron-toolkit/preload": "^3.0.2",
     "@reactour/tour": "^3.8.0",
     "@reduxjs/toolkit": "^2.8.2",
@@ -38,12 +38,14 @@
     "@tiptap/pm": "^2.11.5",
     "@tiptap/react": "^2.11.5",
     "@tiptap/starter-kit": "^2.11.5",
-    "antd": "^5.26.2",
+    "antd": "^6.1.0",
     "electron-updater": "^6.1.8",
     "framer-motion": "^11.5.4",
     "lucide-react": "^0.441.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.10.38",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
     "react-redux": "^9.2.0",
     "uuid": "^11.1.0"
   },
@@ -60,7 +62,6 @@
     "electron-packager": "^17.1.2",
     "postcss": "^8.4.35",
     "postcss-import": "^16.0.1",
-    "react-dom": "^18.3.1",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.4.2",
     "vite": "^6.1.0",
