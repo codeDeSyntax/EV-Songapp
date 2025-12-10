@@ -1,0 +1,72 @@
+import React, { useState } from "react";
+import { SongLibraryPanel } from "./SongLibraryPanel";
+import { PreviewPanel } from "./PreviewPanel";
+import { BackgroundSelectorPanel } from "./BackgroundSelectorPanel";
+import { BottomLeftPanel } from "./BottomLeftPanel";
+import { BottomRightPanel } from "./BottomRightPanel";
+import { useAppSelector } from "@/store";
+
+interface BentoGridProps {
+  isDarkMode: boolean;
+  onSaveSuccess: (message: string) => void;
+  onSaveError: (error: string) => void;
+  showTitleDialog: boolean;
+  onShowTitleDialog: (show: boolean) => void;
+  isEditingSlide: boolean;
+  onEditingSlideChange: (editing: boolean) => void;
+  showAddSlideDialog: boolean;
+  onShowAddSlideDialog: (show: boolean) => void;
+}
+
+export const BentoGrid: React.FC<BentoGridProps> = ({
+  isDarkMode,
+  onSaveSuccess,
+  onSaveError,
+  showTitleDialog,
+  onShowTitleDialog,
+  isEditingSlide,
+  onEditingSlideChange,
+  showAddSlideDialog,
+  onShowAddSlideDialog,
+}) => {
+  const songRepo = useAppSelector((state) => state.songs.songRepo);
+
+  return (
+    <div className="w-full h-full p-2 overflow-hidden">
+      <div className="grid grid-cols-12 gap-2 h-full">
+        {/* Left Tall Panel - Full Height */}
+        <div className="col-span-3 h-full overflow-hidden">
+          <SongLibraryPanel isDarkMode={isDarkMode} />
+        </div>
+
+        {/* Right Side - Two Rows */}
+        <div className="col-span-9 h-full flex flex-col gap-2 overflow-hidden">
+          {/* Top Row - Preview and Background Selector */}
+          <div className="h-[60%] grid grid-cols-5 gap-2 overflow-hidden">
+            <div className="col-span-4">
+              <PreviewPanel
+                isDarkMode={isDarkMode}
+                songRepo={songRepo}
+                onSaveSuccess={onSaveSuccess}
+                onSaveError={onSaveError}
+                showTitleDialog={showTitleDialog}
+                onShowTitleDialog={onShowTitleDialog}
+                isEditingSlide={isEditingSlide}
+                onEditingSlideChange={onEditingSlideChange}
+                showAddSlideDialog={showAddSlideDialog}
+                onShowAddSlideDialog={onShowAddSlideDialog}
+              />
+            </div>
+            <BackgroundSelectorPanel isDarkMode={isDarkMode} />
+          </div>
+
+          {/* Bottom Two Equal Panels - Takes 40% height */}
+          <div className="h-[40%] grid grid-cols-2 gap-2 overflow-hidden">
+            <BottomLeftPanel isDarkMode={isDarkMode} />
+            <BottomRightPanel isDarkMode={isDarkMode} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

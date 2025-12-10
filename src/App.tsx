@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ArrowLeftCircle } from "lucide-react";
 import BlessedMusic from "./vmusic/BlessedMusic";
+import ControlRoomLayout from "./vmusic/ControlRoomLayout";
 import EditSong from "./vmusic/EditForm";
 import WorkspaceSelector from "./vmusic/Welcome";
 import CreateSong from "./vmusic/Form";
@@ -92,7 +93,7 @@ const App = () => {
         ) : currentScreen === "create" ? (
           <CreateSong />
         ) : currentScreen === "Songs" ? (
-          <BlessedMusic />
+          <ControlRoomLayout />
         ) : currentScreen === "edit" ? (
           <EditSong />
         ) : currentScreen === "Presentation" ? (

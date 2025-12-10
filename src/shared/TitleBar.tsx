@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowLeftFromLine,
   GalleryHorizontal,
@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { HomeFilled } from "@ant-design/icons";
 import { Switch } from "antd";
-import { useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "@/store";
 import {
   setCurrentScreen,
@@ -26,6 +25,7 @@ import {
 } from "@/store/slices/appSlice";
 import { ThemeToggle } from "./ThemeToggler";
 import { current } from "@reduxjs/toolkit";
+import { useTheme } from "@/Provider/Theme";
 
 const TitleBar = () => {
   const [isHovered, setIsHovered] = useState<string | null>(null);
@@ -34,6 +34,15 @@ const TitleBar = () => {
   const dispatch = useAppDispatch();
   const currentScreen = useAppSelector((state) => state.app.currentScreen);
   const theme = useAppSelector((state) => state.app.theme);
+  const songTitle = useAppSelector((state) => state.songSlides.songTitle);
+  const currentSlideId = useAppSelector(
+    (state) => state.songSlides.currentSlideId
+  );
+  const slides = useAppSelector((state) => state.songSlides.slides);
+  const { isDarkMode, toggleDarkMode } = useTheme();
+
+  // Get current slide info
+  const currentSlide = slides.find((slide) => slide.id === currentSlideId);
 
   // Hide title bar for presentation screens
   const shouldHideTitleBar = window.location.hash.includes(
@@ -83,20 +92,43 @@ const TitleBar = () => {
   const handleClose = () => {
     dispatch(closeApp());
   };
-
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
   };
 
+  const handleAddToPrelist = () => {
+    // TODO: Implement add to prelist functionality
+    console.log("Add to prelist clicked");
+  };
+
+  const selectedBg = "url('./wood10.jpg')";
+
   return (
     <div
-      className="h-6 w-full  fixed flex z-50 top-0 m-auto bg-opacity-sm backdrop-blur-sm  items-center justify-center px-2 select-none"
-      style={{ WebkitAppRegion: "drag" } as any} // Make the entire title bar draggable
+      className="h-6 w-full fixed flex z-50 top-0 m-auto select-none"
+      style={
+        {
+          WebkitAppRegion: "drag",
+          backgroundImage: !isDarkMode
+            ? `linear-gradient(to bottom,
+             rgba(255, 255, 255, 0%) 0%,
+             rgba(255, 255, 255, 1) 100%),
+             ${selectedBg}`
+            : `linear-gradient(to bottom,
+             rgba(44, 44, 44, 0) 0%,
+             #1c1c1c 80%),
+              ${selectedBg}`,
+          backgroundRepeat: "repeat",
+          backgroundSize: !isDarkMode ? "30px" : "20px",
+          backdropFilter: "blur(10px)",
+          zIndex: 10,
+        } as any
+      }
     >
-      <div className="flex w-full  items-center justify-between space-x-2 ">
+      <div className="flex w-full items-center justify-center px-2">
         {/* Control buttons excluded from dragging */}
         <div
-          className="flex items-center justify-between w-full m-auto  space-x-2"
+          className="flex items-center justify-between w-full m-auto space-x-2"
           style={{ WebkitAppRegion: "no-drag" } as any} // Exclude control buttons from dragging
         >
           <div className="flex items-center justify-center gap-2">
@@ -105,13 +137,6 @@ const TitleBar = () => {
               onMouseEnter={() => setIsHovered("close")}
               onMouseLeave={() => setIsHovered(null)}
               className="w-4 h-4 rounded-full bg-[#FF5F57] hover:bg-red-600 hover:cursor-pointer flex items-center justify-center"
-              // style={{
-              //   backgroundColor: `rgba(${Math.floor(
-              //     Math.random() * 255
-              //   )},${Math.floor(Math.random() * 255)},${Math.floor(
-              //     Math.random() * 255
-              //   )},1)`,
-              // }}
             >
               {isHovered === "close" && (
                 <X className="text-white z-20 size-6" />
@@ -122,13 +147,6 @@ const TitleBar = () => {
               onMouseEnter={() => setIsHovered("minimize")}
               onMouseLeave={() => setIsHovered(null)}
               className="w-4 h-4 text-white rounded-full bg-[#FFBD2E] hover:bg-yellow-600 hover:cursor-pointer flex items-center justify-center hover:text-white"
-              // style={{
-              //   backgroundColor: `rgba(${Math.floor(
-              //     Math.random() * 255
-              //   )},${Math.floor(Math.random() * 255)},${Math.floor(
-              //     Math.random() * 255
-              //   )},1)`,
-              // }}
             >
               {isHovered === "minimize" && (
                 <Minus className="text-white z-20 size-6" />
@@ -139,13 +157,6 @@ const TitleBar = () => {
               onMouseEnter={() => setIsHovered("maximize")}
               onMouseLeave={() => setIsHovered(null)}
               className="w-4 h-4 rounded-full bg-[#28CA41] hover:bg-green-600 hover:cursor-pointer flex items-center justify-center"
-              // style={{
-              //   backgroundColor: `rgba(${Math.floor(
-              //     Math.random() * 255
-              //   )},${Math.floor(Math.random() * 255)},${Math.floor(
-              //     Math.random() * 255
-              //   )},1)`,
-              // }}
             >
               {isHovered === "maximize" && (
                 <Square className="text-white z-20 size-3" />
@@ -154,76 +165,89 @@ const TitleBar = () => {
             <div className="flex items-center justify-center gap-2">
               <div
                 onClick={() => dispatch(setCurrentScreen("Home"))}
-                className={`w-4 h-4 rounded-full  hover:scale-105 hover:cursor-pointer flex items-center justify-center 
+                className={`w-6 h-6 rounded-full flex items-center justify-center group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800
                  ${currentScreen === "Songs" ? "bg-primary/20" : "hidden"}
                 `}
               >
-                <HomeFilled
-                  className="text-primary z-20 size-6"
-                  color={`rgba(${Math.floor(Math.random() * 255)},${Math.floor(
-                    Math.random() * 255
-                  )},${Math.floor(Math.random() * 255)},1)`}
-                />
+                <HomeFilled className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white" />
               </div>
               <div
                 onClick={setThemeChoice}
-                className={`w-4 h-4 rounded-full  hover:scale-105 hover:cursor-pointer  
-              items-center justify-center ${
-                currentScreen === "Songs" || currentScreen === "categorize"
-                  ? "flex"
-                  : "hidden"
-              }`}
+                className={`w-6 h-6 rounded-full flex items-center justify-center group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                  currentScreen === "Songs" || currentScreen === "categorize"
+                    ? "flex"
+                    : "hidden"
+                }`}
                 title="Mild theme 🟤"
               >
-                <SwitchCamera className="text-primary z-20 size-3" />
+                <SwitchCamera className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white" />
               </div>
               <div
                 onClick={() => dispatch(setCurrentScreen("backgrounds"))}
-                className={`w-4 h-4 rounded-full hover:scale-105 hover:cursor-pointer items-center justify-center flex relative ${
+                className={`w-6 h-6 rounded-full flex items-center justify-center group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 relative ${
                   currentScreen === "backgrounds" ? "bg-primary/10" : ""
                 }`}
                 title="Presentation backgrounds"
               >
-                <GalleryHorizontal className="text-primary z-20 size-6" />
+                <GalleryHorizontal className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white" />
                 {currentScreen === "backgrounds" && (
                   <div className="absolute -bottom-2 w-1 h-1 rounded-full bg-primary"></div>
                 )}
               </div>
               <div
                 onClick={() => dispatch(setCurrentScreen("Songs"))}
-                className={`w-4 h-4 rounded-full hover:scale-105 hover:cursor-pointer relative
-              items-center justify-center ${
-                currentScreen === "categorize" ? "flex" : "hidden"
-              }`}
+                className={`w-6 h-6 rounded-full flex items-center justify-center group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 relative ${
+                  currentScreen === "categorize" ? "flex" : "hidden"
+                }`}
                 title="back"
               >
-                <ArrowLeftFromLine className="text-primary z-20 size-6" />
+                <ArrowLeftFromLine className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white" />
               </div>
               <div
                 onClick={() => dispatch(setCurrentScreen("categorize"))}
-                className={`w-4 h-4 rounded-full hover:scale-105 hover:cursor-pointer items-center justify-center flex relative ${
+                className={`w-6 h-6 rounded-full flex items-center justify-center group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 relative ${
                   currentScreen === "categorize" ? "bg-primary/10" : ""
                 }`}
                 title="Music categories"
               >
-                <Group className="text-primary z-20 size-6" />
+                <Group className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white" />
                 {currentScreen === "categorize" && (
                   <div className="absolute -bottom-2 w-1 h-1 rounded-full bg-primary"></div>
                 )}
               </div>
               <div
                 onClick={() => dispatch(setCurrentScreen("userguide"))}
-                className={`w-4 h-4 rounded-full hover:scale-105 hover:cursor-pointer  
-              items-center justify-center flex relative ${
-                currentScreen !== "Songs" && "hidden"
-              } ${currentScreen === "userguide" ? "bg-primary/10" : ""}`}
+                className={`w-6 h-6 rounded-full flex items-center justify-center group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 relative ${
+                  currentScreen !== "Songs" && "hidden"
+                } ${currentScreen === "userguide" ? "bg-primary/10" : ""}`}
                 title="User manual"
               >
-                <User2Icon className="text-primary z-20 size-6" />
+                <User2Icon className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white" />
                 {currentScreen === "userguide" && (
                   <div className="absolute -bottom-2 w-1 h-1 rounded-full bg-primary"></div>
                 )}
               </div>
+              <ThemeToggle />
+              {/* Song Title and Current Slide Display */}
+              {currentScreen === "Songs" && (songTitle || currentSlide) && (
+                <div className="flex items-center gap-2">
+                  {songTitle && (
+                    <div className="flex items-center gap-2 px-3 py-1 bg-app-surface/50 rounded-full border border-app-border/30 backdrop-blur-sm">
+                      <FileText className="w-3 h-3 text-app-text-muted" />
+                      <span className="text-sm font-medium text-app-text max-w-[200px] truncate">
+                        {songTitle}
+                      </span>
+                    </div>
+                  )}
+                  {currentSlide && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-app-accent/20 rounded-full border border-app-accent/30 backdrop-blur-sm">
+                      <span className="text-xs font-bold text-white ">
+                        {currentSlide.label}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
