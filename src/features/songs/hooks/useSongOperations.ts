@@ -64,10 +64,6 @@ export const useSongOperations = () => {
     [dispatch]
   );
 
-  const goToPresentation = useCallback(() => {
-    dispatch(setCurrentScreen("Presentation"));
-  }, [dispatch]);
-
   const presentSelectedSong = useCallback(() => {
     if (selectedSong) {
       presentSong(selectedSong);
@@ -77,14 +73,6 @@ export const useSongOperations = () => {
   // Navigation operations
   const goToEdit = useCallback(() => {
     dispatch(setCurrentScreen("edit"));
-  }, [dispatch]);
-
-  const goToCreate = useCallback(() => {
-    dispatch(setCurrentScreen("create"));
-  }, [dispatch]);
-
-  const goToCategorize = useCallback(() => {
-    dispatch(setCurrentScreen("categorize"));
   }, [dispatch]);
 
   const goToUserGuide = useCallback(() => {
@@ -241,11 +229,8 @@ export const useSongOperations = () => {
     selectSong,
     deselectSong,
     presentSong,
-    goToPresentation,
     presentSelectedSong,
     goToEdit,
-    goToCreate,
-    goToCategorize,
     goToUserGuide,
     goToBackgrounds,
     updateSearchQuery,

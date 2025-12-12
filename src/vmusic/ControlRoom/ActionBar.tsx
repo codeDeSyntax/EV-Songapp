@@ -13,12 +13,22 @@ import {
   Strikethrough,
   Save,
   X,
+  Settings,
+  Monitor,
+  MonitorStop,
 } from "lucide-react";
 import { Tooltip } from "antd";
 import { GamyCard } from "../shared/GamyCard";
 import { SearchWithDropdown } from "./ActionBar/SearchWithDropdown";
 import { Song } from "@/types";
 import { useAppSelector, useAppDispatch } from "@/store";
+import {
+  openDeleteConfirmModal,
+  toggleSettings,
+  setIsEditingSlide,
+  setShowAddSlideDialog,
+  setShowTitleDialog,
+} from "@/store/slices/uiSlice";
 import { useToast } from "./hooks/useToast";
 import { Toaster } from "../shared/Notification";
 import { setSongRepo } from "@/store/slices/songSlice";
@@ -29,8 +39,6 @@ interface ActionBarProps {
   searchQuery: string;
   isProjectionActive: boolean;
   songs: Song[];
-  goToCreate: () => void;
-  goToEdit: () => void;
   showDeleteConfirmation: () => void;
   loadSongs: () => void;
   changeDirectory: () => void;
@@ -40,21 +48,10 @@ interface ActionBarProps {
     message: string,
     type: "success" | "error" | "warning" | "info"
   ) => void;
-  onRequestSave: () => void;
-  onRequestEdit: () => void;
-  onRequestAdd: () => void;
+  onRequestDelete: () => void;
+  onSelectSongFromSearch: (song: Song) => void;
+  onAddToPrelist: () => void;
 }
-
-const fontFamilies = [
-  { name: "Open Sans", value: "Open Sans" },
-  { name: "Segoe UI", value: "segoe" },
-  { name: "Inter", value: "inter" },
-  { name: "Anton SC", value: "anton" },
-  { name: "Oswald", value: "oswald" },
-  { name: "Roboto", value: "roboto" },
-  { name: "Impact", value: "impact" },
-  { name: "Teko", value: "teko" },
-];
 
 export const ActionBar: React.FC<ActionBarProps> = ({
   isDarkMode,
@@ -62,30 +59,79 @@ export const ActionBar: React.FC<ActionBarProps> = ({
   searchQuery,
   isProjectionActive,
   songs,
-  goToCreate,
-  goToEdit,
   showDeleteConfirmation,
   loadSongs,
   changeDirectory,
   updateSearchQuery,
   presentSong,
   addToast,
-  onRequestSave,
-  onRequestEdit,
-  onRequestAdd,
+  onRequestDelete,
+  onSelectSongFromSearch,
+  onAddToPrelist,
 }) => {
-  const [selectedFont, setSelectedFont] = useState(fontFamilies[0].name);
+  const [systemFonts, setSystemFonts] = useState<string[]>([]);
+  const [selectedFont, setSelectedFont] = useState("Arial");
   const [showFontDropdown, setShowFontDropdown] = useState(false);
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
+  const [fontSearchQuery, setFontSearchQuery] = useState("");
 
   const fontDropdownRef = useRef<HTMLDivElement>(null);
   const folderDropdownRef = useRef<HTMLDivElement>(null);
+  const fontSearchInputRef = useRef<HTMLInputElement>(null);
+
+  // Load system fonts on mount
+  useEffect(() => {
+    const loadFonts = async () => {
+      try {
+        const fonts = await window.api.getSystemFonts();
+        setSystemFonts(fonts);
+        if (fonts.length > 0 && !selectedFont) {
+          setSelectedFont(fonts[0]);
+        }
+      } catch (error) {
+        console.error("Error loading system fonts:", error);
+        // Fallback fonts
+        setSystemFonts([
+          "Arial",
+          "Calibri",
+          "Cambria",
+          "Comic Sans MS",
+          "Courier New",
+          "Georgia",
+          "Impact",
+          "Segoe UI",
+          "Tahoma",
+          "Times New Roman",
+          "Verdana",
+        ]);
+      }
+    };
+    loadFonts();
+  }, []);
+
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (showFontDropdown && fontSearchInputRef.current) {
+      setTimeout(() => fontSearchInputRef.current?.focus(), 100);
+    } else if (!showFontDropdown) {
+      setFontSearchQuery("");
+    }
+  }, [showFontDropdown]);
+
+  // Filter fonts based on search query
+  const filteredFonts = systemFonts.filter((font) =>
+    font.toLowerCase().includes(fontSearchQuery.toLowerCase())
+  );
 
   const dispatch = useAppDispatch();
-  const { slides, isSaving, currentSlideId } = useAppSelector(
+  const { slides, isSaving, currentSlideId, currentSongId } = useAppSelector(
     (state) => state.songSlides
   );
   const songRepo = useAppSelector((state) => state.songs.songRepo);
+  const { showSettings, isEditingSlide } = useAppSelector((state) => state.ui);
+
+  // Get the currently loaded song from the songs list (using songs prop)
+  const currentSong = songs.find((song) => song.id === currentSongId);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -122,7 +168,41 @@ export const ActionBar: React.FC<ActionBarProps> = ({
       addToast("No slides to save. Paste lyrics first.", "warning");
       return;
     }
-    onRequestSave();
+    dispatch(setShowTitleDialog(true));
+  };
+
+  const handleProjectionToggle = async () => {
+    try {
+      if (isProjectionActive) {
+        // Close projection
+        await window.api.closeProjectionWindow();
+        addToast("Projection closed", "info");
+      } else {
+        // Start projection with current song
+        if (slides.length === 0) {
+          addToast("No slides to project. Paste lyrics first.", "warning");
+          return;
+        }
+
+        const songData = {
+          title: currentSong?.title || "Untitled Song",
+          slides: slides.map((slide) => ({
+            content: slide.content,
+            type: slide.type,
+            number: slide.number,
+          })),
+        };
+
+        await window.api.projectSong(songData);
+        addToast("Projection started", "success");
+      }
+    } catch (error) {
+      console.error("Projection error:", error);
+      addToast(
+        `Failed to ${isProjectionActive ? "close" : "start"} projection`,
+        "error"
+      );
+    }
   };
 
   return (
@@ -130,10 +210,13 @@ export const ActionBar: React.FC<ActionBarProps> = ({
       <div className="h-10 flex items-center justify-between px-3 gap-3">
         {/* Left: Main Actions */}
         <div className="flex items-center gap-1.5">
-          <Tooltip title="Create New Song" placement="bottom">
+          <Tooltip title="Add Current Song to Prelist" placement="bottom">
             <button
-              onClick={goToCreate}
-              className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-blue hover:bg-app-blue-hover text-white"
+              onClick={onAddToPrelist}
+              disabled={slides.length === 0}
+              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-text-muted dark:bg-app-surface hover:bg-app-surface-hover text-white ${
+                slides.length === 0 ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -141,7 +224,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
 
           <Tooltip title="Edit Current Slide" placement="bottom">
             <button
-              onClick={onRequestEdit}
+              onClick={() => dispatch(setIsEditingSlide(true))}
               disabled={currentSlideId === null}
               className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg text-app-text border border-app-border ${
                 currentSlideId !== null
@@ -155,20 +238,36 @@ export const ActionBar: React.FC<ActionBarProps> = ({
 
           <Tooltip title="Add New Slide" placement="bottom">
             <button
-              onClick={onRequestAdd}
+              onClick={() => dispatch(setShowAddSlideDialog(true))}
               className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-accent text-white hover:bg-app-accent/80 border border-app-border"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
           </Tooltip>
 
-          <Tooltip title="Delete Selected Song" placement="bottom">
+          <Tooltip
+            title={
+              isEditingSlide ? "Delete Current Slide" : "Delete Selected Song"
+            }
+            placement="bottom"
+          >
             <button
-              onClick={() => selectedSong && showDeleteConfirmation()}
-              disabled={!selectedSong}
+              onClick={() => {
+                if (isEditingSlide) {
+                  onRequestDelete();
+                } else if (currentSong) {
+                  dispatch(
+                    openDeleteConfirmModal({
+                      song: currentSong,
+                      type: "permanent",
+                    })
+                  );
+                }
+              }}
+              disabled={isEditingSlide ? currentSlideId === null : !currentSong}
               className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg text-app-text border border-app-border ${
-                selectedSong
-                  ? "hover:bg-app-surface-hover"
+                (isEditingSlide ? currentSlideId !== null : currentSong)
+                  ? "hover:bg-app-surface-hover hover:text-red-500"
                   : "opacity-50 cursor-not-allowed"
               }`}
             >
@@ -180,13 +279,49 @@ export const ActionBar: React.FC<ActionBarProps> = ({
             <button
               onClick={handleSaveClick}
               disabled={isSaving || slides.length === 0}
-              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-green-500 text-white ${
+              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-text-muted text-white ${
                 !isSaving && slides.length > 0
-                  ? "hover:bg-green-600"
+                  ? "hover:bg-app-surface-hover"
                   : "opacity-50 cursor-not-allowed"
               }`}
             >
               <Save className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
+
+          <Tooltip title="Settings" placement="bottom">
+            <button
+              onClick={() => dispatch(toggleSettings())}
+              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all border border-app-border ${
+                showSettings
+                  ? "bg-app-accent text-white"
+                  : "bg-app-bg text-app-text hover:bg-app-surface-hover"
+              }`}
+            >
+              <Settings className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
+
+          <Tooltip
+            title={isProjectionActive ? "Stop Projection" : "Start Projection"}
+            placement="bottom"
+          >
+            <button
+              onClick={handleProjectionToggle}
+              disabled={!isProjectionActive && slides.length === 0}
+              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all border border-app-border ${
+                isProjectionActive
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : slides.length === 0
+                  ? "bg-app-bg text-app-text opacity-50 cursor-not-allowed"
+                  : "bg-app-bg text-app-text hover:bg-app-surface-hover"
+              }`}
+            >
+              {isProjectionActive ? (
+                <MonitorStop className="w-3.5 h-3.5" />
+              ) : (
+                <Monitor className="w-3.5 h-3.5" />
+              )}
             </button>
           </Tooltip>
 
@@ -250,7 +385,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                       disabled={songRepo.trim() === ""}
                       onClick={() => {
                         dispatch(setSongRepo(""));
-                        localStorage.removeItem("songRepo");
+                        localStorage.removeItem("bmusicsongdir");
                         addToast("Songs directory cleared", "info");
                         setShowFolderDropdown(false);
                       }}
@@ -283,19 +418,56 @@ export const ActionBar: React.FC<ActionBarProps> = ({
             </Tooltip>
 
             {showFontDropdown && (
-              <div className="absolute top-full left-0 mt-1 w-40 bg-app-bg border border-app-border rounded-3xl-md shadow-lg z-50 max-h-64 overflow-y-auto">
-                {fontFamilies.map((font) => (
-                  <button
-                    key={font.value}
-                    onClick={() => {
-                      setSelectedFont(font.name);
-                      setShowFontDropdown(false);
-                    }}
-                    className="w-full text-left px-3 py-2 text-ew-xs text-app-text hover:bg-app-surface-hover transition-colors"
-                  >
-                    {font.name}
-                  </button>
-                ))}
+              <div className="absolute top-full left-0 mt-1 w-56 bg-app-bg border border-app-border rounded-lg shadow-lg z-50 flex flex-col">
+                {/* Search Box */}
+                <div className="p-2 border-b border-app-border">
+                  <input
+                    ref={fontSearchInputRef}
+                    type="text"
+                    value={fontSearchQuery}
+                    onChange={(e) => setFontSearchQuery(e.target.value)}
+                    placeholder="Search fonts..."
+                    className="w-full px-2 py-1 text-ew-xs bg-app-surface text-app-text border border-app-border rounded focus:outline-none focus:ring-1 focus:ring-app-accent"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+
+                {/* Font List - Tall scrollable area */}
+                <div
+                  className="overflow-y-auto no-scrollbar p-3 mb-4"
+                  style={{ maxHeight: "500px" }}
+                >
+                  {filteredFonts.length > 0 ? (
+                    filteredFonts.map((font) => (
+                      <GamyCard
+                        isDarkMode={isDarkMode}
+                        key={font}
+                        className="px-2 py-0.5 mt-1"
+                        transparent={true}
+                        style={{ borderRadius: "7px", border: "none" }}
+                      >
+                        <button
+                          key={font}
+                          onClick={() => {
+                            setSelectedFont(font);
+                            setShowFontDropdown(false);
+                            setFontSearchQuery("");
+                          }}
+                          className={`w-full bg-transparent text-left px-3  text-ew-sm text-app-text hover:bg-app-surface-hover transition-colors ${
+                            selectedFont === font ? "bg-app-surface" : ""
+                          }`}
+                          style={{ fontFamily: font }}
+                        >
+                          {font}
+                        </button>
+                      </GamyCard>
+                    ))
+                  ) : (
+                    <div className="px-3 py-4 text-center text-app-text-muted text-ew-xs">
+                      No fonts found
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -333,9 +505,9 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           searchQuery={searchQuery}
           updateSearchQuery={updateSearchQuery}
           songs={songs}
-          onEdit={goToEdit}
           onPresent={presentSong}
           onDelete={showDeleteConfirmation}
+          onSelectSong={onSelectSongFromSearch}
           isDarkMode={isDarkMode}
         />
 

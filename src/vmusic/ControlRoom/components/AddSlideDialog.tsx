@@ -71,7 +71,10 @@ export const AddSlideDialog: React.FC<AddSlideDialogProps> = ({
   };
 
   return (
-    <div className="absolute inset-0 z-40 flex flex-col items-center justify-center p-8">
+    <div
+      className="absolute inset-0 z-40 flex flex-col items-center justify-center p-8"
+      onClick={(e) => e.stopPropagation()}
+    >
       {/* Textarea styled like normal preview */}
       <textarea
         ref={textareaRef}

@@ -34,7 +34,17 @@ interface ElectronAPI {
   maximizeApp: () => void;
   closeApp: () => void;
   selectDirectory: () => Promise<string>;
-  saveSong: (directory: string, title: string, content: string) => void;
+  saveSong: (
+    directory: string,
+    title: string,
+    content: string
+  ) => Promise<{
+    success: boolean;
+    filePath: string;
+    isNewFile: boolean;
+    message: string;
+    sanitizedTitle: string;
+  }>;
   projectSong: (song: any) => void;
   isProjectionActive: () => Promise<boolean>;
   closeProjectionWindow: () => Promise<boolean>;
@@ -138,6 +148,9 @@ interface ElectronAPI {
     error?: string;
   }>;
   onDisplayConfigChanged: (callback: (displays: any[]) => void) => () => void;
+
+  // System Fonts
+  getSystemFonts: () => Promise<string[]>;
 
   // Add other API methods as needed
 }

@@ -45,17 +45,22 @@ export const SlideEditor: React.FC<SlideEditorProps> = ({
   };
 
   return (
-    <div className="absolute inset-0 z-40 flex flex-col items-center justify-center p-8">
+    <div
+      className="absolute inset-0 z-50 flex flex-col items-center justify-center p-2 bg-black/10"
+      onClick={(e) => e.stopPropagation()}
+    >
       {/* Textarea styled like normal preview */}
       <textarea
         ref={textareaRef}
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="w-full max-w-4xl text-white text-center font-sans text-ew-lg leading-relaxed whitespace-pre-wrap bg-transparent border-none outline-none resize-none"
+        className="w-full max-w-5xl text-white text-center font-sans text-2xl leading-relaxed whitespace-pre-wrap bg-transparent border-none outline-none resize-none no-scrollbar"
+        spellCheck={false}
         style={{
           textShadow: "2px 2px 4px rgba(0,0,0,0.8)",
-          minHeight: "300px",
+          fontFamily: "Arial Black",
+          minHeight: "350px",
         }}
         placeholder="Enter slide content..."
       />

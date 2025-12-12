@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ArrowLeftCircle } from "lucide-react";
-import BlessedMusic from "./vmusic/BlessedMusic";
-import ControlRoomLayout from "./vmusic/ControlRoomLayout";
-import EditSong from "./vmusic/EditForm";
+import ControlRoom from "./vmusic/ControlRoom";
 import WorkspaceSelector from "./vmusic/Welcome";
-import CreateSong from "./vmusic/Form";
-import SongPresentation from "./vmusic/PresentationMode";
-import SongCollectionManager from "./vmusic/Categorize/Categorize";
 import UserGuidePage from "./vmusic/Userguide";
 import PresentationBackgroundSelector from "./vmusic/BackgroundChoose";
 import SongPresentationDisplay from "./vmusic/components/SongPresentationDisplay/SongPresentationDisplay";
@@ -90,16 +85,8 @@ const App = () => {
         {/* Main App Content */}
         {currentScreen === "Home" ? (
           <WorkspaceSelector />
-        ) : currentScreen === "create" ? (
-          <CreateSong />
         ) : currentScreen === "Songs" ? (
-          <ControlRoomLayout />
-        ) : currentScreen === "edit" ? (
-          <EditSong />
-        ) : currentScreen === "Presentation" ? (
-          <SongPresentation />
-        ) : currentScreen === "categorize" ? (
-          <SongCollectionManager />
+          <ControlRoom />
         ) : currentScreen === "userguide" ? (
           <UserGuidePage />
         ) : currentScreen === "backgrounds" ? (

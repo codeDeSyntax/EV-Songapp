@@ -7,12 +7,14 @@ interface ContentAreaProps {
   isDarkMode: boolean;
   onSaveSuccess: (message: string) => void;
   onSaveError: (error: string) => void;
-  showTitleDialog: boolean;
-  onShowTitleDialog: (show: boolean) => void;
-  isEditingSlide: boolean;
-  onEditingSlideChange: (editing: boolean) => void;
-  showAddSlideDialog: boolean;
-  onShowAddSlideDialog: (show: boolean) => void;
+  loadSongs: () => void;
+  onRequestDelete: () => void;
+  deleteSlideRequested: boolean;
+  onDeleteSlideComplete: () => void;
+  addToast: (
+    message: string,
+    type: "success" | "error" | "warning" | "info"
+  ) => void;
 }
 
 export const ContentArea: React.FC<ContentAreaProps> = ({
@@ -20,25 +22,23 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
   isDarkMode,
   onSaveSuccess,
   onSaveError,
-  showTitleDialog,
-  onShowTitleDialog,
-  isEditingSlide,
-  onEditingSlideChange,
-  showAddSlideDialog,
-  onShowAddSlideDialog,
+  loadSongs,
+  onRequestDelete,
+  deleteSlideRequested,
+  onDeleteSlideComplete,
+  addToast,
 }) => {
   return (
-    <div className="h-[88vh] w-full bg-app-bg">
+    <div className="h-[90vh] w-full bg-app-bg">
       <BentoGrid
         isDarkMode={isDarkMode}
         onSaveSuccess={onSaveSuccess}
         onSaveError={onSaveError}
-        showTitleDialog={showTitleDialog}
-        onShowTitleDialog={onShowTitleDialog}
-        isEditingSlide={isEditingSlide}
-        onEditingSlideChange={onEditingSlideChange}
-        showAddSlideDialog={showAddSlideDialog}
-        onShowAddSlideDialog={onShowAddSlideDialog}
+        loadSongs={loadSongs}
+        onRequestDelete={onRequestDelete}
+        deleteSlideRequested={deleteSlideRequested}
+        onDeleteSlideComplete={onDeleteSlideComplete}
+        addToast={addToast}
       />
     </div>
   );

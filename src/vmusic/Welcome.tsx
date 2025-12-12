@@ -226,10 +226,6 @@ const WorkspaceSelector = () => {
     dispatch(setCurrentScreen("Songs"));
   }, [dispatch]);
 
-  const navigateToCreate = useCallback(() => {
-    dispatch(setCurrentScreen("create"));
-  }, [dispatch]);
-
   // Use will-change to optimize GPU rendering
   const willChangeStyle = { willChange: "transform, opacity" };
 

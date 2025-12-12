@@ -21,6 +21,7 @@ export interface SongSlide {
 export interface ParsedSong {
   slides: SongSlide[];
   title?: string;
+  isPrelisted?: boolean;
 }
 
 /**
@@ -31,8 +32,22 @@ export function parseLyrics(rawText: string): ParsedSong {
     return { slides: [] };
   }
 
+  // Check for metadata header
+  let isPrelisted = false;
+  let contentToProcess = rawText;
+
+  const metadataMatch = rawText.match(
+    /^---METADATA---\n(.*?)\n---END-METADATA---\n\n/s
+  );
+  if (metadataMatch) {
+    const metadataContent = metadataMatch[1];
+    isPrelisted = /isPrelisted:\s*true/i.test(metadataContent);
+    // Remove metadata from content to process
+    contentToProcess = rawText.replace(metadataMatch[0], "");
+  }
+
   // Normalize line endings and clean up text
-  const normalizedText = rawText
+  const normalizedText = contentToProcess
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
     .trim();
@@ -112,7 +127,7 @@ export function parseLyrics(rawText: string): ParsedSong {
     });
   }
 
-  return { slides };
+  return { slides, isPrelisted };
 }
 
 /**

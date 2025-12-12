@@ -3,7 +3,7 @@ import ReactDOM from "react-dom/client";
 import { Provider } from "react-redux";
 import { store } from "./store";
 import { ThemeProvider } from "./Provider/Theme";
-import SongPresentation from "./vmusic/PresentationMode";
+import SongPresentationDisplay from "./vmusic/components/SongPresentationDisplay/SongPresentationDisplay";
 import { DisplayInfo } from "./types/electron-api";
 import { setCurrentScreen } from "./store/slices/appSlice";
 import { Plus, Minus, Type } from "lucide-react";
@@ -275,7 +275,7 @@ const ProjectorContent: React.FC = () => {
   return (
     <div className="relative h-screen">
       <FontControls />
-      <SongPresentation />
+      <SongPresentationDisplay />
     </div>
   );
 };

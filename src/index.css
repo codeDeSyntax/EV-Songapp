@@ -6,14 +6,14 @@
 
 /* CSS Variables for Theme - Automatically switch with dark mode */
 :root {
-  /* Light mode colors (default) */
-  --app-bg: #ffffff;
-  --app-surface: #f3f4f6;
-  --app-surface-hover: #f9f9f9;
-  --app-border: #e5e5e5;
-  --app-text: #171717;
-  --app-text-muted: #737373;
-  --app-accent: #d4d4d4;
+  /* Light mode colors (default) - Creamy theme */
+  --app-bg: #faeed1;
+  --app-surface: #f5e1b9;
+  --app-surface-hover: #f8ead0;
+  --app-border: #d4c4a8;
+  --app-text: #292524;
+  --app-text-muted: #9a674a;
+  --app-accent: #e8d9ba;
 }
 
 .dark {
@@ -59,7 +59,6 @@ div {
 .bod {
   border-width: 10px;
 }
-
 
 .dottedb {
   background: radial-gradient(

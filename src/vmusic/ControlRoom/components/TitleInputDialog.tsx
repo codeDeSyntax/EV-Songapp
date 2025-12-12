@@ -61,6 +61,7 @@ export const TitleInputDialog: React.FC<TitleInputDialogProps> = ({
             placeholder="Song title..."
             className="flex-1 h-8 px-3 text-sm bg-transparent border-none border-app-border/30 rounded text-app-text placeholder-app-text-muted focus:outline-none focus:border-app-surface-hover transition-colors"
             maxLength={100}
+            spellCheck={false}
           />
 
           <GamyCard isDarkMode={isDarkMode} className="rounded-full py-1">

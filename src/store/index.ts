@@ -3,6 +3,7 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 import appSlice, { AppState } from "./slices/appSlice";
 import songSlice from "./slices/songSlice";
 import songSlidesSlice from "./slices/songSlidesSlice";
+import uiSlice from "./slices/uiSlice";
 
 /**
  * Redux store configuration optimized for large song collections.
@@ -15,6 +16,7 @@ export const store = configureStore({
     songs: songSlice,
     app: appSlice,
     songSlides: songSlidesSlice,
+    ui: uiSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

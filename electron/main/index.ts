@@ -35,6 +35,8 @@ import {
   getSongPresentationWindow,
   getIsProjectionActive,
 } from "./projection";
+// Import font utilities
+import { getSystemFonts } from "./fontUtils";
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -459,6 +461,11 @@ ipcMain.handle("select-directory", async () => {
   return result.canceled ? null : result.filePaths[0];
 });
 
+// Get system fonts
+ipcMain.handle("get-system-fonts", async () => {
+  return await getSystemFonts();
+});
+
 // Handle saving a song as a text file
 ipcMain.handle("save-song", async (event, { directory, title, content }) => {
   try {
@@ -478,6 +485,20 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
     if (title.trim().length === 0) {
       const errorMsg = "Song title cannot be empty.";
       logSongError("Empty song title provided", { title });
+      throw new Error(errorMsg);
+    }
+
+    // Sanitize filename - remove invalid characters and extra spaces
+    const sanitizedTitle = title
+      .trim()
+      .replace(/[<>:"/\\|?*]/g, "") // Remove invalid filename characters
+      .replace(/\s+/g, " ") // Replace multiple spaces with single space
+      .replace(/\.+$/g, "") // Remove trailing periods
+      .substring(0, 200); // Limit length to prevent issues
+
+    if (sanitizedTitle.length === 0) {
+      const errorMsg = "Song title contains only invalid characters.";
+      logSongError("Invalid characters in title", { title, sanitizedTitle });
       throw new Error(errorMsg);
     }
 
@@ -502,7 +523,19 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
       throw new Error(errorMsg);
     }
 
-    const filePath = path.join(directory, `${title.trim()}.txt`);
+    const filePath = path.join(directory, `${sanitizedTitle}.txt`);
+
+    // Validate the final file path
+    if (!path.isAbsolute(filePath) || filePath.includes("..")) {
+      const errorMsg = "Invalid file path generated.";
+      logSongError("Path validation failed", {
+        filePath,
+        directory,
+        sanitizedTitle,
+      });
+      throw new Error(errorMsg);
+    }
+
     const fileExists = fs.existsSync(filePath);
 
     // Write the file (create new or overwrite existing)
@@ -513,8 +546,9 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
       filePath,
       isNewFile: !fileExists,
       message: fileExists
-        ? `Song "${title}" has been successfully updated.`
-        : `Song "${title}" has been successfully created.`,
+        ? `Song "${sanitizedTitle}" has been successfully updated.`
+        : `Song "${sanitizedTitle}" has been successfully created.`,
+      sanitizedTitle, // Return the sanitized title so UI can update if needed
     };
 
     // Log successful operation
@@ -523,7 +557,8 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
         ? "Song updated successfully"
         : "New song created successfully",
       {
-        title,
+        originalTitle: title,
+        sanitizedTitle,
         filePath,
         contentLength: content.length,
         directory,
@@ -549,7 +584,7 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
       const code = (error as any).code;
       if (code === "ENOENT") {
         throw new Error(
-          "The file path is invalid or the directory no longer exists."
+          "The file path is invalid or the directory no longer exists. Please ensure the directory exists and the song title doesn't contain invalid characters."
         );
       } else if (code === "EACCES" || code === "EPERM") {
         throw new Error(
@@ -580,12 +615,23 @@ ipcMain.handle("fetch-songs", async (event, directory) => {
           const fileStats = fs.statSync(filePath);
           const content = fs.readFileSync(filePath, "utf8");
 
+          // Check for isPrelisted in metadata
+          let isPrelisted = false;
+          const metadataMatch = content.match(
+            /^---METADATA---\n(.*?)\n---END-METADATA---\n\n/s
+          );
+          if (metadataMatch) {
+            const metadataContent = metadataMatch[1];
+            isPrelisted = /isPrelisted:\s*true/i.test(metadataContent);
+          }
+
           return {
             id: `bmusic${index + 1}`,
             title: path.basename(file, ".txt"),
             path: filePath,
             content,
             dateModified: fileStats.mtime.toISOString(),
+            isPrelisted,
           };
         })
     );

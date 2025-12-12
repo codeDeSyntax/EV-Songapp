@@ -40,17 +40,15 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
     dispatch(setCurrentSlide(slideId));
   };
   return (
-    <GamyCard
-      isDarkMode={isDarkMode}
-      blackBackground={true}
-      className="h-full flex flex-col bg-app-surface"
+    <div
+      className="h-full flex flex-col rounded-md  px-0 py-0"
       style={{
         border: "none",
         boxShadow: "none",
       }}
     >
       {/* Header */}
-      <div className="p-3 border-b border-app-border flex items-center justify-between flex-shrink-0">
+      <div className="p-3 bg-app-surface border-b border-app-border flex items-center justify-between flex-shrink-0">
         <span className="text-ew-sm font-medium text-app-text">
           Song Slides
         </span>
@@ -60,10 +58,17 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
       </div>
 
       {/* Slides List */}
-      <div className="flex-1 overflow-y-auto no-scrollbar p-2 space-y-2">
+      <div className="flex-1 p-2 bg-app-surface overflow-y-auto no-scrollbar min-h-full space-y-2 ">
         {slides.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-4">
-            <p className="text-ew-sm text-app-text-muted">No slides yet</p>
+          <div className="flex flex-col items-center justify-center h-full gp text-center px-4">
+            <img
+              src="./no_slides.svg"
+              alt="No slides"
+              className="w-24 h-24 mb-4 opacity-50"
+            />
+            <p className="text-ew-sm font-medium text-app-text-muted">
+              No slides yet
+            </p>
             <p className="text-ew-xs text-app-text-muted mt-2">
               Paste lyrics in the preview panel to create slides
             </p>
@@ -77,12 +82,15 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
             >
               <GamyCard
                 isDarkMode={isDarkMode}
-                className={`overflow-hidden w-[90%]  m-auto transition-all hover:scale-[1.02] h-24 px-0 py-0 ${
-                  currentSlideId === slide.id ? "ring-2 ring-app-blue" : ""
+                className={`overflow-hidden w-[90%] rounded-2xl  m-auto transition-all hover:scale-[1.02] h-24 px-0 py-0 ${
+                  currentSlideId === slide.id ? "ring-2 ring-app-text-muted" : ""
                 }`}
+                style={{
+                  borderRadius: "20px",
+                }}
               >
                 <div
-                  className="h-full relative bg-cover bg-center bg-no-repeat"
+                  className="h-full relative bg-cover bg-center bg-no-repeat px-2"
                   style={{
                     backgroundImage: selectedBgSrc
                       ? `url(${selectedBgSrc})`
@@ -115,7 +123,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
                     {/* Slide Content Preview - Vertical Text */}
                     <div className="flex-1 overflow-hidden flex items-center justify-center">
                       <pre
-                        className="text-[12px] text-white leading-tight whitespace-pre-wrap line-clamp-4 font-sans text-center"
+                        className="text-[12px] text-app-accent dark:text-white leading-tight whitespace-pre-wrap line-clamp-4 font-sans text-center"
                         style={{
                           textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
                         }}
@@ -130,6 +138,6 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
           ))
         )}
       </div>
-    </GamyCard>
+    </div>
   );
 };

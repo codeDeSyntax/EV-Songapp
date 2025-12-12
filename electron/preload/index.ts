@@ -467,6 +467,7 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.send("closeApp");
   },
   selectDirectory: () => ipcRenderer.invoke("select-directory"),
+  getSystemFonts: () => ipcRenderer.invoke("get-system-fonts"),
   saveSong: (directory: string, title: string, content: string) =>
     ipcRenderer.invoke("save-song", { directory, title, content }),
   editSong: (songData: any) => ipcRenderer.invoke("edit-song", songData),

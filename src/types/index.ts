@@ -7,6 +7,7 @@ export interface Song {
   message?: string;
   categories: string[];
   dateModified: string;
+  isPrelisted?: boolean;
 }
 
 export interface EditSong {

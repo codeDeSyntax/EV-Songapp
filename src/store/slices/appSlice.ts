@@ -3,10 +3,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 export type CurrentScreen =
   | "Home"
   | "Songs"
-  | "create"
   | "edit"
-  | "Presentation"
-  | "categorize"
   | "userguide"
   | "backgrounds"
   | "ControlRoom";
@@ -26,8 +23,7 @@ export interface AppState {
 }
 
 const initialState: AppState = {
-  currentScreen:
-    (localStorage.getItem("lastScreen") as CurrentScreen) || "Home",
+  currentScreen: "Home",
   theme: (localStorage.getItem("theme") as Theme) || "creamy",
   presentationbgs: [],
   bibleBgs: [], // Initialize as empty since we'll only use custom images
@@ -44,7 +40,6 @@ const appSlice = createSlice({
   reducers: {
     setCurrentScreen: (state, action: PayloadAction<CurrentScreen>) => {
       state.currentScreen = action.payload;
-      localStorage.setItem("lastScreen", action.payload);
     },
     setTheme: (state, action: PayloadAction<Theme>) => {
       state.theme = action.payload;

@@ -160,6 +160,32 @@ const songSlice = createSlice({
         localStorage.setItem("favorites", JSON.stringify(state.favorites));
       }
     },
+    togglePrelist: (state, action: PayloadAction<Song>) => {
+      const song = action.payload;
+      const songIndex = state.songs.findIndex((s) => s.id === song.id);
+
+      if (songIndex !== -1) {
+        const updatedSong = {
+          ...state.songs[songIndex],
+          isPrelisted: !state.songs[songIndex].isPrelisted,
+        };
+        state.songs[songIndex] = Object.freeze(updatedSong);
+
+        // Update in filtered songs
+        const filteredIndex = state.filteredSongs.findIndex(
+          (s) => s.id === song.id
+        );
+        if (filteredIndex !== -1) {
+          state.filteredSongs[filteredIndex] = Object.freeze(updatedSong);
+        }
+
+        // Update selected song if it matches
+        if (state.selectedSong?.id === song.id) {
+          state.selectedSong = updatedSong;
+          localStorage.setItem("selectedSong", JSON.stringify(updatedSong));
+        }
+      }
+    },
   },
 });
 
@@ -178,6 +204,7 @@ export const {
   deleteSongFromState,
   clearSearch,
   updateSong,
+  togglePrelist,
 } = songSlice.actions;
 
 export default songSlice.reducer;

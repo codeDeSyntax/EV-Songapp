@@ -7,6 +7,22 @@ import React, {
 } from "react";
 import { ChevronLeft, ChevronRight, Plus, Minus } from "lucide-react";
 
+interface Slide {
+  content: string;
+  type: string;
+  number?: number;
+}
+
+interface SlideUpdateData {
+  type: string;
+  slide: Slide;
+  songTitle: string;
+  currentIndex: number;
+  totalSlides: number;
+  backgroundColor?: string;
+}
+
+// Legacy interface for p-tag parsing (backward compatibility)
 interface SongSection {
   type: string;
   content: string[];
@@ -17,6 +33,7 @@ interface SongSection {
 interface SongData {
   title: string;
   content: string;
+  slides?: Slide[];
 }
 
 interface SongPresentationDisplayProps {
@@ -34,7 +51,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
   }, []);
 
   // State management
-  const [songSections, setSongSections] = useState<SongSection[]>([]);
+  const [slides, setSlides] = useState<Slide[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [songTitle, setSongTitle] = useState("");
   const [fontSizeMultiplier, setFontSizeMultiplier] = useState(1.0);
@@ -263,9 +280,22 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
 
       try {
         setSongTitle(songData.title || "Untitled Song");
-        const sections = parseSongContent(songData.content);
-        const sequence = createDisplaySequence(sections);
-        setSongSections(sequence);
+
+        // Check if we have slides array (new format) or need to parse content (legacy)
+        if (songData.slides && Array.isArray(songData.slides)) {
+          setSlides(songData.slides);
+        } else {
+          // Legacy: parse p-tag based content
+          const sections = parseSongContent(songData.content);
+          const sequence = createDisplaySequence(sections);
+          // Convert old sections to new slide format
+          const convertedSlides = sequence.map((section) => ({
+            content: section.content.join("\n"),
+            type: section.type,
+            number: section.number,
+          }));
+          setSlides(convertedSlides);
+        }
         setCurrentIndex(0);
       } catch (error) {
         console.error("Error handling song data:", error);
@@ -274,29 +304,38 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
     [parseSongContent, createDisplaySequence]
   );
 
+  // Get current slide
+  const currentSlide = slides[currentIndex];
+
+  // Split slide content into lines for rendering
+  const contentLines = useMemo(() => {
+    if (!currentSlide?.content) return [];
+    return currentSlide.content.split("\n").filter((line) => line.trim());
+  }, [currentSlide]);
+
   // Enhanced font control functions with improved overflow prevention
   const increaseFontSize = useCallback(() => {
     if (fontSizeMultiplier < 8.0) {
       const newMultiplier = Math.min(6.0, fontSizeMultiplier + 0.01); // Exactly 1% increments
 
       // Test if the new multiplier would cause overflow before applying
-      const currentSection = songSections[currentIndex];
-      if (contentRef.current && currentSection) {
+      const slideToTest = slides[currentIndex];
+      if (contentRef.current && currentSlide && contentLines.length > 0) {
         const currentLineHeight =
-          currentSection.content.length === 1
+          contentLines.length === 1
             ? 1.0
-            : currentSection.content.length === 2
+            : contentLines.length === 2
             ? 1.4
-            : currentSection.content.length === 3
+            : contentLines.length === 3
             ? 1.35
-            : currentSection.content.length === 4
+            : contentLines.length === 4
             ? 1.3
-            : currentSection.content.length <= 6
+            : contentLines.length <= 6
             ? 1.25
             : 1.2;
 
         // Calculate current font size using line-based approach only
-        const lineCount = currentSection.content.length;
+        const lineCount = contentLines.length;
         let baseTestSize;
         if (lineCount === 1) {
           baseTestSize = baseFontSize * 2.5;
@@ -342,17 +381,17 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
 
         // Dynamic line spacing based on content (with increased spacing for ≤6 lines)
         const lineSpacing =
-          currentSection.content.length === 1
+          contentLines.length === 1
             ? 0
-            : currentSection.content.length === 2
+            : contentLines.length === 2
             ? 0.08 // Increased for better readability
-            : currentSection.content.length <= 4
+            : contentLines.length <= 4
             ? 0.12 // Increased for better readability
-            : currentSection.content.length <= 6
+            : contentLines.length <= 6
             ? 0.15 // Increased for better readability
             : 0.15; // Keep consistent for many lines
 
-        currentSection.content.forEach((line, index) => {
+        contentLines.forEach((line: string, index: number) => {
           const p = document.createElement("p");
           p.textContent = line.trim() || " ";
           p.style.margin = "0";
@@ -362,7 +401,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
           p.style.whiteSpace = "normal";
           p.style.wordWrap = "break-word";
 
-          if (index < currentSection.content.length - 1) {
+          if (index < contentLines.length - 1) {
             p.style.marginBottom = Math.floor(testSize * lineSpacing) + "px";
           }
           temp.appendChild(p);
@@ -418,7 +457,8 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
   }, [
     fontSizeMultiplier,
     currentIndex,
-    songSections,
+    slides,
+    contentLines,
     fontFamily,
     baseFontSize,
   ]);
@@ -433,10 +473,10 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
 
   // Navigation functions
   const goToNext = useCallback(() => {
-    if (currentIndex < songSections.length - 1) {
+    if (currentIndex < slides.length - 1) {
       setCurrentIndex(currentIndex + 1);
     }
-  }, [currentIndex, songSections.length]);
+  }, [currentIndex, slides.length]);
 
   const goToPrevious = useCallback(() => {
     if (currentIndex > 0) {
@@ -446,11 +486,11 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
 
   const goToSection = useCallback(
     (index: number) => {
-      if (index >= 0 && index < songSections.length) {
+      if (index >= 0 && index < slides.length) {
         setCurrentIndex(index);
       }
     },
-    [songSections.length]
+    [slides.length]
   );
 
   // Keyboard navigation
@@ -486,7 +526,46 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [goToNext, goToPrevious, increaseFontSize, decreaseFontSize]);
 
-  // Listen for song data from Electron
+  // Listen for slide updates from the new system
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.api?.onSongProjectionUpdate) {
+      const cleanup = window.api.onSongProjectionUpdate((data: any) => {
+        console.log("📥 Projection received slide update:", data);
+
+        if (data.type === "SLIDE_UPDATE") {
+          const slideData = data as SlideUpdateData;
+          setSongTitle(slideData.songTitle);
+          setCurrentIndex(slideData.currentIndex);
+
+          // Update background if provided
+          if (slideData.backgroundColor) {
+            setBackgroundImage(slideData.backgroundColor);
+          }
+
+          // If this is the first slide or we don't have slides yet, set all slides
+          if (data.slides) {
+            setSlides(data.slides);
+          } else if (slideData.slide) {
+            // Single slide update - update the specific slide in array
+            setSlides((prev) => {
+              const newSlides = [...prev];
+              if (newSlides[slideData.currentIndex]) {
+                newSlides[slideData.currentIndex] = slideData.slide;
+              } else {
+                // If we don't have enough slides, just add this one
+                newSlides[slideData.currentIndex] = slideData.slide;
+              }
+              return newSlides;
+            });
+          }
+        }
+      });
+
+      return cleanup;
+    }
+  }, []);
+
+  // Listen for song data from Electron (legacy support)
   useEffect(() => {
     if (typeof window !== "undefined" && window.api?.onDisplaySong) {
       window.api.onDisplaySong(handleSongData);
@@ -521,38 +600,35 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
   const jumpToSection = (sectionType: string, sectionNumber?: number) => {
     console.log("🎯 Jumping to section:", { sectionType, sectionNumber });
     console.log(
-      "📋 Available sections:",
-      songSections.map(
-        (s, i) => `${i}: ${s.type}${s.number ? ` ${s.number}` : ""}`
-      )
+      "📋 Available slides:",
+      slides.map((s, i) => `${i}: ${s.type}${s.number ? ` ${s.number}` : ""}`)
     );
 
     let targetIndex = -1;
 
     if (sectionType.toLowerCase() === "chorus") {
       // Find first chorus
-      targetIndex = songSections.findIndex(
-        (section) =>
-          section.type.toLowerCase() === "chorus" ||
-          section.type.toLowerCase().includes("chorus") ||
-          section.type.toLowerCase().includes("refrain")
+      targetIndex = slides.findIndex(
+        (slide) =>
+          slide.type.toLowerCase() === "chorus" ||
+          slide.type.toLowerCase().includes("chorus") ||
+          slide.type.toLowerCase().includes("refrain")
       );
     } else if (sectionType.toLowerCase() === "verse" && sectionNumber) {
       // Find specific verse number
-      targetIndex = songSections.findIndex(
-        (section) =>
-          section.type.toLowerCase() === "verse" &&
-          section.number === sectionNumber
+      targetIndex = slides.findIndex(
+        (slide) =>
+          slide.type.toLowerCase() === "verse" && slide.number === sectionNumber
       );
     }
 
     if (targetIndex !== -1) {
-      console.log("✅ Found section at index:", targetIndex, "- jumping to it");
+      console.log("✅ Found slide at index:", targetIndex, "- jumping to it");
       setCurrentIndex(targetIndex);
     } else {
-      console.log("❌ Section not found:", { sectionType, sectionNumber });
-      console.log("💡 Available section types:", [
-        ...new Set(songSections.map((s) => s.type.toLowerCase())),
+      console.log("❌ Slide not found:", { sectionType, sectionNumber });
+      console.log("💡 Available slide types:", [
+        ...new Set(slides.map((s) => s.type.toLowerCase())),
       ]);
     }
   };
@@ -573,7 +649,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
 
       return cleanup;
     }
-  }, [goToNext, goToPrevious, songSections]);
+  }, [goToNext, goToPrevious, slides]);
 
   // Listen for font size updates from main window
   useEffect(() => {
@@ -597,7 +673,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
     if (
       typeof window !== "undefined" &&
       window.api?.sendToMainWindow &&
-      songSections.length > 0
+      slides.length > 0
     ) {
       window.api
         .sendToMainWindow({
@@ -605,9 +681,9 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
           data: {
             type: "PAGE_CHANGE",
             currentPage: currentIndex,
-            totalPages: songSections.length,
-            currentSection: songSections[currentIndex]?.type || "Unknown",
-            sectionNumber: songSections[currentIndex]?.number || null,
+            totalPages: slides.length,
+            currentSection: slides[currentIndex]?.type || "Unknown",
+            sectionNumber: slides[currentIndex]?.number || null,
           },
         })
         .catch((error) => {
@@ -617,38 +693,36 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
           );
         });
     }
-  }, [currentIndex, songSections]);
-
-  const currentSection = songSections[currentIndex];
+  }, [currentIndex, slides]);
 
   // Calculate dynamic line height for better space utilization - tighter spacing overall
-  const dynamicLineHeight = currentSection
-    ? currentSection.content.length === 1
+  const dynamicLineHeight = currentSlide
+    ? contentLines.length === 1
       ? 1.0 // Single line - no spacing needed
-      : currentSection.content.length === 2
+      : contentLines.length === 2
       ? 1.1 // Two lines - minimal spacing for better screen usage
-      : currentSection.content.length === 3
+      : contentLines.length === 3
       ? 1.15 // Three lines - slight spacing
-      : currentSection.content.length === 4
+      : contentLines.length === 4
       ? 1.6 // Four lines - comfortable spacing
-      : currentSection.content.length === 5
+      : contentLines.length === 5
       ? 1.5 // Up to 5 lines - standard spacing
-      : currentSection.content.length === 6
+      : contentLines.length === 6
       ? 1.4 // Up to 6 lines - standard spacing
-      : currentSection.content.length === 7
+      : contentLines.length === 7
       ? 1.25 // Up to 7 lines - slightly tighter
-      : currentSection.content.length === 8
+      : contentLines.length === 8
       ? 1.4 // Up to 8 lines - tighter spacing
       : 1.15 // Many lines - tighter spacing for better fit
     : 1.3;
 
   // Line-based font size calculation - simple approach based on number of lines
   const lineBasedFontSize = useMemo(() => {
-    if (!currentSection?.content?.length) {
+    if (!contentLines.length) {
       return baseFontSize;
     }
 
-    const lineCount = currentSection.content.length + 2;
+    const lineCount = contentLines.length + 2;
 
     // Base font size calculation - aggressive sizing for better space utilization
     // With tighter line spacing, we can use even larger fonts for fewer lines
@@ -710,7 +784,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
 
     return finalSize;
   }, [
-    currentSection,
+    contentLines,
     baseFontSize,
     fontSizeMultiplier,
     contentRef.current,
@@ -723,19 +797,19 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
   const optimalFontSize = useMemo(() => {
     console.log("🚨 OPTIMAL FONT SIZE FUNCTION CALLED!");
 
-    if (!currentSection?.content?.length) {
-      console.log("❌ No current section content, returning base font size");
+    if (!contentLines.length) {
+      console.log("❌ No content lines, returning base font size");
       return baseFontSize;
     }
 
     // Start with line-based font size
     let finalSize = lineBasedFontSize;
     console.log(
-      `🎯 OPTIMAL FONT SIZE: Starting with line-based: ${finalSize}px for ${currentSection.content.length} lines`
+      `🎯 OPTIMAL FONT SIZE: Starting with line-based: ${finalSize}px for ${contentLines.length} lines`
     );
 
     // ALWAYS apply overflow protection - don't let fonts get huge
-    if (contentRef.current && currentSection) {
+    if (contentRef.current && contentLines.length > 0) {
       const containerHeight =
         contentRef.current.clientHeight || window.innerHeight;
       const containerWidth =
@@ -773,7 +847,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
           document.body.appendChild(testElement);
 
           // Add content
-          currentSection.content.forEach((line, index) => {
+          contentLines.forEach((line: string, index: number) => {
             const lineDiv = document.createElement("div");
             lineDiv.textContent = line.trim() || " ";
             lineDiv.style.cssText = "margin: 0; padding: 0;";
@@ -784,12 +858,12 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
           document.body.removeChild(testElement);
 
           console.log(`🔍 DETAILED MEASUREMENT:
-            - Lines: ${currentSection.content.length}
+            - Lines: ${contentLines.length}
             - Font size: ${finalSize}px  
             - Container: ${containerHeight}px height
             - Actual content: ${actualHeight}px height
-            - Line content: ${currentSection.content
-              .map((l) => `"${l}"`)
+            - Line content: ${contentLines
+              .map((l: string) => `"${l}"`)
               .join(", ")}`);
 
           const maxAllowedHeight = containerHeight * 0.95; // Use 95% of screen
@@ -864,7 +938,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
     return result; // Minimum 20px font size
   }, [
     lineBasedFontSize,
-    currentSection,
+    contentLines,
     contentRef.current,
     fontFamily,
     dynamicLineHeight,
@@ -877,7 +951,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
 
   // Track when font calculation is complete to show content immediately
   useEffect(() => {
-    if (optimalFontSize && currentSection) {
+    if (optimalFontSize && currentSlide) {
       const timer = setTimeout(() => {
         setIsFontCalculated(true);
       }, 10); // Minimal delay to ensure calculation is complete
@@ -886,20 +960,21 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
     } else {
       setIsFontCalculated(false);
     }
-  }, [optimalFontSize, currentSection]);
+  }, [optimalFontSize, currentSlide]);
 
   // Calculate dynamic line spacing based on content length (with increased spacing for ≤6 lines)
-  const dynamicLineSpacing = currentSection
-    ? currentSection.content.length === 1
-      ? 0
-      : currentSection.content.length === 2
-      ? 0.08 // Increased for better readability
-      : currentSection.content.length <= 4
-      ? 0.12 // Increased for better readability
-      : currentSection.content.length <= 6
-      ? 0.15 // Increased for better readability
-      : 0.15 // Keep consistent for many lines
-    : 0.15;
+  const dynamicLineSpacing =
+    contentLines.length > 0
+      ? contentLines.length === 1
+        ? 0
+        : contentLines.length === 2
+        ? 0.08 // Increased for better readability
+        : contentLines.length <= 4
+        ? 0.12 // Increased for better readability
+        : contentLines.length <= 6
+        ? 0.15 // Increased for better readability
+        : 0.15 // Keep consistent for many lines
+      : 0.15;
 
   // REMOVED: Real-time overflow protection to prevent visible resizing
   // Font sizing is now pre-calculated to be correct from the start
@@ -1088,7 +1163,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
             }}
           >
             {/* Content with Enhanced Animations */}
-            {currentSection ? (
+            {currentSlide ? (
               <div
                 className="content-container relative"
                 style={{
@@ -1102,11 +1177,10 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
                 {/* Content Background Blur Effect */}
                 <div className="absolute inset-0 -m-8  rounded-3xl border border-white/10" />
 
-                {currentSection.content.map((line, index) => {
+                {contentLines.map((line, index) => {
                   // ABSOLUTE MINIMAL spacing - match algorithm exactly
                   const marginBottom =
-                    index < currentSection.content.length - 1 &&
-                    currentSection.content.length > 1
+                    index < contentLines.length - 1 && contentLines.length > 1
                       ? "1px" // Exactly match the 1px from algorithm
                       : "0px";
 
@@ -1172,30 +1246,29 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
         <div className="bg-black/40 backdrop-blur-sm rounded-lg border border-white/10 p-2 shadow-lg">
           <div className="flex items-center space-x-2">
             {/* Section Indicator (Compact) */}
-            {currentSection && (
+            {currentSlide && (
               <div className="bg-black/50 rounded-md px-2 py-1 border border-white/10">
                 <div className="flex items-center space-x-1">
                   <div className="w-1 h-1 bg-blue-400 rounded-full" />
                   <span className="text-white text-xs font-medium">
-                    {currentSection.type}
-                    {currentSection.number && ` ${currentSection.number}`}
-                    {currentSection.isRepeating && " (R)"}
+                    {currentSlide.type}
+                    {currentSlide.number && ` ${currentSlide.number}`}
                   </span>
                 </div>
               </div>
             )}
 
             {/* Navigation Progress (Compact) */}
-            {songSections.length > 0 && (
+            {slides.length > 0 && (
               <div className="bg-black/50 rounded-md px-2 py-1 border border-white/10">
                 <div className="flex items-center space-x-1">
                   <span className="text-white text-xs font-mono">
-                    {currentIndex + 1}/{songSections.length}
+                    {currentIndex + 1}/{slides.length}
                   </span>
                   {/* Mini progress dots */}
                   <div className="flex space-x-0.5 ml-1">
-                    {songSections
-                      .slice(0, Math.min(5, songSections.length))
+                    {slides
+                      .slice(0, Math.min(5, slides.length))
                       .map((_, index) => (
                         <div
                           key={index}
@@ -1206,7 +1279,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
                           }`}
                         />
                       ))}
-                    {songSections.length > 5 && (
+                    {slides.length > 5 && (
                       <span className="text-white/50 text-xs ml-0.5">…</span>
                     )}
                   </div>
@@ -1240,7 +1313,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
             </div>
 
             {/* Navigation Arrows (Compact) */}
-            {songSections.length > 0 && (
+            {slides.length > 0 && (
               <div className="bg-black/50 rounded-md border border-white/10">
                 <div className="flex items-center">
                   <button
@@ -1251,20 +1324,20 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
                         ? "text-gray-500 cursor-not-allowed"
                         : "text-blue-300 hover:text-blue-100 hover:bg-blue-500/20"
                     }`}
-                    aria-label="Previous section"
+                    aria-label="Previous slide"
                   >
                     <ChevronLeft size={12} />
                   </button>
 
                   <button
                     onClick={goToNext}
-                    disabled={currentIndex === songSections.length - 1}
+                    disabled={currentIndex === slides.length - 1}
                     className={`p-1 rounded-r-md transition-all duration-200 hover:scale-110 active:scale-90 ${
-                      currentIndex === songSections.length - 1
+                      currentIndex === slides.length - 1
                         ? "text-gray-500 cursor-not-allowed"
                         : "text-blue-300 hover:text-blue-100 hover:bg-blue-500/20"
                     }`}
-                    aria-label="Next section"
+                    aria-label="Next slide"
                   >
                     <ChevronRight size={12} />
                   </button>

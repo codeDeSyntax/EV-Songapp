@@ -12,7 +12,18 @@ interface Window {
     maximizeApp: () => void;
     closeApp: () => void;
     selectDirectory: () => void;
-    saveSong: (directory: string, title: string, content: string) => void;
+    getSystemFonts: () => Promise<string[]>;
+    saveSong: (
+      directory: string,
+      title: string,
+      content: string
+    ) => Promise<{
+      success: boolean;
+      filePath: string;
+      isNewFile: boolean;
+      message: string;
+      sanitizedTitle: string;
+    }>;
     editSong: (
       directory: string,
       newTitle: string,

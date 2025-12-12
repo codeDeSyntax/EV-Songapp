@@ -14,7 +14,6 @@ import {
   Monitor,
 } from "lucide-react";
 import TitleBar from "../shared/TitleBar";
-import ModernSongEditor from "./ModernSongEditor";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSongOperations } from "@/features/songs/hooks/useSongOperations";
 import { useAppDispatch, useAppSelector } from "@/store";
@@ -342,9 +341,22 @@ export default function CreateSong() {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex-1 bg-[#fdf4d0]/50 backdrop-blur-xl rounded-2xl shadow-xl border-1 border-[#a6795b]/40 overflow-hidden border-dashed"
+              className="flex-1 bg-[#fdf4d0]/50 backdrop-blur-xl rounded-2xl shadow-xl border-1 border-[#a6795b]/40 overflow-hidden border-dashed flex flex-col"
             >
-              <ModernSongEditor formData={formData} setFormData={setFormData} />
+              <div className="p-6 border-b border-[#a6795b]/20 bg-[#fdf4d0]/30">
+                <h3 className="text-lg font-semibold text-[#8b6f47] flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Song Content
+                </h3>
+              </div>
+              <textarea
+                name="message"
+                value={formData.message}
+                onChange={handleInputChange}
+                placeholder="Paste or type your song lyrics here..."
+                className="flex-1 w-full p-6 bg-transparent text-[#5d4e37] placeholder-[#a6795b]/50 resize-none focus:outline-none font-mono text-base leading-relaxed"
+                style={{ fontFamily: "Palatino" }}
+              />
             </motion.div>
           </div>
         </div>

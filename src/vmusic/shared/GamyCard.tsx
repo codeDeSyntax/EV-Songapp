@@ -45,13 +45,13 @@ export const GamyCard: React.FC<GamyCardProps> = ({
                   ? "#000000"
                   : isDarkMode
                   ? "linear-gradient(145deg, #2c2c2c, #1a1a1a)"
-                  : "linear-gradient(145deg, #f3f4f6, #f3f4f6)",
+                  : "linear-gradient(145deg, #f5e6c8, #faeed1)",
               backgroundImage:
                 blackBackground && isDarkMode
                   ? "repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px)"
                   : isDarkMode
                   ? "linear-gradient(145deg, #2c2c2c, #1a1a1a), repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px)"
-                  : "linear-gradient(145deg, #f3f4f6, #f3f4f6), repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(0, 0, 0, 0.02) 20px, rgba(0, 0, 0, 0.02) 21px), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(0, 0, 0, 0.02) 20px, rgba(0, 0, 0, 0.02) 21px)",
+                  : "linear-gradient(145deg, #f5e6c8, #faeed1), repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(154, 103, 74, 0.03) 20px, rgba(154, 103, 74, 0.03) 21px), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(154, 103, 74, 0.03) 20px, rgba(154, 103, 74, 0.03) 21px)",
               boxShadow:
                 blackBackground && isDarkMode
                   ? "inset 2px 2px 4px rgba(0,0,0,0.8), inset -2px -2px 4px rgba(255,255,255,0.03), 0 8px 16px rgba(0,0,0,0.6)"
@@ -63,7 +63,7 @@ export const GamyCard: React.FC<GamyCardProps> = ({
                   ? "#222"
                   : isDarkMode
                   ? "#444"
-                  : "#ccc"
+                  : "#d4c4a8"
               }`,
             }),
         ...style,
@@ -81,7 +81,7 @@ export const GamyCard: React.FC<GamyCardProps> = ({
           </h3>
         </div>
       )}
-      <div className="flex-1 overflow-auto no-scrollbar relative z-10">
+      <div className="flex- overflow-auto no-scrollbar relative z-10">
         {children}
       </div>
     </div>

@@ -3,8 +3,12 @@ import { SongSlide } from "./lyricsParser";
 /**
  * Converts slides back into a formatted text string for saving to .txt files
  * Format: Each slide separated by double newlines, with section labels preserved
+ * Optionally adds metadata header for prelist status
  */
-export const formatSlidesForSave = (slides: SongSlide[]): string => {
+export const formatSlidesForSave = (
+  slides: SongSlide[],
+  isPrelisted?: boolean
+): string => {
   if (slides.length === 0) {
     return "";
   }
@@ -15,8 +19,15 @@ export const formatSlidesForSave = (slides: SongSlide[]): string => {
     return `${label}\n${slide.content}`;
   });
 
-  // Join slides with double newlines
-  return formattedSlides.join("\n\n");
+  // Create the song content
+  let content = formattedSlides.join("\n\n");
+
+  // Add metadata header if isPrelisted is true
+  if (isPrelisted) {
+    content = `---METADATA---\nisPrelisted: true\n---END-METADATA---\n\n${content}`;
+  }
+
+  return content;
 };
 
 /**
