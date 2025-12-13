@@ -9,6 +9,7 @@ interface UIState {
   isEditingSlide: boolean;
   showAddSlideDialog: boolean;
   showTitleDialog: boolean;
+  showPrelistTitleDialog: boolean;
 }
 
 const initialState: UIState = {
@@ -19,6 +20,7 @@ const initialState: UIState = {
   isEditingSlide: false,
   showAddSlideDialog: false,
   showTitleDialog: false,
+  showPrelistTitleDialog: false,
 };
 
 const uiSlice = createSlice({
@@ -50,6 +52,9 @@ const uiSlice = createSlice({
     setShowTitleDialog: (state, action: PayloadAction<boolean>) => {
       state.showTitleDialog = action.payload;
     },
+    setShowPrelistTitleDialog: (state, action: PayloadAction<boolean>) => {
+      state.showPrelistTitleDialog = action.payload;
+    },
   },
 });
 
@@ -60,6 +65,7 @@ export const {
   setIsEditingSlide,
   setShowAddSlideDialog,
   setShowTitleDialog,
+  setShowPrelistTitleDialog,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

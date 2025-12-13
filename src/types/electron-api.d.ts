@@ -34,6 +34,7 @@ interface ElectronAPI {
   maximizeApp: () => void;
   closeApp: () => void;
   selectDirectory: () => Promise<string>;
+  getDefaultSongsDirectory: () => Promise<string>;
   saveSong: (
     directory: string,
     title: string,

@@ -5,6 +5,7 @@ import { BentoGrid } from "./BentoGrid";
 interface ContentAreaProps {
   filteredSongsCount: number;
   isDarkMode: boolean;
+  toggleDarkMode?: () => void;
   onSaveSuccess: (message: string) => void;
   onSaveError: (error: string) => void;
   loadSongs: () => void;
@@ -20,6 +21,7 @@ interface ContentAreaProps {
 export const ContentArea: React.FC<ContentAreaProps> = ({
   filteredSongsCount,
   isDarkMode,
+  toggleDarkMode,
   onSaveSuccess,
   onSaveError,
   loadSongs,
@@ -32,6 +34,7 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
     <div className="h-[90vh] w-full bg-app-bg">
       <BentoGrid
         isDarkMode={isDarkMode}
+        toggleDarkMode={toggleDarkMode}
         onSaveSuccess={onSaveSuccess}
         onSaveError={onSaveError}
         loadSongs={loadSongs}

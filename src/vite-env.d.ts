@@ -138,6 +138,7 @@ interface Window {
       type: string;
       command?: string;
       fontSize?: number;
+      fontFamily?: string;
       data?: any;
     }) => Promise<{ success: boolean; error?: string }>;
     onSongProjectionUpdate: (callback: (data: any) => void) => () => void;

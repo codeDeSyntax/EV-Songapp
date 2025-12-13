@@ -6,7 +6,6 @@ import { SongSlide } from "../utils/lyricsParser";
 interface SlideEditorProps {
   slide: SongSlide;
   isDarkMode: boolean;
-  backgroundImage: string;
   onSave: (id: string, content: string) => void;
   onCancel: () => void;
 }
@@ -14,7 +13,6 @@ interface SlideEditorProps {
 export const SlideEditor: React.FC<SlideEditorProps> = ({
   slide,
   isDarkMode,
-  backgroundImage,
   onSave,
   onCancel,
 }) => {
@@ -46,8 +44,11 @@ export const SlideEditor: React.FC<SlideEditorProps> = ({
 
   return (
     <div
-      className="absolute inset-0 z-50 flex flex-col items-center justify-center p-2 bg-black/10"
+      className="absolute inset-0 z-50 flex flex-col items-center justify-center p-2"
       onClick={(e) => e.stopPropagation()}
+      style={{
+        backgroundColor: isDarkMode ? "#000000" : "#fef3e2",
+      }}
     >
       {/* Textarea styled like normal preview */}
       <textarea
@@ -55,10 +56,10 @@ export const SlideEditor: React.FC<SlideEditorProps> = ({
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="w-full max-w-5xl text-white text-center font-sans text-2xl leading-relaxed whitespace-pre-wrap bg-transparent border-none outline-none resize-none no-scrollbar"
+        className="w-full max-w-5xl text-center font-sans text-2xl leading-relaxed whitespace-pre-wrap bg-transparent border-none outline-none resize-none no-scrollbar"
         spellCheck={false}
         style={{
-          textShadow: "2px 2px 4px rgba(0,0,0,0.8)",
+          color: isDarkMode ? "#ffffff" : "#1f2937",
           fontFamily: "Arial Black",
           minHeight: "350px",
         }}

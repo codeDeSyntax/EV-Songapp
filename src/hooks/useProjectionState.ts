@@ -17,12 +17,21 @@ export const useProjectionState = () => {
     // Listen for projection state changes
     const cleanup = window.api?.onProjectionStateChanged?.(
       (isActive: boolean) => {
-        console.log("🎥 Projection state changed:", isActive);
-        setProjectionState((prev) => ({
-          ...prev,
-          isActive,
-          isVisible: isActive, // Show floating preview when projection is active
-        }));
+        console.log("🎥 🔔 Projection state changed EVENT RECEIVED:", isActive);
+        console.log("🎥 🔔 Previous state was:", projectionState.isActive);
+        setProjectionState((prev) => {
+          console.log(
+            "🎥 🔔 Updating state from",
+            prev.isActive,
+            "to",
+            isActive
+          );
+          return {
+            ...prev,
+            isActive,
+            isVisible: isActive, // Show floating preview when projection is active
+          };
+        });
       }
     );
 
@@ -46,6 +55,7 @@ export const useProjectionState = () => {
     checkInitialState();
 
     return () => {
+      console.log("🎥 Cleaning up projection state listener");
       cleanup?.();
     };
   }, []);

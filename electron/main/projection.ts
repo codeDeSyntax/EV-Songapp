@@ -46,95 +46,7 @@ const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 const preload = path.join(__dirname, "../preload/index.mjs");
 const indexHtml = path.join(RENDERER_DIST, "index.html");
 
-// Windows Display Configuration Functions
-async function setWindowsDisplayMode(
-  mode: "extend" | "duplicate" | "internal" | "external"
-) {
-  try {
-    console.log(`🖥️ Setting Windows display mode to: ${mode}`);
-
-    // Use Windows built-in displayswitch.exe utility (same as Windows + P)
-    let command = "";
-
-    switch (mode) {
-      case "duplicate":
-        command = "displayswitch.exe /clone";
-        break;
-      case "extend":
-        command = "displayswitch.exe /extend";
-        break;
-      case "internal":
-        command = "displayswitch.exe /internal";
-        break;
-      case "external":
-        command = "displayswitch.exe /external";
-        break;
-    }
-
-    if (command) {
-      console.log(`🔧 Executing: ${command}`);
-      await execAsync(command);
-
-      console.log(`✅ Windows display mode set to: ${mode}`);
-
-      // Wait a bit for the display change to take effect
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      return { success: true, mode };
-    }
-
-    return { success: false, error: "Invalid display mode" };
-  } catch (error) {
-    console.error("❌ Error setting Windows display mode:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
-}
-
-// Get current Windows display configuration
-async function getWindowsDisplayMode() {
-  try {
-    // Query current display configuration using PowerShell
-    const psCommand = `
-      $monitors = Get-WmiObject -Class Win32_DesktopMonitor | Where-Object { $_.Availability -eq 3 };
-      $activeCount = ($monitors | Measure-Object).Count;
-      $totalMonitors = (Get-CimInstance -Class Win32_PnPEntity | Where-Object { $_.Name -like '*monitor*' -and $_.Status -eq 'OK' } | Measure-Object).Count;
-      Write-Output "$activeCount|$totalMonitors"
-    `;
-
-    const { stdout } = await execAsync(
-      `powershell.exe -Command "${psCommand}"`
-    );
-    const [active, total] = stdout.trim().split("|").map(Number);
-
-    let mode = "unknown";
-    if (active === 1 && total > 1) {
-      mode = "internal"; // PC screen only
-    } else if (active > 1) {
-      // Need to check if it's duplicate or extend
-      // This is harder to detect programmatically, so we'll assume extend
-      mode = "extend";
-    }
-
-    console.log(
-      `🔍 Detected display mode: ${mode} (${active}/${total} monitors active)`
-    );
-    return {
-      success: true,
-      mode,
-      activeMonitors: active,
-      totalMonitors: total,
-    };
-  } catch (error) {
-    console.error("❌ Error getting Windows display mode:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
-}
+// No Windows display mode switching needed - we detect displays directly
 
 // Helper function to load display preferences
 async function loadDisplayPreferences() {
@@ -239,7 +151,7 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
     console.log("ℹ️ No display preferences found, using auto-detection");
   }
 
-  // Fallback to auto-detection if no preferences or preferred display not available
+  // Auto-detection: Find external (non-internal) display for projection
   if (
     !fs.existsSync(
       path.join(os.homedir(), ".ev-songapp-display-config.json")
@@ -256,115 +168,60 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
     )
   ) {
     if (displays.length > 1) {
-      // Visual Song Book-style display detection - Override Windows main display logic
-      // Priority 1: Use non-internal (external) display for projection, regardless of main display setting
-      let externalDisplay = displays.find((display) => !display.internal);
+      // Strategy: Find non-internal (external) display - works regardless of Windows primary display setting
+      const externalDisplay = displays.find((display) => !display.internal);
 
       if (externalDisplay) {
         presentationDisplay = externalDisplay;
         isExternalDisplay = true;
         console.log(
-          "🎯 Visual Song Book Mode - Using external display for projection (overriding Windows main display):",
+          "🎯 Projection: Using external display (works regardless of Windows primary setting):",
           {
             id: externalDisplay.id,
             bounds: externalDisplay.bounds,
             internal: externalDisplay.internal,
             isPrimary: externalDisplay.id === screen.getPrimaryDisplay().id,
-            windowsMainDisplay: screen.getPrimaryDisplay().id,
           }
         );
 
-        logSongProjection("Visual Song Book mode - External display selected", {
+        logSongProjection("External display detected for projection", {
           displayId: externalDisplay.id,
           isExternal: true,
-          overridingWindowsMain:
-            externalDisplay.id === screen.getPrimaryDisplay().id,
-          windowsMainDisplayId: screen.getPrimaryDisplay().id,
+          isPrimary: externalDisplay.id === screen.getPrimaryDisplay().id,
         });
       } else {
-        // Priority 2: If no external display, use non-primary display
-        const nonPrimaryDisplay = displays.find(
-          (display) => display.id !== screen.getPrimaryDisplay().id
-        );
-
-        if (nonPrimaryDisplay) {
-          presentationDisplay = nonPrimaryDisplay;
-          isExternalDisplay = true;
-          console.log("🎯 Using non-primary display for projection:", {
-            id: nonPrimaryDisplay.id,
-            bounds: nonPrimaryDisplay.bounds,
-            internal: nonPrimaryDisplay.internal,
-          });
-        } else {
-          // Priority 3: Fallback to primary display if only one display
-          console.log(
-            "⚠️ Song Presentation - No external display found, using primary"
-          );
-        }
+        console.log("⚠️ No external display found, using primary display");
       }
     } else {
-      console.log(
-        "⚠️ Song Presentation - Only one display detected, using primary"
-      );
+      console.log("⚠️ Only one display detected, using primary display");
     }
   }
 
-  // **NEW: Implement display mode logic**
-  let windowConfig: Electron.BrowserWindowConstructorOptions = {
+  // Create projection window on detected display
+  const windowConfig: Electron.BrowserWindowConstructorOptions = {
     title: "Song Presentation",
     frame: false,
-    show: true,
+    show: false,
     alwaysOnTop: false,
     skipTaskbar: true,
     resizable: false,
     minimizable: false,
     maximizable: false,
+    x: presentationDisplay.bounds.x,
+    y: presentationDisplay.bounds.y,
+    width: presentationDisplay.bounds.width,
+    height: presentationDisplay.bounds.height,
+    fullscreen: true,
     icon: path.join(process.env.VITE_PUBLIC || "", "evv.png"),
     webPreferences: {
       preload,
       nodeIntegration: false,
       contextIsolation: true,
+      devTools: !!VITE_DEV_SERVER_URL,
     },
   };
 
-  // Configure window based on projection mode
-  if (projectionMode === "duplicate") {
-    // DUPLICATE MODE: Show on primary display only - let OS handle duplication
-    const primaryDisplay = screen.getPrimaryDisplay();
-    windowConfig = {
-      ...windowConfig,
-      x: primaryDisplay.bounds.x,
-      y: primaryDisplay.bounds.y,
-      width: primaryDisplay.bounds.width,
-      height: primaryDisplay.bounds.height,
-      fullscreen: true,
-      show: false, // Don't show immediately
-    };
-    console.log(
-      "🔄 Using DUPLICATE mode - showing on primary display for OS-level duplication"
-    );
-    console.log(
-      "� Note: Use Windows display settings to set monitors to duplicate mode"
-    );
-
-    // Create single window on primary display
-    songPresentationWin = new BrowserWindow(windowConfig);
-  } else {
-    // EXTEND MODE: Show on selected/external display
-    windowConfig = {
-      ...windowConfig,
-      x: isExternalDisplay ? presentationDisplay.bounds.x : undefined,
-      y: isExternalDisplay ? presentationDisplay.bounds.y : undefined,
-      width: isExternalDisplay ? presentationDisplay.bounds.width : 1024,
-      height: isExternalDisplay ? presentationDisplay.bounds.height : 768,
-      fullscreen: isExternalDisplay,
-      show: false, // Don't show immediately, we'll show after loading
-    };
-    console.log("↔️ Using EXTEND mode - showing on selected display");
-
-    // Create single Song presentation window
-    songPresentationWin = new BrowserWindow(windowConfig);
-  }
+  songPresentationWin = new BrowserWindow(windowConfig);
 
   console.log("🪟 Song Presentation Window created with:", {
     x: songPresentationWin.getBounds().x,
@@ -439,12 +296,10 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
       });
       songPresentationWin.setFullScreen(true);
 
-      console.log(
-        `✅ ${projectionMode} mode fullscreen set on primary display`
-      );
-      logSongProjection(`${projectionMode} mode fullscreen configured`, {
+      console.log("✅ Fullscreen configured on target display");
+      logSongProjection("Fullscreen configured", {
         bounds: songPresentationWin.getBounds(),
-        mode: projectionMode,
+        displayId: presentationDisplay.id,
         isFullscreen: songPresentationWin.isFullScreen(),
       });
     }
@@ -455,6 +310,8 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
     songPresentationWin.loadURL(
       `${VITE_DEV_SERVER_URL}/#/song-presentation-display`
     );
+    // Open DevTools in development mode
+    // songPresentationWin.webContents.openDevTools({ mode: "detach" });
   } else {
     songPresentationWin.loadFile(indexHtml, {
       hash: "song-presentation-display",
@@ -805,8 +662,6 @@ export function registerProjectionHandlers() {
   // Send navigation commands to song projection window
   ipcMain.handle("send-to-song-projection", async (event, data) => {
     try {
-      console.log("🎵 Song projection navigation command:", data);
-
       if (!songPresentationWin || songPresentationWin.isDestroyed()) {
         return { success: false, error: "No active song projection window" };
       }
@@ -821,18 +676,6 @@ export function registerProjectionHandlers() {
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }
-  });
-
-  // Windows Display Mode Control (like Windows + P)
-  ipcMain.handle(
-    "set-windows-display-mode",
-    async (event, mode: "extend" | "duplicate" | "internal" | "external") => {
-      return await setWindowsDisplayMode(mode);
-    }
-  );
-
-  ipcMain.handle("get-windows-display-mode", async () => {
-    return await getWindowsDisplayMode();
   });
 
   // Detect display configuration changes

@@ -3,7 +3,7 @@ import { ArrowLeftCircle } from "lucide-react";
 import ControlRoom from "./vmusic/ControlRoom";
 import WorkspaceSelector from "./vmusic/Welcome";
 import UserGuidePage from "./vmusic/Userguide";
-import PresentationBackgroundSelector from "./vmusic/BackgroundChoose";
+// import PresentationBackgroundSelector from "./vmusic/BackgroundChoose";
 import SongPresentationDisplay from "./vmusic/components/SongPresentationDisplay/SongPresentationDisplay";
 import FloatingProjectionPreview from "./components/FloatingProjectionPreview";
 import { useAppSelector, useAppDispatch } from "./store";
@@ -89,8 +89,6 @@ const App = () => {
           <ControlRoom />
         ) : currentScreen === "userguide" ? (
           <UserGuidePage />
-        ) : currentScreen === "backgrounds" ? (
-          <PresentationBackgroundSelector />
         ) : (
           <WorkspaceSelector />
         )}

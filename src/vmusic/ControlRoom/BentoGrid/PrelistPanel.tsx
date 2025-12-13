@@ -22,8 +22,9 @@ export const PrelistPanel: React.FC<PrelistPanelProps> = ({ isDarkMode }) => {
   const [hoveredSong, setHoveredSong] = useState<string | null>(null);
 
   const handleSongClick = (song: Song) => {
-    const parsed = parseLyrics(song.content);
-    dispatch(setSlides(parsed.slides));
+    // Backend now provides decoded slides directly
+    const slides = song.slides || [];
+    dispatch(setSlides(slides));
     // Set the actual saved title (overrides auto-generated title from setSlides)
     dispatch(setSongTitle(song.title));
     // Track which song is currently loaded

@@ -137,7 +137,9 @@ export const useSongOperations = () => {
   const loadSongs = useCallback(async () => {
     try {
       dispatch(setLoading(true));
-      const songsData = (await window.api.fetchSongs(songRepo)) as Song[];
+
+      // Always load from app data directory (empty string triggers default)
+      const songsData = (await window.api.fetchSongs("")) as Song[];
       dispatch(setSongs(songsData));
     } catch (error) {
       // Extract meaningful information from error for better user experience

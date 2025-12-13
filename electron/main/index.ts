@@ -132,7 +132,7 @@ async function createMainWindow() {
       }
     }
 
-    // Position window on the appropriate display
+    //Position window on the appropriate display
     mainWin.setBounds({
       x: controlDisplay.bounds.x + 50, // Slight offset from edge
       y: controlDisplay.bounds.y + 50,
@@ -140,7 +140,7 @@ async function createMainWindow() {
       height: Math.min(900, controlDisplay.bounds.height - 100),
     });
   } catch (error) {
-    console.log("⚠️ Could not apply Visual Song Book positioning:", error);
+    console.log("⚠️ Could not apply positioning:", error);
     // Window will use default positioning
   }
 
@@ -466,15 +466,34 @@ ipcMain.handle("get-system-fonts", async () => {
   return await getSystemFonts();
 });
 
+// Get default songs directory
+ipcMain.handle("get-default-songs-directory", async () => {
+  const songsDir = path.join(app.getPath("userData"), "Songs");
+  // Ensure directory exists
+  if (!fs.existsSync(songsDir)) {
+    fs.mkdirSync(songsDir, { recursive: true });
+  }
+  return songsDir;
+});
+
 // Handle saving a song as a text file
 ipcMain.handle("save-song", async (event, { directory, title, content }) => {
+  // Use app data directory if no directory provided
+  const songsDirectory =
+    directory || path.join(app.getPath("userData"), "Songs");
+
   try {
+    // Ensure songs directory exists
+    if (!fs.existsSync(songsDirectory)) {
+      fs.mkdirSync(songsDirectory, { recursive: true });
+    }
+
     // Validate inputs
-    if (!directory || !title || content === undefined) {
+    if (!title || content === undefined) {
       const errorMsg =
-        "Missing required fields: directory, title, and content are required.";
+        "Missing required fields: title and content are required.";
       logSongError("Song save validation failed", {
-        directory,
+        directory: songsDirectory,
         title,
         hasContent: content !== undefined,
       });
@@ -502,35 +521,27 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
       throw new Error(errorMsg);
     }
 
-    // Check if directory exists
-    if (!fs.existsSync(directory)) {
-      const errorMsg =
-        "The specified directory does not exist. Please select a valid folder.";
-      logSongError("Invalid directory path", { directory });
-      throw new Error(errorMsg);
-    }
-
     // Check directory permissions
     try {
-      fs.accessSync(directory, fs.constants.W_OK);
+      fs.accessSync(songsDirectory, fs.constants.W_OK);
     } catch (permissionError) {
       const errorMsg =
-        "Permission denied. You don't have write access to the selected directory.";
+        "Permission denied. You don't have write access to the songs directory.";
       logSongError("Directory permission denied", {
-        directory,
+        directory: songsDirectory,
         error: permissionError,
       });
       throw new Error(errorMsg);
     }
 
-    const filePath = path.join(directory, `${sanitizedTitle}.txt`);
+    const filePath = path.join(songsDirectory, `${sanitizedTitle}.evsong`);
 
     // Validate the final file path
     if (!path.isAbsolute(filePath) || filePath.includes("..")) {
       const errorMsg = "Invalid file path generated.";
       logSongError("Path validation failed", {
         filePath,
-        directory,
+        directory: songsDirectory,
         sanitizedTitle,
       });
       throw new Error(errorMsg);
@@ -539,6 +550,7 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
     const fileExists = fs.existsSync(filePath);
 
     // Write the file (create new or overwrite existing)
+    // Content is expected to be base64-encoded JSON from the frontend
     fs.writeFileSync(filePath, content, "utf8");
 
     const result = {
@@ -561,7 +573,7 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
         sanitizedTitle,
         filePath,
         contentLength: content.length,
-        directory,
+        directory: songsDirectory,
       }
     );
 
@@ -571,7 +583,7 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
     logSongError("Failed to save song", {
       error: error instanceof Error ? error.message : String(error),
       title: title || "unknown",
-      directory: directory || "unknown",
+      directory: songsDirectory || "unknown",
     });
 
     // Handle specific error types
@@ -606,48 +618,69 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
 // Handle fetching songs from a directory
 ipcMain.handle("fetch-songs", async (event, directory) => {
   try {
-    const files = fs.readdirSync(directory);
+    // Use app data directory if no directory provided
+    const songsDirectory =
+      directory || path.join(app.getPath("userData"), "Songs");
+
+    // Ensure songs directory exists
+    if (!fs.existsSync(songsDirectory)) {
+      fs.mkdirSync(songsDirectory, { recursive: true });
+      return []; // Return empty array for new directory
+    }
+
+    const files = fs.readdirSync(songsDirectory);
     const songs = await Promise.all(
       files
-        .filter((file) => file.endsWith(".txt"))
+        .filter((file) => file.endsWith(".evsong"))
         .map(async (file, index) => {
-          const filePath = path.join(directory, file);
+          const filePath = path.join(songsDirectory, file);
           const fileStats = fs.statSync(filePath);
-          const content = fs.readFileSync(filePath, "utf8");
+          const encodedContent = fs.readFileSync(filePath, "utf8");
 
-          // Check for isPrelisted in metadata
+          // Decode the base64-encoded JSON
+          let songData;
           let isPrelisted = false;
-          const metadataMatch = content.match(
-            /^---METADATA---\n(.*?)\n---END-METADATA---\n\n/s
-          );
-          if (metadataMatch) {
-            const metadataContent = metadataMatch[1];
-            isPrelisted = /isPrelisted:\s*true/i.test(metadataContent);
+          try {
+            const jsonString = Buffer.from(encodedContent, "base64").toString(
+              "utf8"
+            );
+            songData = JSON.parse(jsonString);
+            isPrelisted = songData.metadata?.isPrelisted || false;
+          } catch (decodeError) {
+            console.error(`Failed to decode song file ${file}:`, decodeError);
+            // Skip invalid files
+            return null;
           }
 
           return {
             id: `bmusic${index + 1}`,
-            title: path.basename(file, ".txt"),
+            title: songData.title || path.basename(file, ".evsong"),
             path: filePath,
-            content,
-            dateModified: fileStats.mtime.toISOString(),
+            content: encodedContent, // Return the encoded content
+            dateModified:
+              songData.metadata?.modified || fileStats.mtime.toISOString(),
             isPrelisted,
+            slides: songData.slides || [], // Include slides data
+            metadata: songData.metadata, // Include full metadata
           };
         })
     );
 
+    // Filter out null entries (failed decodes)
+    const validSongs = songs.filter((song) => song !== null);
+
     // Log successful fetch
     logSongAction("Songs loaded from directory", {
-      directory,
-      songCount: songs.length,
+      directory: songsDirectory,
+      songCount: validSongs.length,
       fileCount: files.length,
     });
 
-    return songs;
+    return validSongs;
   } catch (error) {
     console.error("Error fetching songs:", error);
     logSongError("Failed to fetch songs from directory", {
-      directory,
+      directory: directory || app.getPath("userData"),
       error: error instanceof Error ? error.message : String(error),
     });
     throw new Error("Failed to fetch songs.");

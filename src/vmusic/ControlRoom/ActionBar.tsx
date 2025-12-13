@@ -28,10 +28,12 @@ import {
   setIsEditingSlide,
   setShowAddSlideDialog,
   setShowTitleDialog,
+  setShowPrelistTitleDialog,
 } from "@/store/slices/uiSlice";
 import { useToast } from "./hooks/useToast";
 import { Toaster } from "../shared/Notification";
 import { setSongRepo } from "@/store/slices/songSlice";
+import { setFontFamily } from "@/store/slices/projectionSlice";
 
 interface ActionBarProps {
   isDarkMode: boolean;
@@ -50,7 +52,6 @@ interface ActionBarProps {
   ) => void;
   onRequestDelete: () => void;
   onSelectSongFromSearch: (song: Song) => void;
-  onAddToPrelist: () => void;
 }
 
 export const ActionBar: React.FC<ActionBarProps> = ({
@@ -67,7 +68,6 @@ export const ActionBar: React.FC<ActionBarProps> = ({
   addToast,
   onRequestDelete,
   onSelectSongFromSearch,
-  onAddToPrelist,
 }) => {
   const [systemFonts, setSystemFonts] = useState<string[]>([]);
   const [selectedFont, setSelectedFont] = useState("Arial");
@@ -85,7 +85,12 @@ export const ActionBar: React.FC<ActionBarProps> = ({
       try {
         const fonts = await window.api.getSystemFonts();
         setSystemFonts(fonts);
-        if (fonts.length > 0 && !selectedFont) {
+
+        // Load saved font from localStorage
+        const savedFont = localStorage.getItem("bmusicfontFamily");
+        if (savedFont) {
+          setSelectedFont(savedFont);
+        } else if (fonts.length > 0 && !selectedFont) {
           setSelectedFont(fonts[0]);
         }
       } catch (error) {
@@ -124,9 +129,8 @@ export const ActionBar: React.FC<ActionBarProps> = ({
   );
 
   const dispatch = useAppDispatch();
-  const { slides, isSaving, currentSlideId, currentSongId } = useAppSelector(
-    (state) => state.songSlides
-  );
+  const { slides, isSaving, currentSlideId, currentSongId, songTitle } =
+    useAppSelector((state) => state.songSlides);
   const songRepo = useAppSelector((state) => state.songs.songRepo);
   const { showSettings, isEditingSlide } = useAppSelector((state) => state.ui);
 
@@ -157,13 +161,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
   }, [showFontDropdown, showFolderDropdown]);
 
   const handleSaveClick = () => {
-    if (!songRepo || songRepo.trim() === "") {
-      addToast(
-        "No songs directory set. Please select a folder first.",
-        "error"
-      );
-      return;
-    }
+    // No need to check songRepo anymore - we auto-use app data directory
     if (slides.length === 0) {
       addToast("No slides to save. Paste lyrics first.", "warning");
       return;
@@ -173,9 +171,15 @@ export const ActionBar: React.FC<ActionBarProps> = ({
 
   const handleProjectionToggle = async () => {
     try {
+      console.log(
+        "🎬 Projection toggle clicked, current state:",
+        isProjectionActive
+      );
       if (isProjectionActive) {
         // Close projection
-        await window.api.closeProjectionWindow();
+        console.log("🔴 Closing projection...");
+        const result = await window.api.closeProjectionWindow();
+        console.log("🔴 Close projection result:", result);
         addToast("Projection closed", "info");
       } else {
         // Start projection with current song
@@ -184,8 +188,10 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           return;
         }
 
+        // First, open the projection window with basic song data
         const songData = {
-          title: currentSong?.title || "Untitled Song",
+          title: songTitle || currentSong?.title || "Untitled Song",
+          content: "", // Not used anymore
           slides: slides.map((slide) => ({
             content: slide.content,
             type: slide.type,
@@ -194,6 +200,54 @@ export const ActionBar: React.FC<ActionBarProps> = ({
         };
 
         await window.api.projectSong(songData);
+
+        // Wait a moment for window to be ready, then send the first slide
+        setTimeout(async () => {
+          console.log("⏱️ Timeout callback executing...");
+          console.log("  - slides.length:", slides.length);
+          console.log("  - currentSlideId:", currentSlideId);
+          console.log(
+            "  - Condition check:",
+            slides.length > 0 && currentSlideId
+          );
+
+          if (slides.length > 0 && currentSlideId) {
+            const currentIndex = slides.findIndex(
+              (s) => s.id === currentSlideId
+            );
+            console.log("  - Found currentIndex:", currentIndex);
+            const currentSlide = slides[currentIndex] || slides[0];
+            console.log("  - currentSlide:", currentSlide);
+
+            const slideData = {
+              type: "SLIDE_UPDATE",
+              slide: {
+                content: currentSlide.content,
+                type: currentSlide.type,
+                number: currentSlide.number,
+              },
+              songTitle: songTitle || currentSong?.title || "Untitled Song",
+              currentIndex: Math.max(0, currentIndex),
+              totalSlides: slides.length,
+              backgroundColor: "#000000",
+              slides: slides.map((slide) => ({
+                content: slide.content,
+                type: slide.type,
+                number: slide.number,
+              })),
+            };
+
+            console.log("📤 Sending projection data:");
+            console.log("  - Song title:", slideData.songTitle);
+            console.log("  - Current index:", slideData.currentIndex);
+            console.log("  - Total slides:", slideData.totalSlides);
+            console.log("  - Slides array:", slideData.slides);
+            console.log("  - Current slide:", slideData.slide);
+
+            await window.api.sendToSongProjection(slideData);
+          }
+        }, 500);
+
         addToast("Projection started", "success");
       }
     } catch (error) {
@@ -212,7 +266,16 @@ export const ActionBar: React.FC<ActionBarProps> = ({
         <div className="flex items-center gap-1.5">
           <Tooltip title="Add Current Song to Prelist" placement="bottom">
             <button
-              onClick={onAddToPrelist}
+              onClick={() => {
+                if (slides.length === 0) {
+                  addToast(
+                    "No slides to add to prelist. Paste lyrics first.",
+                    "warning"
+                  );
+                  return;
+                }
+                dispatch(setShowPrelistTitleDialog(true));
+              }}
               disabled={slides.length === 0}
               className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-text-muted dark:bg-app-surface hover:bg-app-surface-hover text-white ${
                 slides.length === 0 ? "opacity-50 cursor-not-allowed" : ""
@@ -418,7 +481,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
             </Tooltip>
 
             {showFontDropdown && (
-              <div className="absolute top-full left-0 mt-1 w-56 bg-app-bg border border-app-border rounded-lg shadow-lg z-50 flex flex-col">
+              <div className="absolute top-full left-0 mt-1 w-56 bg-app-bg border border-app-border rounded-lg shadow-lg z-[9999] flex flex-col">
                 {/* Search Box */}
                 <div className="p-2 border-b border-app-border">
                   <input
@@ -427,7 +490,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                     value={fontSearchQuery}
                     onChange={(e) => setFontSearchQuery(e.target.value)}
                     placeholder="Search fonts..."
-                    className="w-full px-2 py-1 text-ew-xs bg-app-surface text-app-text border border-app-border rounded focus:outline-none focus:ring-1 focus:ring-app-accent"
+                    className="w-full px-2 py-1 text-ew-xs bg-app-surface text-app-text border border-app-border border-none rounded focus:outline-none focus:ring-1 focus:ring-app-accent"
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>
@@ -448,10 +511,38 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                       >
                         <button
                           key={font}
-                          onClick={() => {
+                          onClick={async () => {
                             setSelectedFont(font);
                             setShowFontDropdown(false);
                             setFontSearchQuery("");
+                            // Update Redux store and localStorage
+                            dispatch(setFontFamily(font));
+                            localStorage.setItem("bmusicfontFamily", font);
+
+                            // Send IPC message to update projection window immediately
+                            if (isProjectionActive) {
+                              try {
+                                await window.api.sendToSongProjection({
+                                  type: "FONT_FAMILY_UPDATE",
+                                  fontFamily: font,
+                                });
+                              } catch (error) {
+                                console.error(
+                                  "Error sending font update to projection:",
+                                  error
+                                );
+                              }
+                            }
+
+                            // Dispatch storage event for cross-component updates
+                            window.dispatchEvent(
+                              new StorageEvent("storage", {
+                                key: "bmusicfontFamily",
+                                oldValue: null,
+                                newValue: font,
+                                storageArea: localStorage,
+                              })
+                            );
                           }}
                           className={`w-full bg-transparent text-left px-3  text-ew-sm text-app-text hover:bg-app-surface-hover transition-colors ${
                             selectedFont === font ? "bg-app-surface" : ""

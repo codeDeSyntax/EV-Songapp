@@ -468,6 +468,8 @@ contextBridge.exposeInMainWorld("api", {
   },
   selectDirectory: () => ipcRenderer.invoke("select-directory"),
   getSystemFonts: () => ipcRenderer.invoke("get-system-fonts"),
+  getDefaultSongsDirectory: () =>
+    ipcRenderer.invoke("get-default-songs-directory"),
   saveSong: (directory: string, title: string, content: string) =>
     ipcRenderer.invoke("save-song", { directory, title, content }),
   editSong: (songData: any) => ipcRenderer.invoke("edit-song", songData),
@@ -483,11 +485,12 @@ contextBridge.exposeInMainWorld("api", {
   isProjectionActive: () => ipcRenderer.invoke("is-projection-active"),
   closeProjectionWindow: () => ipcRenderer.invoke("close-projection-window"),
   onProjectionStateChanged: (callback: (isActive: boolean) => void) => {
-    ipcRenderer.on("projection-state-changed", (event, isActive) =>
-      callback(isActive)
-    );
+    const listener = (event: Electron.IpcRendererEvent, isActive: boolean) => {
+      callback(isActive);
+    };
+    ipcRenderer.on("projection-state-changed", listener);
     return () => {
-      ipcRenderer.removeAllListeners("projection-state-changed");
+      ipcRenderer.removeListener("projection-state-changed", listener);
     };
   },
   onDisplaySong: (callback: (songData: any) => void) => {

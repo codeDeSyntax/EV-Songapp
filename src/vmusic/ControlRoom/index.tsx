@@ -8,14 +8,10 @@ import {
 } from "@/store/slices/songSlidesSlice";
 import { updateSong } from "@/store/slices/songSlice";
 import { parseLyrics } from "./utils/lyricsParser";
-import {
-  formatSlidesForSave,
-  validateSongForSave,
-} from "./utils/songFormatter";
+import { encodeSongData, validateSongForSave } from "./utils/songFileFormat";
 import { Song } from "@/types";
 import TitleBar from "../../shared/TitleBar";
 import DeletePopup from "../DeletePopup";
-import SongProjectionControls from "../components/SongProjectionControls";
 import { useProjectionState } from "@/hooks/useProjectionState";
 import { GamyCard } from "../shared/GamyCard";
 import { ActionBar } from "./ActionBar";
@@ -70,14 +66,12 @@ const ControlRoom = () => {
   };
 
   const handleSelectSongFromSearch = (song: Song) => {
-    const parsed = parseLyrics(song.content);
-    dispatch(setSlides(parsed.slides));
+    // Backend now provides decoded slides directly
+    const slides = song.slides || [];
+    dispatch(setSlides(slides));
     dispatch(setSongTitle(song.title));
     dispatch(setCurrentSongId(song.id));
-    addToast(
-      `Loaded "${song.title}" with ${parsed.slides.length} slides`,
-      "success"
-    );
+    addToast(`Loaded "${song.title}" with ${slides.length} slides`, "success");
   };
 
   const handleAddToPrelist = async () => {
@@ -86,14 +80,7 @@ const ControlRoom = () => {
       return;
     }
 
-    if (!songRepo || songRepo.trim() === "") {
-      addToast(
-        "No songs directory set. Please select a folder first.",
-        "error"
-      );
-      return;
-    }
-
+    // No need to check songRepo - we auto-use app data directory
     setShowPrelistTitleDialog(true);
   };
 
@@ -105,21 +92,17 @@ const ControlRoom = () => {
     }
 
     try {
-      const formattedContent = formatSlidesForSave(slides, true);
-      const result = await window.api.saveSong(
-        songRepo,
-        title,
-        formattedContent
-      );
+      const encodedContent = encodeSongData(title, slides, true);
+      const result = await window.api.saveSong("", title, encodedContent);
 
       const newSong: Song = {
         id: Date.now().toString(),
         title: result.sanitizedTitle || title,
         path: result.filePath || "",
-        content: formattedContent,
+        content: encodedContent,
         categories: [],
         dateModified: new Date().toISOString(),
-        size: formattedContent.length,
+        size: encodedContent.length,
         isPrelisted: true,
       };
 
@@ -191,11 +174,11 @@ const ControlRoom = () => {
             addToast={addToast}
             onRequestDelete={handleRequestDelete}
             onSelectSongFromSearch={handleSelectSongFromSearch}
-            onAddToPrelist={handleAddToPrelist}
           />
           <ContentArea
             filteredSongsCount={filteredSongs.length}
             isDarkMode={isDarkMode}
+            toggleDarkMode={toggleDarkMode}
             onSaveSuccess={handleSaveSuccess}
             onSaveError={handleSaveError}
             loadSongs={loadSongs}
@@ -219,9 +202,6 @@ const ControlRoom = () => {
           deleteSong={deleteSelectedSong}
         />
       )}
-
-      {/* Projection Controls */}
-      <SongProjectionControls />
 
       {/* Prelist Title Dialog */}
       <TitleInputDialog

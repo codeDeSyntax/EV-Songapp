@@ -14,20 +14,22 @@ import {
   setIsEditingSlide,
   setShowAddSlideDialog,
   setShowTitleDialog,
+  setShowPrelistTitleDialog,
 } from "@/store/slices/uiSlice";
 import { parseLyrics, SongSlide } from "../utils/lyricsParser";
 import { TitleInputDialog } from "../components/TitleInputDialog";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { SlideEditor } from "../components/SlideEditor";
 import { AddSlideDialog } from "../components/AddSlideDialog";
-import {
-  formatSlidesForSave,
-  validateSongForSave,
-} from "../utils/songFormatter";
+import { SettingsView } from "../components/SettingsView";
+import { encodeSongData, validateSongForSave } from "../utils/songFileFormat";
 import { useProjectionState } from "@/features/songs/hooks/useProjectionState";
+import { Song } from "@/types";
+import { updateSong } from "@/store/slices/songSlice";
 
 interface PreviewPanelProps {
   isDarkMode: boolean;
+  toggleDarkMode?: () => void;
   songRepo: string;
   onSaveSuccess: (message: string) => void;
   onSaveError: (error: string) => void;
@@ -43,6 +45,7 @@ interface PreviewPanelProps {
 
 export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   isDarkMode,
+  toggleDarkMode,
   songRepo,
   onSaveSuccess,
   onSaveError,
@@ -56,57 +59,137 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   const { slides, currentSlideId, songTitle, isSaving } = useAppSelector(
     (state) => state.songSlides
   );
-  const { showSettings, isEditingSlide, showAddSlideDialog, showTitleDialog } =
-    useAppSelector((state) => state.ui);
+  const {
+    showSettings,
+    isEditingSlide,
+    showAddSlideDialog,
+    showTitleDialog,
+    showPrelistTitleDialog,
+  } = useAppSelector((state) => state.ui);
   const [selectedBgSrc, setSelectedBgSrc] = useState<string>("");
+  const [previewBgSrc, setPreviewBgSrc] = useState<string>("");
+  const [fontFamily, setFontFamily] = useState<string>(() => {
+    return localStorage.getItem("bmusicfontFamily") || "Arial Black";
+  });
+  const [overlayOpacity, setOverlayOpacity] = useState<number>(() => {
+    const saved = localStorage.getItem("bmusicOverlayOpacity");
+    return saved ? parseFloat(saved) : 0.3;
+  });
   const contentRef = useRef<HTMLDivElement>(null);
   const { isProjectionActive } = useProjectionState();
+
+  // Detect background type (use previewBgSrc for display)
+  const backgroundType = React.useMemo(() => {
+    const bgSrc = previewBgSrc || selectedBgSrc;
+    if (bgSrc.startsWith("solid:")) {
+      return "solid";
+    }
+    if (bgSrc.startsWith("gradient:")) {
+      return "gradient";
+    }
+    if (
+      bgSrc.endsWith(".mp4") ||
+      bgSrc.endsWith(".webm") ||
+      bgSrc.endsWith(".mov")
+    ) {
+      return "video";
+    }
+    return "image";
+  }, [previewBgSrc, selectedBgSrc]);
+
+  // Extract background value (use previewBgSrc for display)
+  const backgroundValue = React.useMemo(() => {
+    const bgSrc = previewBgSrc || selectedBgSrc;
+    if (backgroundType === "solid") {
+      return bgSrc.replace("solid:", "");
+    }
+    if (backgroundType === "gradient") {
+      return bgSrc.replace("gradient:", "");
+    }
+    return bgSrc;
+  }, [previewBgSrc, selectedBgSrc, backgroundType]);
+
+  // Check if background is a video (legacy support)
+  const isVideoBg = React.useMemo(() => {
+    return backgroundType === "video";
+  }, [backgroundType]);
 
   // Get current slide
   const currentSlide = slides.find((s) => s.id === currentSlideId) || null;
   const currentIndex = slides.findIndex((s) => s.id === currentSlideId);
 
-  // Load saved background on mount
+  // Load saved background and font on mount and poll for changes
   useEffect(() => {
-    const savedBg = localStorage.getItem("bmusicpresentationbg");
-    if (savedBg) {
-      setSelectedBgSrc(savedBg);
-    }
-  }, []);
+    const updateSettings = () => {
+      const savedBg = localStorage.getItem("bmusicpresentationbg");
+      if (savedBg && savedBg !== selectedBgSrc) {
+        setSelectedBgSrc(savedBg);
+        // Only update preview if no preview is active
+        if (!previewBgSrc || previewBgSrc === selectedBgSrc) {
+          setPreviewBgSrc(savedBg);
+        }
+      }
 
-  // Listen for background changes
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "bmusicpresentationbg" && e.newValue) {
-        setSelectedBgSrc(e.newValue);
+      const savedFont = localStorage.getItem("bmusicfontFamily");
+      if (savedFont && savedFont !== fontFamily) {
+        setFontFamily(savedFont);
+      }
+
+      const savedOpacity = localStorage.getItem("bmusicOverlayOpacity");
+      if (savedOpacity) {
+        const opacity = parseFloat(savedOpacity);
+        if (opacity !== overlayOpacity) {
+          setOverlayOpacity(opacity);
+        }
       }
     };
 
+    // Initial load
+    updateSettings();
+
+    // Poll for changes every 100ms to catch immediate updates
+    const interval = setInterval(updateSettings, 100);
+
+    // Listen for preview background changes (before confirmation)
+    const handlePreviewBackgroundChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ src: string; isPreview: boolean }>;
+      if (customEvent.detail) {
+        // Set preview background (doesn't affect localStorage)
+        setPreviewBgSrc(customEvent.detail.src);
+      }
+    };
+
+    // Also listen for storage events (after confirmation/apply)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "bmusicpresentationbg" && e.newValue) {
+        setSelectedBgSrc(e.newValue);
+        setPreviewBgSrc(e.newValue);
+      }
+      if (e.key === "bmusicfontFamily" && e.newValue) {
+        setFontFamily(e.newValue);
+      }
+      if (e.key === "bmusicOverlayOpacity" && e.newValue) {
+        setOverlayOpacity(parseFloat(e.newValue));
+      }
+    };
+
+    window.addEventListener(
+      "preview-background-change",
+      handlePreviewBackgroundChange
+    );
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
 
-  // Sync current slide to projection window
-  useEffect(() => {
-    if (isProjectionActive && currentSlide && slides.length > 0) {
-      const slideData = {
-        type: "SLIDE_UPDATE",
-        slide: {
-          content: currentSlide.content,
-          type: currentSlide.type,
-          number: currentSlide.number,
-        },
-        songTitle: songTitle,
-        currentIndex: currentIndex,
-        totalSlides: slides.length,
-        backgroundColor: selectedBgSrc || "#000000",
-      };
-
-      window.api.sendToSongProjection(slideData).catch((error) => {
-        console.error("Failed to send slide to projection:", error);
-      });
-    }
-  }, [isProjectionActive, currentSlideId, slides, songTitle, selectedBgSrc]);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener(
+        "preview-background-change",
+        handlePreviewBackgroundChange
+      );
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [selectedBgSrc, previewBgSrc, fontFamily, overlayOpacity]); // NOTE: Slide sync removed - navigation is handled by SongProjectionControls commands
+  // The PreviewPanel used to sync on every slide change, causing duplicate navigation
+  // Now only SongLibraryPanel sends slide updates when clicking slides directly
 
   // Keyboard navigation for slides
   useEffect(() => {
@@ -121,6 +204,13 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       }
 
       if (slides.length === 0) return;
+
+      // Handle Enter key for projection
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleProjectCurrentSong();
+        return;
+      }
 
       if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         e.preventDefault();
@@ -140,6 +230,32 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [slides, currentIndex, isEditingSlide, dispatch]);
+
+  // Handle projection of current song
+  const handleProjectCurrentSong = async () => {
+    if (!songTitle || slides.length === 0) {
+      addToast("No song to project", "warning");
+      return;
+    }
+
+    try {
+      const songData = {
+        title: songTitle,
+        content: slides.map((s) => s.content).join("\n\n"),
+        slides: slides.map((s) => ({
+          content: s.content,
+          type: s.type,
+          number: s.number,
+        })),
+      };
+
+      await window.api.projectSong(songData);
+      addToast(`Projecting: ${songTitle}`, "success");
+    } catch (error) {
+      console.error("Error projecting song:", error);
+      addToast("Failed to project song", "error");
+    }
+  };
 
   // Handle delete slide request
   useEffect(() => {
@@ -173,8 +289,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     dispatch(removeSlide(currentSlideId));
     dispatch(setIsEditingSlide(false));
 
-    // Auto-save to file if we have a title and repo
-    if (songTitle && songRepo) {
+    // Auto-save to file if we have a title
+    if (songTitle) {
       try {
         const updatedSlides = slides.filter((s) => s.id !== currentSlideId);
 
@@ -186,10 +302,10 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           return;
         }
 
-        const formattedContent = formatSlidesForSave(updatedSlides);
-        await window.api.saveSong(songRepo, songTitle, formattedContent);
+        const encodedContent = encodeSongData(songTitle, updatedSlides);
+        await window.api.saveSong("", songTitle, encodedContent);
         onSaveSuccess(
-          `${slideToDelete.label} deleted and saved to "${songTitle}".txt`
+          `${slideToDelete.label} deleted and saved to "${songTitle}".evsong`
         );
         // Reload songs to refresh the list
         loadSongs();
@@ -226,17 +342,13 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     try {
       dispatch(setIsSaving(true));
       dispatch(setSongTitle(title));
-      const formattedContent = formatSlidesForSave(slides);
-      const result = await window.api.saveSong(
-        songRepo,
-        title,
-        formattedContent
-      );
+      const encodedContent = encodeSongData(title, slides);
+      const result = await window.api.saveSong("", title, encodedContent);
 
       onSaveSuccess(
         `Song "${title}" saved successfully! 🎵\n${slides.length} slide${
           slides.length !== 1 ? "s" : ""
-        } saved to ${songRepo}`
+        } saved`
       );
       dispatch(setShowTitleDialog(false));
       // Reload songs to refresh the list
@@ -248,6 +360,39 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       );
     } finally {
       dispatch(setIsSaving(false));
+    }
+  };
+
+  // Handle save to prelist
+  const handleSaveToPrelist = async (title: string) => {
+    const validation = validateSongForSave(title, slides);
+    if (!validation.valid) {
+      onSaveError(validation.error || "Invalid song data");
+      return;
+    }
+
+    try {
+      const encodedContent = encodeSongData(title, slides, true);
+      const result = await window.api.saveSong("", title, encodedContent);
+
+      const newSong: Song = {
+        id: Date.now().toString(),
+        title: result.sanitizedTitle || title,
+        path: result.filePath || "",
+        content: encodedContent,
+        categories: [],
+        dateModified: new Date().toISOString(),
+        size: encodedContent.length,
+        isPrelisted: true,
+      };
+
+      dispatch(updateSong(newSong));
+      addToast(`"${title}" added to prelist! 🎵`, "success");
+      dispatch(setShowPrelistTitleDialog(false));
+      loadSongs();
+    } catch (error) {
+      console.error("Error adding to prelist:", error);
+      addToast("Failed to add to prelist. Please try again.", "error");
     }
   };
 
@@ -267,14 +412,15 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     dispatch(updateSlide({ id, content }));
     dispatch(setIsEditingSlide(false));
 
-    // Auto-save to file if we have a title and repo
-    if (songTitle && songRepo) {
+    // Auto-save to file if we have a title
+    if (songTitle) {
       try {
-        const formattedContent = formatSlidesForSave(
-          slides.map((s) => (s.id === id ? { ...s, content } : s))
+        const updatedSlides = slides.map((s) =>
+          s.id === id ? { ...s, content } : s
         );
-        await window.api.saveSong(songRepo, songTitle, formattedContent);
-        onSaveSuccess(`Slide updated and saved to "${songTitle}".txt`);
+        const encodedContent = encodeSongData(songTitle, updatedSlides);
+        await window.api.saveSong("", songTitle, encodedContent);
+        onSaveSuccess(`Slide updated and saved to \"${songTitle}\".evsong`);
         // Reload songs to refresh the list
         loadSongs();
       } catch (error) {
@@ -296,8 +442,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       | "ending"
       | "intro"
   ) => {
-    const currentIndex = slides.findIndex((s) => s.id === currentSlideId);
-    const slideNumber = currentIndex + 2; // Next slide number
+    // Count how many slides of this type already exist
+    const sameTypeCount = slides.filter((s) => s.type === type).length;
+    const slideNumber = sameTypeCount + 1; // Next number for this type
 
     const newSlide: SongSlide = {
       id: `slide-${Date.now()}`,
@@ -310,14 +457,14 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     dispatch(addSlide(newSlide));
     dispatch(setShowAddSlideDialog(false));
 
-    // Auto-save to file if we have a title and repo
-    if (songTitle && songRepo) {
+    // Auto-save to file if we have a title
+    if (songTitle) {
       try {
         const updatedSlides = [...slides, newSlide];
-        const formattedContent = formatSlidesForSave(updatedSlides);
-        await window.api.saveSong(songRepo, songTitle, formattedContent);
+        const encodedContent = encodeSongData(songTitle, updatedSlides);
+        await window.api.saveSong("", songTitle, encodedContent);
         onSaveSuccess(
-          `New ${type} slide added and saved to \"${songTitle}\".txt`
+          `New ${type} slide added and saved to \"${songTitle}\".evsong`
         );
         // Reload songs to refresh the list
         loadSongs();
@@ -338,49 +485,67 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         onSave={handleSaveSong}
       />
 
+      <TitleInputDialog
+        isOpen={showPrelistTitleDialog}
+        initialTitle={songTitle}
+        isDarkMode={isDarkMode}
+        onClose={() => dispatch(setShowPrelistTitleDialog(false))}
+        onSave={handleSaveToPrelist}
+      />
+
       <DeleteConfirmModal addToast={addToast} loadSongs={loadSongs} />
 
-      <div
-        className="h-full w-full relative rounded-xl overflow-hidden"
-        style={{
-          background: selectedBgSrc
-            ? `url(${selectedBgSrc}) center/cover no-repeat`
-            : "#000000",
-        }}
-      >
+      <div className="h-full w-full relative rounded-xl overflow-y-auto">
+        {/* Background - Solid, Gradient, Video or Image */}
+        {selectedBgSrc &&
+          (backgroundType === "video" ? (
+            <video
+              className="absolute inset-0 w-full h-full object-cover rounded-xl"
+              src={backgroundValue}
+              autoPlay
+              loop
+              muted
+              playsInline
+            />
+          ) : backgroundType === "solid" ? (
+            <div
+              className="absolute inset-0 rounded-xl"
+              style={{ backgroundColor: backgroundValue }}
+            />
+          ) : backgroundType === "gradient" ? (
+            <div
+              className="absolute inset-0 rounded-xl"
+              style={{ background: backgroundValue }}
+            />
+          ) : (
+            <div
+              className="absolute inset-0 rounded-xl"
+              style={{
+                backgroundImage: `url(${backgroundValue})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+              }}
+            />
+          ))}
+        {!selectedBgSrc && (
+          <div className="absolute inset-0 bg-black rounded-xl" />
+        )}
+
+        {/* Dark overlay for text visibility */}
+        {selectedBgSrc && (
+          <div
+            className="absolute inset-0 bg-black rounded-xl transition-opacity duration-200"
+            style={{ opacity: overlayOpacity }}
+          />
+        )}
+
         {/* Settings View Overlay */}
         {showSettings && (
-          <div className="absolute inset-0 z-50 bg-black/90 backdrop-blur-sm overflow-y-auto">
-            <div className="p-6">
-              <h2 className="text-white text-2xl font-bold mb-6">Settings</h2>
-              <div className="space-y-4">
-                <div className="bg-white/10 rounded-lg p-4">
-                  <h3 className="text-white text-lg font-semibold mb-2">
-                    Display Settings
-                  </h3>
-                  <p className="text-white/70 text-sm">
-                    Configure display preferences
-                  </p>
-                </div>
-                <div className="bg-white/10 rounded-lg p-4">
-                  <h3 className="text-white text-lg font-semibold mb-2">
-                    Text Settings
-                  </h3>
-                  <p className="text-white/70 text-sm">
-                    Configure text formatting options
-                  </p>
-                </div>
-                <div className="bg-white/10 rounded-lg p-4">
-                  <h3 className="text-white text-lg font-semibold mb-2">
-                    Background Settings
-                  </h3>
-                  <p className="text-white/70 text-sm">
-                    Manage background preferences
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <SettingsView
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={toggleDarkMode}
+          />
         )}
 
         {/* Preview Area with Selected Background */}
@@ -388,31 +553,29 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           ref={contentRef}
           tabIndex={0}
           onPaste={handlePaste}
-          className="w-full h-full focus:outline-none flex items-center justify-center overflow-y-auto no-scrollbar cursor-text"
+          className="relative w-full h-full focus:outline-none flex items-center justify-center overflow-y-auto no-scrollbar cursor-text z-10"
         >
           {/* Content based on state */}
           {isEditingSlide && currentSlide ? (
             <SlideEditor
               slide={currentSlide}
               isDarkMode={isDarkMode}
-              backgroundImage={selectedBgSrc}
               onSave={handleEditSlide}
               onCancel={() => dispatch(setIsEditingSlide(false))}
             />
           ) : showAddSlideDialog ? (
             <AddSlideDialog
               isDarkMode={isDarkMode}
-              backgroundImage={selectedBgSrc}
               onAdd={handleAddSlide}
               onCancel={() => dispatch(setShowAddSlideDialog(false))}
             />
           ) : currentSlide ? (
-            <div className="text-app-accent dark:text-white text-center max-w-6xl w-full max-h-full px-4">
+            <div className="text-app-accent dark:text-white text-center max-w-6xl w-full overflow-y-scroll h-[95%] max-h-[54vh] px-4 no-scrollbar">
               <pre
                 className="font-sans text-2xl leading-relaxed whitespace-pre-wrap text-shadow-lg"
                 style={{
                   textShadow: "2px 2px 4px rgba(0,0,0,0.8)",
-                  fontFamily: "Arial Black",
+                  fontFamily: fontFamily,
                 }}
               >
                 {currentSlide.content}

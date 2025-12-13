@@ -4,7 +4,6 @@ import { SongSlide } from "../utils/lyricsParser";
 
 interface AddSlideDialogProps {
   isDarkMode: boolean;
-  backgroundImage: string;
   onAdd: (
     content: string,
     type:
@@ -42,7 +41,6 @@ const slideTypes: Array<{
 
 export const AddSlideDialog: React.FC<AddSlideDialogProps> = ({
   isDarkMode,
-  backgroundImage,
   onAdd,
   onCancel,
 }) => {
@@ -74,6 +72,9 @@ export const AddSlideDialog: React.FC<AddSlideDialogProps> = ({
     <div
       className="absolute inset-0 z-40 flex flex-col items-center justify-center p-8"
       onClick={(e) => e.stopPropagation()}
+      style={{
+        backgroundColor: isDarkMode ? "#000000" : "#fef3e2",
+      }}
     >
       {/* Textarea styled like normal preview */}
       <textarea
@@ -81,9 +82,9 @@ export const AddSlideDialog: React.FC<AddSlideDialogProps> = ({
         value={content}
         onChange={(e) => setContent(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="w-full max-w-4xl text-white text-center font-sans text-ew-lg leading-relaxed whitespace-pre-wrap bg-transparent border-none outline-none resize-none"
+        className="w-full max-w-4xl text-center font-sans text-ew-lg leading-relaxed whitespace-pre-wrap bg-transparent border-none outline-none resize-none"
         style={{
-          textShadow: "2px 2px 4px rgba(0,0,0,0.8)",
+          color: isDarkMode ? "#ffffff" : "#1f2937",
           minHeight: "300px",
         }}
         placeholder="Enter slide content..."

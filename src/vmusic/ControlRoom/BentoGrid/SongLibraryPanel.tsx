@@ -1,31 +1,81 @@
 import React, { useState, useEffect } from "react";
 import { GamyCard } from "../../shared/GamyCard";
 import { useAppSelector, useAppDispatch } from "@/store";
-import { setCurrentSlide } from "@/store/slices/songSlidesSlice";
+import { setCurrentSlide, removeSlide } from "@/store/slices/songSlidesSlice";
+import { useProjectionState } from "@/hooks/useProjectionState";
+import { Trash2 } from "lucide-react";
+import { encodeSongData } from "../utils/songFileFormat";
 
 interface SongLibraryPanelProps {
   isDarkMode: boolean;
+  onSaveSuccess: (message: string) => void;
+  onSaveError: (error: string) => void;
+  loadSongs: () => void;
 }
 
 export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
   isDarkMode,
+  onSaveSuccess,
+  onSaveError,
+  loadSongs,
 }) => {
   const dispatch = useAppDispatch();
-  const { slides, currentSlideId } = useAppSelector(
+  const { slides, currentSlideId, songTitle } = useAppSelector(
     (state) => state.songSlides
   );
+  const { isActive: isProjectionActive } = useProjectionState();
   const [selectedBgSrc, setSelectedBgSrc] = useState<string>("");
 
-  // Load saved background on mount
-  useEffect(() => {
-    const savedBg = localStorage.getItem("bmusicpresentationbg");
-    if (savedBg) {
-      setSelectedBgSrc(savedBg);
+  // Detect background type
+  const backgroundType = React.useMemo(() => {
+    if (selectedBgSrc.startsWith("solid:")) {
+      return "solid";
     }
-  }, []);
+    if (selectedBgSrc.startsWith("gradient:")) {
+      return "gradient";
+    }
+    if (
+      selectedBgSrc.endsWith(".mp4") ||
+      selectedBgSrc.endsWith(".webm") ||
+      selectedBgSrc.endsWith(".mov")
+    ) {
+      return "video";
+    }
+    return "image";
+  }, [selectedBgSrc]);
 
-  // Listen for background changes
+  // Extract background value
+  const backgroundValue = React.useMemo(() => {
+    if (backgroundType === "solid") {
+      return selectedBgSrc.replace("solid:", "");
+    }
+    if (backgroundType === "gradient") {
+      return selectedBgSrc.replace("gradient:", "");
+    }
+    return selectedBgSrc;
+  }, [selectedBgSrc, backgroundType]);
+
+  // Check if background is a video (legacy support)
+  const isVideoBg = React.useMemo(() => {
+    return backgroundType === "video";
+  }, [backgroundType]);
+
+  // Load saved background on mount and poll for changes
   useEffect(() => {
+    const updateBackground = () => {
+      const savedBg = localStorage.getItem("bmusicpresentationbg");
+      if (savedBg && savedBg !== selectedBgSrc) {
+        setSelectedBgSrc(savedBg);
+      }
+    };
+
+    // Initial load
+    updateBackground();
+
+    // Poll for changes every 100ms to catch immediate updates
+    const interval = setInterval(updateBackground, 100);
+
+    // Also listen for storage events
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "bmusicpresentationbg" && e.newValue) {
         setSelectedBgSrc(e.newValue);
@@ -33,11 +83,111 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
     };
 
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
 
-  const handleSlideSelect = (slideId: string) => {
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [selectedBgSrc]);
+
+  // Keyboard navigation for slides when projection is active
+  useEffect(() => {
+    if (!isProjectionActive || slides.length === 0) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if not in an input/textarea
+      if (
+        document.activeElement?.tagName.toLowerCase() === "input" ||
+        document.activeElement?.tagName.toLowerCase() === "textarea"
+      ) {
+        return;
+      }
+
+      const currentIndex = slides.findIndex((s) => s.id === currentSlideId);
+
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        // Go to next slide
+        if (currentIndex < slides.length - 1) {
+          const nextSlide = slides[currentIndex + 1];
+          handleSlideSelect(nextSlide.id);
+        }
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        // Go to previous slide
+        if (currentIndex > 0) {
+          const prevSlide = slides[currentIndex - 1];
+          handleSlideSelect(prevSlide.id);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isProjectionActive, slides, currentSlideId]);
+
+  const handleDeleteSlide = async () => {
+    if (!currentSlideId) {
+      onSaveError("No slide selected to delete.");
+      return;
+    }
+
+    if (slides.length === 1) {
+      onSaveError(
+        "Cannot delete the last slide. A song must have at least one slide."
+      );
+      return;
+    }
+
+    // Remove slide from Redux state
+    dispatch(removeSlide(currentSlideId));
+
+    // Auto-save to file if we have a title
+    if (songTitle) {
+      try {
+        const updatedSlides = slides.filter((s) => s.id !== currentSlideId);
+        const encodedContent = encodeSongData(songTitle, updatedSlides);
+        await window.api.saveSong("", songTitle, encodedContent);
+        onSaveSuccess(`Slide deleted and saved to "${songTitle}".evsong`);
+        // Reload songs to refresh the list
+        loadSongs();
+      } catch (error) {
+        console.error("Error saving after delete:", error);
+        onSaveError("Slide deleted but failed to save to file.");
+      }
+    }
+  };
+
+  const handleSlideSelect = async (slideId: string) => {
     dispatch(setCurrentSlide(slideId));
+
+    // If projection is active, send slide update to projection window
+    if (isProjectionActive) {
+      const currentIndex = slides.findIndex((s) => s.id === slideId);
+      const currentSlide = slides[currentIndex];
+
+      if (currentSlide) {
+        const slideData = {
+          type: "SLIDE_UPDATE",
+          slide: {
+            content: currentSlide.content,
+            type: currentSlide.type,
+            number: currentSlide.number,
+          },
+          songTitle: songTitle || "Untitled Song",
+          currentIndex,
+          totalSlides: slides.length,
+          backgroundColor: "#000000",
+          slides: slides.map((slide) => ({
+            content: slide.content,
+            type: slide.type,
+            number: slide.number,
+          })),
+        };
+
+        await window.api.sendToSongProjection(slideData);
+      }
+    }
   };
   return (
     <div
@@ -52,13 +202,23 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
         <span className="text-ew-sm font-medium text-app-text">
           Song Slides
         </span>
-        <p className="text-ew-xs text-app-text-muted mt-1">
-          {slides.length} {slides.length === 1 ? "slide" : "slides"}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="text-ew-xs text-app-text-muted">
+            {slides.length} {slides.length === 1 ? "slide" : "slides"}
+          </p>
+          <button
+            onClick={handleDeleteSlide}
+            disabled={!currentSlideId || slides.length === 1}
+            className="h-8 w-8 bg-app-surface hover:bg-red-500/20 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Delete current slide"
+          >
+            <Trash2 className="w-4 h-4 text-red-500" />
+          </button>
+        </div>
       </div>
 
       {/* Slides List */}
-      <div className="flex-1 p-2 bg-app-surface overflow-y-auto no-scrollbar min-h-full space-y-2 ">
+      <div className="flex-1 p-2 bg-app-surface overflow-y-auto no-scrollbar pb-20 space-y-2 ">
         {slides.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gp text-center px-4">
             <img
@@ -83,20 +243,46 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
               <GamyCard
                 isDarkMode={isDarkMode}
                 className={`overflow-hidden w-[90%] rounded-2xl  m-auto transition-all hover:scale-[1.02] h-24 px-0 py-0 ${
-                  currentSlideId === slide.id ? "ring-2 ring-app-text-muted" : ""
+                  currentSlideId === slide.id
+                    ? "ring-2 ring-app-text-muted"
+                    : ""
                 }`}
                 style={{
                   borderRadius: "20px",
                 }}
               >
-                <div
-                  className="h-full relative bg-cover bg-center bg-no-repeat px-2"
-                  style={{
-                    backgroundImage: selectedBgSrc
-                      ? `url(${selectedBgSrc})`
-                      : "none",
-                  }}
-                >
+                <div className="h-full relative px-2">
+                  {/* Background - Solid, Gradient, Video or Image */}
+                  {selectedBgSrc &&
+                    (backgroundType === "video" ? (
+                      <video
+                        className="absolute inset-0 w-full h-full object-cover"
+                        src={backgroundValue}
+                        muted
+                        playsInline
+                      />
+                    ) : backgroundType === "solid" ? (
+                      <div
+                        className="absolute inset-0"
+                        style={{ backgroundColor: backgroundValue }}
+                      />
+                    ) : backgroundType === "gradient" ? (
+                      <div
+                        className="absolute inset-0"
+                        style={{ background: backgroundValue }}
+                      />
+                    ) : (
+                      <div
+                        className="absolute inset-0"
+                        style={{
+                          backgroundImage: `url(${backgroundValue})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                          backgroundRepeat: "no-repeat",
+                        }}
+                      />
+                    ))}
+
                   {/* Semi-transparent overlay for readability */}
                   <div className="absolute inset-0 bg-black/30" />
 

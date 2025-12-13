@@ -4,7 +4,7 @@ import { useAppSelector, useAppDispatch } from "@/store";
 import { closeDeleteConfirmModal } from "@/store/slices/uiSlice";
 import { deleteSongFromState, updateSong } from "@/store/slices/songSlice";
 import { parseLyrics } from "../vmusic/ControlRoom/utils/lyricsParser";
-import { formatSlidesForSave } from "../vmusic/ControlRoom/utils/songFormatter";
+import { encodeSongData } from "../vmusic/ControlRoom/utils/songFileFormat";
 import { useTheme } from "@/Provider/Theme";
 
 interface DeleteConfirmModalProps {
@@ -37,19 +37,19 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
 
       if (deleteType === "prelist") {
         // Remove from prelist by updating isPrelisted flag
-        const parsed = parseLyrics(songToDelete.content);
-        const formattedContent = formatSlidesForSave(parsed.slides, false);
+        const slides = songToDelete.slides || [];
+        const encodedContent = encodeSongData(
+          songToDelete.title,
+          slides,
+          false
+        );
 
         // Get song directory from any existing song path
         const songRepo = songs[0]?.path
           ? songs[0].path.substring(0, songs[0].path.lastIndexOf("\\"))
           : "";
 
-        await window.api.saveSong(
-          songRepo,
-          songToDelete.title,
-          formattedContent
-        );
+        await window.api.saveSong(songRepo, songToDelete.title, encodedContent);
 
         const updatedSong = { ...songToDelete, isPrelisted: false };
         dispatch(updateSong(updatedSong));
