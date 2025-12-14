@@ -199,7 +199,12 @@ export const BottomRightPanel: React.FC<BottomRightPanelProps> = ({
             {settingItems[0].items.map((subItem, subIndex) => {
               const bgType = getBackgroundType();
               // Hide "Name" field for Image, Video, or Gradient (show thumbnail only)
-              if (subItem.key === "Name" && (bgType === "Image" || bgType === "Video" || bgType === "Gradient")) {
+              if (
+                subItem.key === "Name" &&
+                (bgType === "Image" ||
+                  bgType === "Video" ||
+                  bgType === "Gradient")
+              ) {
                 return null;
               }
               return (
