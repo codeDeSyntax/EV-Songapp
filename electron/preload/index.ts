@@ -407,10 +407,10 @@ function createSplashScreen() {
               splashContainer.remove();
             }, 1000);
           }, 800);
-        }, 500); // Delay before exit animation
+        }, 50); // Delay before exit animation
       }
     );
-  }, 2000); // Start progress after tiles have started assembling
+  }, 150); // Start progress after tiles have started assembling
 
   // Fallback removal after 7 seconds (increased due to longer animation)
   setTimeout(() => {
@@ -419,7 +419,7 @@ function createSplashScreen() {
       splashContainer.style.opacity = "0";
       setTimeout(() => splashContainer.remove(), 800);
     }
-  }, 7000);
+  }, 1750);
 }
 
 // Show splash screen when DOM is ready

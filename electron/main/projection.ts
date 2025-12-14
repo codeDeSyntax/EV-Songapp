@@ -212,11 +212,12 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
     width: presentationDisplay.bounds.width,
     height: presentationDisplay.bounds.height,
     fullscreen: true,
-    icon: path.join(process.env.VITE_PUBLIC || "", "evv.png"),
+    icon: path.join(process.env.VITE_PUBLIC || "", "evsongsicon.png"),
     webPreferences: {
       preload,
-      nodeIntegration: false,
-      contextIsolation: true,
+          nodeIntegration: false,
+          contextIsolation: true,
+          zoomFactor: 1.0,
       devTools: !!VITE_DEV_SERVER_URL,
     },
   };
@@ -246,64 +247,7 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
     displayCount: screen.getAllDisplays().length,
   });
 
-  // Ensure full-screen coverage for all modes
-  console.log("🔧 Ensuring full-screen coverage...");
-
-  // Handle fullscreen setup for single window
-  if (projectionMode === "duplicate") {
-    // DUPLICATE MODE: Setup primary display window
-    const primaryDisplay = screen.getPrimaryDisplay();
-    songPresentationWin.setBounds({
-      x: primaryDisplay.bounds.x,
-      y: primaryDisplay.bounds.y,
-      width: primaryDisplay.bounds.width,
-      height: primaryDisplay.bounds.height,
-    });
-    songPresentationWin.setFullScreen(true);
-
-    console.log(
-      "✅ Duplicate mode - window bounds and fullscreen set on primary display"
-    );
-    logSongProjection("Duplicate mode fullscreen configured", {
-      displayId: primaryDisplay.id,
-      bounds: songPresentationWin.getBounds(),
-      isFullscreen: songPresentationWin.isFullScreen(),
-    });
-  } else {
-    // EXTEND MODE: Setup single window
-    if (isExternalDisplay) {
-      songPresentationWin.setBounds({
-        x: presentationDisplay.bounds.x,
-        y: presentationDisplay.bounds.y,
-        width: presentationDisplay.bounds.width,
-        height: presentationDisplay.bounds.height,
-      });
-      songPresentationWin.setFullScreen(true);
-
-      console.log("✅ External display bounds and fullscreen set");
-      logSongProjection("External display fullscreen configured", {
-        originalBounds: presentationDisplay.bounds,
-        finalBounds: songPresentationWin.getBounds(),
-        displayId: presentationDisplay.id,
-        isFullscreen: songPresentationWin.isFullScreen(),
-      });
-    } else {
-      songPresentationWin.setBounds({
-        x: presentationDisplay.bounds.x,
-        y: presentationDisplay.bounds.y,
-        width: presentationDisplay.bounds.width,
-        height: presentationDisplay.bounds.height,
-      });
-      songPresentationWin.setFullScreen(true);
-
-      console.log("✅ Fullscreen configured on target display");
-      logSongProjection("Fullscreen configured", {
-        bounds: songPresentationWin.getBounds(),
-        displayId: presentationDisplay.id,
-        isFullscreen: songPresentationWin.isFullScreen(),
-      });
-    }
-  }
+  
 
   // Load the React-based song presentation display page
   if (VITE_DEV_SERVER_URL) {
