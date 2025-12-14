@@ -158,8 +158,18 @@ async function createMainWindow() {
   }
 
   mainWin.webContents.on("before-input-event", (event, input) => {
+    // F12 toggles dev tools
+    if (input.key === "F12" && input.type === "keyDown") {
+      if (mainWin?.webContents.isDevToolsOpened()) {
+        mainWin.webContents.closeDevTools();
+      } else {
+        mainWin?.webContents.openDevTools();
+      }
+      event.preventDefault();
+      return;
+    }
+
     if (
-      input.key === "F12" || // Disable F12 for dev tools
       (input.key === "I" && input.control && input.shift) || // Disable Ctrl+Shift+I or Cmd+Opt+I
       (input.key === "R" && input.control) || // Disable Ctrl+R for reload
       (input.key === "R" && input.meta) // Disable Cmd+R for reload on macOS
@@ -1013,33 +1023,6 @@ ipcMain.handle("save-display-preferences", async (_, preferences) => {
   } catch (error) {
     console.error("Error saving display preferences:", error);
     logSystemError("Failed to save display preferences", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
-});
-
-ipcMain.handle("load-display-preferences", async () => {
-  try {
-    const prefsPath = path.join(
-      os.homedir(),
-      ".ev-songapp-display-config.json"
-    );
-
-    if (!fs.existsSync(prefsPath)) {
-      return { success: true, data: null };
-    }
-
-    const prefsData = JSON.parse(fs.readFileSync(prefsPath, "utf8"));
-    console.log("📖 Display preferences loaded:", prefsData);
-
-    return { success: true, data: prefsData };
-  } catch (error) {
-    console.error("Error loading display preferences:", error);
-    logSystemError("Failed to load display preferences", {
       error: error instanceof Error ? error.message : String(error),
     });
     return {

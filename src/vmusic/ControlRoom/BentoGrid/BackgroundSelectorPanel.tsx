@@ -145,14 +145,13 @@ export const BackgroundSelectorPanel: React.FC<
   };
 
   const handleCancelBackground = () => {
-    // Revert preview to current selected background
-    if (selectedBackground) {
-      window.dispatchEvent(
-        new CustomEvent("preview-background-change", {
-          detail: { src: selectedBackground.src, isPreview: false },
-        })
-      );
-    }
+    // Revert preview to current selected background (or empty)
+    const revertSrc = selectedBackground ? selectedBackground.src : "";
+    window.dispatchEvent(
+      new CustomEvent("preview-background-change", {
+        detail: { src: revertSrc, isPreview: false, isCancel: true },
+      })
+    );
 
     setShowConfirmation(false);
     setPendingBackground(null);
@@ -348,12 +347,9 @@ export const BackgroundSelectorPanel: React.FC<
         <div className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
           <div className="bg-app-surface dark:bg-black border border-app-border rounded-lg p-6 max-w-xs w-full mx-4 shadow-2xl">
             <div className="space-y-4">
-             
-                <p className="text-sm text-center font-medium text-app-text mb-2">
-                  Apply Background?
-                </p>
-               
-            
+              <p className="text-sm text-center font-medium text-app-text mb-2">
+                Apply Background?
+              </p>
 
               <div className="flex gap-3 justify-center">
                 <GamyCard

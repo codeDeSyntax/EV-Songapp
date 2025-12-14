@@ -186,7 +186,7 @@ const TitleBar = () => {
               >
                 <HomeFilled className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white" />
               </div>
-              <div
+              {/* <div
                 onClick={setThemeChoice}
                 className={`w-6 h-6 rounded-full flex items-center justify-center group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 ${
                   currentScreen === "Songs" ? "flex" : "hidden"
@@ -194,8 +194,8 @@ const TitleBar = () => {
                 title="Mild theme 🟤"
               >
                 <SwitchCamera className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white" />
-              </div>
-              <div
+              </div> */}
+              {/* <div
                 onClick={() => dispatch(setCurrentScreen("backgrounds"))}
                 className={`w-6 h-6 rounded-full flex items-center justify-center group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 relative ${
                   currentScreen === "backgrounds" ? "bg-primary/10" : ""
@@ -206,7 +206,7 @@ const TitleBar = () => {
                 {currentScreen === "backgrounds" && (
                   <div className="absolute -bottom-2 w-1 h-1 rounded-full bg-primary"></div>
                 )}
-              </div>
+              </div> */}
               <div
                 onClick={() => dispatch(setCurrentScreen("userguide"))}
                 className={`w-6 h-6 rounded-full flex items-center justify-center group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 relative ${

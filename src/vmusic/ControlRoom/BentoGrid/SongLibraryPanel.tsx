@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { GamyCard } from "../../shared/GamyCard";
 import { useAppSelector, useAppDispatch } from "@/store";
-import { setCurrentSlide, removeSlide } from "@/store/slices/songSlidesSlice";
+import {
+  setCurrentSlide,
+  removeSlide,
+  setSlides,
+} from "@/store/slices/songSlidesSlice";
 import { useProjectionState } from "@/hooks/useProjectionState";
 import { Trash2 } from "lucide-react";
 import { encodeSongData } from "../utils/songFileFormat";
@@ -145,8 +149,31 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
     // Auto-save to file if we have a title
     if (songTitle) {
       try {
+        // Filter out the deleted slide
         const updatedSlides = slides.filter((s) => s.id !== currentSlideId);
-        const encodedContent = encodeSongData(songTitle, updatedSlides);
+
+        // Renumber slides by type
+        const renumberedSlides = updatedSlides.map((slide) => {
+          // Count how many slides of the same type come before this one
+          const sameTypeBefore = updatedSlides
+            .slice(0, updatedSlides.indexOf(slide))
+            .filter((s) => s.type === slide.type).length;
+
+          const newNumber = sameTypeBefore + 1;
+
+          return {
+            ...slide,
+            number: newNumber,
+            label: `${
+              slide.type.charAt(0).toUpperCase() + slide.type.slice(1)
+            } ${newNumber}`,
+          };
+        });
+
+        // Update Redux state with renumbered slides
+        dispatch(setSlides(renumberedSlides));
+
+        const encodedContent = encodeSongData(songTitle, renumberedSlides);
         await window.api.saveSong("", songTitle, encodedContent);
         onSaveSuccess(`Slide deleted and saved to "${songTitle}".evsong`);
         // Reload songs to refresh the list
@@ -191,14 +218,14 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
   };
   return (
     <div
-      className="h-full flex flex-col rounded-md  px-0 py-0"
+      className="h-full flex flex-col rounded-md bg-app-surface dark:bg-black  px-0 py-0"
       style={{
         border: "none",
         boxShadow: "none",
       }}
     >
       {/* Header */}
-      <div className="p-3 bg-app-surface border-b border-app-border flex items-center justify-between flex-shrink-0">
+      <div className="p-3  border-b border-app-border flex items-center justify-between flex-shrink-0">
         <span className="text-ew-sm font-medium text-app-text">
           Song Slides
         </span>
@@ -209,7 +236,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
           <button
             onClick={handleDeleteSlide}
             disabled={!currentSlideId || slides.length === 1}
-            className="h-8 w-8 bg-app-surface hover:bg-red-500/20 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="h-8 w-8  hover:bg-red-500/20 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             title="Delete current slide"
           >
             <Trash2 className="w-4 h-4 text-red-500" />
@@ -218,7 +245,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
       </div>
 
       {/* Slides List */}
-      <div className="flex-1 p-2 bg-app-surface overflow-y-auto no-scrollbar pb-20 space-y-2 ">
+      <div className="flex-1 p-2  overflow-y-auto no-scrollbar pb-20 space-y-2 ">
         {slides.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gp text-center px-4">
             <img
@@ -284,12 +311,12 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
                     ))}
 
                   {/* Semi-transparent overlay for readability */}
-                  <div className="absolute inset-0 bg-black/30" />
+                  <div className="absolute inset-0 bg-black/30 " />
 
                   {/* Content */}
-                  <div className="relative h-full p-2 flex flex-col">
+                  <div className="relative h-[90%] p-2 flex items-start justify-center overflow-hidden mb-4">
                     {/* Slide Header */}
-                    <div className="flex items-center justify-between mb-1 flex-shrink-0">
+                    <div className="absolute p-2 gap-2 top-0 left-0 flex flex-col items-center justify-between mb-1 flex-shrink-0">
                       <span className="text-[10px] font-bold text-white drop-shadow-md">
                         {slide.label}
                       </span>
@@ -299,7 +326,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
                             ? "bg-app-blue/80 text-white"
                             : slide.type === "bridge"
                             ? "bg-app-accent/80 text-white"
-                            : "bg-gray-700/80 text-white"
+                            : "bg-black text-white"
                         }`}
                       >
                         {slide.type}
@@ -307,15 +334,15 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
                     </div>
 
                     {/* Slide Content Preview - Vertical Text */}
-                    <div className="flex-1 overflow-hidden flex items-center justify-center">
-                      <pre
-                        className="text-[12px] text-app-accent dark:text-white leading-tight whitespace-pre-wrap line-clamp-4 font-sans text-center"
+                    <div className="flex- overflow-hidden flex items-center justify-center ">
+                      <span
+                        className="text-[12px] text-app-accent dark:text-white leading-tight whitespace-pre-wrap line-clmp-4 font-sans text-center"
                         style={{
                           textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
                         }}
                       >
                         {slide.content}
-                      </pre>
+                      </span>
                     </div>
                   </div>
                 </div>

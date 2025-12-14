@@ -44,12 +44,8 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
           false
         );
 
-        // Get song directory from any existing song path
-        const songRepo = songs[0]?.path
-          ? songs[0].path.substring(0, songs[0].path.lastIndexOf("\\"))
-          : "";
-
-        await window.api.saveSong(songRepo, songToDelete.title, encodedContent);
+        // Save to app data directory (empty string)
+        await window.api.saveSong("", songToDelete.title, encodedContent);
 
         const updatedSong = { ...songToDelete, isPrelisted: false };
         dispatch(updateSong(updatedSong));

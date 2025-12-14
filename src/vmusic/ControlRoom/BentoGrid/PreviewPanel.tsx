@@ -152,10 +152,19 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
     // Listen for preview background changes (before confirmation)
     const handlePreviewBackgroundChange = (e: Event) => {
-      const customEvent = e as CustomEvent<{ src: string; isPreview: boolean }>;
+      const customEvent = e as CustomEvent<{
+        src: string;
+        isPreview: boolean;
+        isCancel?: boolean;
+      }>;
       if (customEvent.detail) {
-        // Set preview background (doesn't affect localStorage)
-        setPreviewBgSrc(customEvent.detail.src);
+        if (customEvent.detail.isCancel) {
+          // On cancel, revert to the selected background
+          setPreviewBgSrc("");
+        } else {
+          // Set preview background (doesn't affect localStorage)
+          setPreviewBgSrc(customEvent.detail.src);
+        }
       }
     };
 

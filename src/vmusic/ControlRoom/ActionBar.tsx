@@ -1,3 +1,4 @@
+// ActionBar Component - Main control panel for song management and projection
 import React, { useState, useEffect, useRef } from "react";
 import {
   Plus,
@@ -7,8 +8,7 @@ import {
   Folder,
   Radio,
   ChevronDown,
-  Bold,
-  Italic,
+  Printer,
   Underline,
   Strikethrough,
   Save,
@@ -16,6 +16,8 @@ import {
   Settings,
   Monitor,
   MonitorStop,
+  BellPlus,
+  Sheet,
 } from "lucide-react";
 import { Tooltip } from "antd";
 import { GamyCard } from "../shared/GamyCard";
@@ -136,6 +138,43 @@ export const ActionBar: React.FC<ActionBarProps> = ({
 
   // Get the currently loaded song from the songs list (using songs prop)
   const currentSong = songs.find((song) => song.id === currentSongId);
+
+  // Get prelist songs and all songs
+  const prelistedSongs = songs.filter((song) => song.isPrelisted);
+  const allSongs = songs;
+
+  // PDF generation handlers
+  const handlePrintPrelistToPDF = async () => {
+    try {
+      const { generatePrelistPDF } = await import("@/utils/pdfGenerator");
+      await generatePrelistPDF(prelistedSongs);
+      addToast(`Prelist PDF generated successfully!`, "success");
+    } catch (error) {
+      console.error("Error generating prelist PDF:", error);
+      addToast(
+        error instanceof Error
+          ? error.message
+          : "Failed to generate prelist PDF",
+        "error"
+      );
+    }
+  };
+
+  const handlePrintAllSongsToPDF = async () => {
+    try {
+      const { generateSongsDatabasePDF } = await import("@/utils/pdfGenerator");
+      await generateSongsDatabasePDF(allSongs);
+      addToast(`Songs database PDF generated successfully!`, "success");
+    } catch (error) {
+      console.error("Error generating songs database PDF:", error);
+      addToast(
+        error instanceof Error
+          ? error.message
+          : "Failed to generate songs database PDF",
+        "error"
+      );
+    }
+  };
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -281,7 +320,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                 slides.length === 0 ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
-              <Plus className="w-3.5 h-3.5" />
+              <BellPlus className="w-3.5 h-3.5" />
             </button>
           </Tooltip>
 
@@ -302,7 +341,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           <Tooltip title="Add New Slide" placement="bottom">
             <button
               onClick={() => dispatch(setShowAddSlideDialog(true))}
-              className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-accent text-white hover:bg-app-accent/80 border border-app-border"
+              className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-text-muted daek:bg-app-surface text-white hover:bg-app-accent/80 border border-app-border"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -565,20 +604,36 @@ export const ActionBar: React.FC<ActionBarProps> = ({
 
           <div className="w-px h-6 mx-1 bg-app-border"></div>
 
-          {/* Text Formatting */}
-          <Tooltip title="Bold Text" placement="bottom">
-            <button className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg hover:bg-app-surface-hover text-app-text border border-app-border">
-              <Bold className="w-3.5 h-3.5" />
+          {/* PDF Export */}
+          <Tooltip title="Print Prelist to PDF" placement="bottom">
+            <button
+              onClick={handlePrintPrelistToPDF}
+              disabled={prelistedSongs.length === 0}
+              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg text-app-text border border-app-border ${
+                prelistedSongs.length > 0
+                  ? "hover:bg-app-surface-hover"
+                  : "opacity-50 cursor-not-allowed"
+              }`}
+            >
+              <Sheet className="w-3.5 h-3.5" />
             </button>
           </Tooltip>
 
-          <Tooltip title="Italic Text" placement="bottom">
-            <button className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg hover:bg-app-surface-hover text-app-text border border-app-border">
-              <Italic className="w-3.5 h-3.5" />
+          <Tooltip title="Print All Songs to PDF" placement="bottom">
+            <button
+              onClick={handlePrintAllSongsToPDF}
+              disabled={allSongs.length === 0}
+              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg text-app-text border border-app-border ${
+                allSongs.length > 0
+                  ? "hover:bg-app-surface-hover"
+                  : "opacity-50 cursor-not-allowed"
+              }`}
+            >
+              <Printer className="w-3.5 h-3.5" />
             </button>
           </Tooltip>
 
-          <Tooltip title="Underline Text" placement="bottom">
+          {/* <Tooltip title="Underline Text" placement="bottom">
             <button className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg hover:bg-app-surface-hover text-app-text border border-app-border">
               <Underline className="w-3.5 h-3.5" />
             </button>
@@ -588,7 +643,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
             <button className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg hover:bg-app-surface-hover text-app-text border border-app-border">
               <Strikethrough className="w-3.5 h-3.5" />
             </button>
-          </Tooltip>
+          </Tooltip> */}
         </div>
 
         {/* Center: Search */}
@@ -605,13 +660,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
         {/* Right: Status & Go Live */}
         <div className="flex items-center gap-2">
           {isProjectionActive && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-3xl border border-red-200 bg-red-50">
-              <Radio className="w-3 h-3 text-red-500 animate-pulse" />
-              <span className="text-ew-xs font-medium text-red-600">LIVE</span>
-            </div>
-          )}
-
-          <Tooltip title="Present Song Live" placement="bottom">
+             <Tooltip title="Present Song Live" placement="bottom">
             <button
               onClick={() => selectedSong && presentSong(selectedSong)}
               disabled={!selectedSong}
@@ -624,6 +673,9 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               <Radio className="w-3.5 h-3.5" />
             </button>
           </Tooltip>
+          )}
+
+         
         </div>
       </div>
     </div>
