@@ -177,17 +177,16 @@ export const BottomRightPanel: React.FC<BottomRightPanelProps> = ({
   ];
 
   return (
-    <GamyCard isDarkMode={isDarkMode} className="h-full flex flex-col p-3">
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-app-border">
-        <Settings className="w-4 h-4 text-app-blue" />
-        <h3 className="text-sm font-semibold text-app-text">
-          Projection Settings
-        </h3>
-      </div>
-
+    <GamyCard
+      isDarkMode={isDarkMode}
+      className="h-full flex flex-col p-3 bg-white/30 dark:bg-app-surface"
+      style={{
+        border: "none",
+      }}
+    >
       <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-2.5">
         {/* Background Card - Spans 2 columns (full width) */}
-        <div className="col-span-2 p-3 rounded-xl bg-app-surface hover:bg-app-surface-hover transition-all duration-200 border border-app-border/50 shadow-sm">
+        <div className="col-span-2 p-3 rounded-xl bg-app-bg hover:bg-app-surface-hover transition-all duration-200 border border-app-border/50 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Palette className="w-4 h-4 text-app-blue flex-shrink-0" />
             <span className="text-xs font-semibold text-app-text">
@@ -222,7 +221,7 @@ export const BottomRightPanel: React.FC<BottomRightPanelProps> = ({
         </div>
 
         {/* Font Card - Takes 1 column */}
-        <div className="col-span-1 p-3 rounded-xl bg-app-surface hover:bg-app-surface-hover transition-all duration-200 border border-app-border/50 shadow-sm">
+        <div className="col-span-1 p-3 rounded-xl bg-app-bg hover:bg-app-surface-hover transition-all duration-200 border border-app-border/50 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Type className="w-4 h-4 text-app-blue flex-shrink-0" />
             <span className="text-xs font-semibold text-app-text">Font</span>
@@ -242,7 +241,7 @@ export const BottomRightPanel: React.FC<BottomRightPanelProps> = ({
         </div>
 
         {/* Display Card - Takes 1 column */}
-        <div className="col-span-1 p-3 rounded-xl bg-app-surface hover:bg-app-surface-hover transition-all duration-200 border border-app-border/50 shadow-sm">
+        <div className="col-span-1 p-3 rounded-xl bg-app-bg hover:bg-app-surface-hover transition-all duration-200 border border-app-border/50 shadow-sm">
           <div className="flex items-center gap-2 mb-2">
             <Monitor className="w-4 h-4 text-app-blue flex-shrink-0" />
             <span className="text-xs font-semibold text-app-text">Display</span>

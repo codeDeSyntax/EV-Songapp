@@ -116,7 +116,7 @@ const TitleBar = () => {
     console.log("Add to prelist clicked");
   };
 
-  const selectedBg = isDarkMode ? "url('./wood10.jpg')" : "url(./wood6.jpg)";
+  const selectedBg = isDarkMode ? "url('./wood10.jpg')" : "url(./wood10.jpg)";
 
   return (
     <div
@@ -127,7 +127,7 @@ const TitleBar = () => {
           backgroundImage: !isDarkMode
             ? `linear-gradient(to bottom,
              rgba(255, 255, 255, 0%) 0%,
-             rgba(250, 238, 209, 1) 100%),
+             rgba(160, 160, 160, 1) 100%),
              ${selectedBg}`
             : `linear-gradient(to bottom,
              rgba(44, 44, 44, 0) 0%,
@@ -184,7 +184,7 @@ const TitleBar = () => {
                  ${currentScreen === "Songs" ? "bg-primary/20" : "hidden"}
                 `}
               >
-                <HomeFilled className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white" />
+                <HomeFilled className="w-4 h-4 text-app-text group-hover:text-black dark:group-hover:text-white" />
               </div>
               {/* <div
                 onClick={setThemeChoice}
@@ -193,7 +193,7 @@ const TitleBar = () => {
                 }`}
                 title="Mild theme 🟤"
               >
-                <SwitchCamera className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white" />
+                <SwitchCamera className="w-4 h-4 text-app-text group-hover:text-black dark:group-hover:text-white" />
               </div> */}
               {/* <div
                 onClick={() => dispatch(setCurrentScreen("backgrounds"))}
@@ -202,7 +202,7 @@ const TitleBar = () => {
                 }`}
                 title="Presentation backgrounds"
               >
-                <GalleryHorizontal className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white" />
+                <GalleryHorizontal className="w-4 h-4 text-app-text group-hover:text-black dark:group-hover:text-white" />
                 {currentScreen === "backgrounds" && (
                   <div className="absolute -bottom-2 w-1 h-1 rounded-full bg-primary"></div>
                 )}
@@ -214,7 +214,7 @@ const TitleBar = () => {
                 } ${currentScreen === "userguide" ? "bg-primary/10" : ""}`}
                 title="User manual"
               >
-                <User2Icon className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-black dark:group-hover:text-white" />
+                <User2Icon className="w-4 h-4 text-app-text group-hover:text-black dark:group-hover:text-white" />
                 {currentScreen === "userguide" && (
                   <div className="absolute -bottom-2 w-1 h-1 rounded-full bg-primary"></div>
                 )}

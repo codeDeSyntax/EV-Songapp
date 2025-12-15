@@ -520,7 +520,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
             </Tooltip>
 
             {showFontDropdown && (
-              <div className="absolute top-full left-0 mt-1 w-56 bg-app-bg border border-app-border rounded-lg shadow-lg z-[9999] flex flex-col">
+              <div className="absolute top-full left-0 mt-1 w-56 bg-app-surface border border-app-border rounded-lg shadow-lg z-[9999] flex flex-col">
                 {/* Search Box */}
                 <div className="p-2 border-b border-app-border">
                   <input
@@ -583,7 +583,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                               })
                             );
                           }}
-                          className={`w-full bg-transparent text-left px-3  text-ew-sm text-app-text hover:bg-app-surface-hover transition-colors ${
+                          className={`w-full bg-transparent text-left px-3  text-ew-sm text-app-text-muted hover:bg-app-surface-hover transition-colors ${
                             selectedFont === font ? "bg-app-surface" : ""
                           }`}
                           style={{ fontFamily: font }}
@@ -660,22 +660,20 @@ export const ActionBar: React.FC<ActionBarProps> = ({
         {/* Right: Status & Go Live */}
         <div className="flex items-center gap-2">
           {isProjectionActive && (
-             <Tooltip title="Present Song Live" placement="bottom">
-            <button
-              onClick={() => selectedSong && presentSong(selectedSong)}
-              disabled={!selectedSong}
-              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-red text-white ${
-                selectedSong
-                  ? "hover:bg-app-red-hover"
-                  : "opacity-50 cursor-not-allowed"
-              }`}
-            >
-              <Radio className="w-3.5 h-3.5" />
-            </button>
-          </Tooltip>
+            <Tooltip title="Present Song Live" placement="bottom">
+              <button
+                onClick={() => selectedSong && presentSong(selectedSong)}
+                disabled={!selectedSong}
+                className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-red text-white ${
+                  selectedSong
+                    ? "hover:bg-app-red-hover"
+                    : "opacity-50 cursor-not-allowed"
+                }`}
+              >
+                <Radio className="w-3.5 h-3.5" />
+              </button>
+            </Tooltip>
           )}
-
-         
         </div>
       </div>
     </div>

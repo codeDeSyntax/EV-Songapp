@@ -5,6 +5,7 @@ import {
   setSlides,
   setSongTitle,
   setCurrentSongId,
+  setCurrentSlide,
 } from "@/store/slices/songSlidesSlice";
 import { updateSong } from "@/store/slices/songSlice";
 import { parseLyrics } from "./utils/lyricsParser";
@@ -71,6 +72,10 @@ const ControlRoom = () => {
     dispatch(setSlides(slides));
     dispatch(setSongTitle(song.title));
     dispatch(setCurrentSongId(song.id));
+    // Set current slide to first slide to ensure projection works
+    if (slides.length > 0) {
+      dispatch(setCurrentSlide(slides[0].id));
+    }
     addToast(`Loaded "${song.title}" with ${slides.length} slides`, "success");
   };
 

@@ -40,30 +40,30 @@ export const GamyCard: React.FC<GamyCardProps> = ({
               fontFamily: "garamond",
             }
           : {
-              background:
-                blackBackground && isDarkMode
-                  ? "#000000"
-                  : isDarkMode
-                  ? "linear-gradient(145deg, #2c2c2c, #1a1a1a)"
-                  : "linear-gradient(145deg, #f5e6c8, #faeed1)",
-              backgroundImage:
-                blackBackground && isDarkMode
-                  ? "repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px)"
-                  : isDarkMode
-                  ? "linear-gradient(145deg, #2c2c2c, #1a1a1a), repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px)"
-                  : "linear-gradient(145deg, #f5e6c8, #faeed1), repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(154, 103, 74, 0.03) 20px, rgba(154, 103, 74, 0.03) 21px), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(154, 103, 74, 0.03) 20px, rgba(154, 103, 74, 0.03) 21px)",
+              // background:
+              //   blackBackground && isDarkMode
+              //     ? "#000000"
+              //     : isDarkMode
+              //     ? "linear-gradient(145deg, #2c2c2c, #1a1a1a)"
+              //     : "linear-gradient(145deg, #9a9a9a, #8a8a8a)",
+              // backgroundImage:
+              //   blackBackground && isDarkMode
+              //     ? "repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px)"
+              //     : isDarkMode
+              //     ? "linear-gradient(145deg, #2c2c2c, #1a1a1a), repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px)"
+              //     : "linear-gradient(145deg, #9a9a9a, #8a8a8a), repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(0, 0, 0, 0.03) 20px, rgba(0, 0, 0, 0.03) 21px), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(0, 0, 0, 0.03) 20px, rgba(0, 0, 0, 0.03) 21px)",
               boxShadow:
                 blackBackground && isDarkMode
                   ? "inset 2px 2px 4px rgba(0,0,0,0.8), inset -2px -2px 4px rgba(255,255,255,0.03), 0 8px 16px rgba(0,0,0,0.6)"
                   : isDarkMode
                   ? "inset 2px 2px 4px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(255,255,255,0.05), 0 8px 16px rgba(0,0,0,0.4)"
-                  : "inset 2px 2px 4px rgba(0,0,0,0.2), inset -2px -2px 4px rgba(255,255,255,0.8), 0 8px 16px rgba(236, 236, 236, 0.1)",
+                  : "inset 2px 2px 4px rgba(0,0,0,0.3), inset -2px -2px 4px rgba(255,255,255,0.2), 0 8px 16px rgba(0, 0, 0, 0.1)",
               border: `1px solid ${
                 blackBackground && isDarkMode
                   ? "#222"
                   : isDarkMode
                   ? "#444"
-                  : "#d4c4a8"
+                  : "#606060"
               }`,
             }),
         ...style,

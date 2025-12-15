@@ -311,6 +311,26 @@ export const useProjectionData = () => {
     [dispatch, parseSongContent, createDisplaySequence]
   );
 
+  // Listen for display-song events from projectSong IPC handler
+  useEffect(() => {
+    const handleDisplaySong = (songData: SongData) => {
+      handleSongData(songData);
+      // Save as last projected song with proper format
+      const lastSong = {
+        ...songData,
+        songTitle: songData.title,
+        currentIndex: 0,
+        slides: songData.slides || [],
+      };
+      dispatch(setLastProjectedSong(lastSong));
+    };
+
+    if (window.api && window.api.onDisplaySong) {
+      const cleanup = window.api.onDisplaySong(handleDisplaySong);
+      return cleanup;
+    }
+  }, [dispatch, handleSongData]);
+
   // IPC listener for slide updates and navigation commands
   useEffect(() => {
     if (!window.api?.onSongProjectionCommand) return;

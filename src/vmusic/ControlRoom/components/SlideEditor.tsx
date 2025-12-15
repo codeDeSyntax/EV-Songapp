@@ -47,7 +47,7 @@ export const SlideEditor: React.FC<SlideEditorProps> = ({
       className="absolute inset-0 z-50 flex flex-col items-center justify-center p-2"
       onClick={(e) => e.stopPropagation()}
       style={{
-        backgroundColor: isDarkMode ? "#000000" : "#fef3e2",
+        backgroundColor: isDarkMode ? "#000000" : "#fcfcfc",
       }}
     >
       {/* Textarea styled like normal preview */}

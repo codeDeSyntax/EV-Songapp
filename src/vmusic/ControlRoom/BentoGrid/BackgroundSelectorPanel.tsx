@@ -177,10 +177,10 @@ export const BackgroundSelectorPanel: React.FC<
       style={{
         border: "none",
       }}
-      className="h-full px-1 flex flex-col overflow-hidden"
+      className="h-full px-1 flex flex-col overflow-hidden py-0 bg-white/50 dark:bg-app-surface"
     >
       {/* Header */}
-      <div className="p-3 border-b border-app-border flex items-center justify-between flex-shrink-0">
+      <div className="px-3 pt-2 border-b border-app-border flex items-center justify-between flex-shrink-0">
         <h3 className="text-ew-sm font-medium text-app-text">Backgrounds</h3>
         <div className="flex items-center gap-2 relative">
           <GamyCard
@@ -345,10 +345,10 @@ export const BackgroundSelectorPanel: React.FC<
       {/* Confirmation Modal */}
       {showConfirmation && pendingBackground && (
         <div className="absolute inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
-          <div className="bg-app-surface dark:bg-black border border-app-border rounded-lg p-6 max-w-xs w-full mx-4 shadow-2xl">
+          <div className="bg-white dark:bg-black border border-app-border rounded-lg p-6 max-w-xs w-full mx-4 shadow-2xl">
             <div className="space-y-4">
               <p className="text-sm text-center font-medium text-app-text mb-2">
-                Apply Background?
+                Apply
               </p>
 
               <div className="flex gap-3 justify-center">
@@ -358,15 +358,15 @@ export const BackgroundSelectorPanel: React.FC<
                   style={{
                     border: "none",
                     boxShadow: "none",
-                    borderRadius: "none",
+                    borderRadius: "5px",
                   }}
                 >
                   <button
                     onClick={handleCancelBackground}
-                    className="p-2  bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-all"
+                    className="  bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-all"
                     title="Cancel"
                   >
-                    <X className="w-5 h-5" />
+                    <img src="./close.svg" alt="Cancel" className="w-8 h-8" />
                   </button>
                 </GamyCard>
                 <GamyCard
@@ -380,10 +380,10 @@ export const BackgroundSelectorPanel: React.FC<
                 >
                   <button
                     onClick={handleApplyBackground}
-                    className="p-2  bg-green-500/10 hover:bg-green-500/20 text-green-500 transition-all"
+                    className="  bg-green-500/10 hover:bg-green-500/20 text-green-500 transition-all"
                     title="Apply"
                   >
-                    <Check className="w-5 h-5" />
+                    <img src="./done.svg" alt="Cancel" className="w-8 h-8" />
                   </button>
                 </GamyCard>
               </div>

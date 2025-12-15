@@ -26,17 +26,37 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [hoveredSong, setHoveredSong] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Filter songs based on search query (only after Enter is pressed)
   const filteredSongs = searchQuery.trim()
-    ? songs.filter(
-        (song) =>
-          song.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          song.content.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? songs.filter((song) => {
+        const lowerQuery = searchQuery.toLowerCase();
+        const titleMatch = song.title.toLowerCase().includes(lowerQuery);
+
+        // Search in decoded slides content if available
+        const contentMatch =
+          song.slides && song.slides.length > 0
+            ? song.slides.some((slide) =>
+                slide.content.toLowerCase().includes(lowerQuery)
+              )
+            : song.content.toLowerCase().includes(lowerQuery);
+
+        return titleMatch || contentMatch;
+      })
     : [];
+
+  // Reset selected index when filtered songs change
+  useEffect(() => {
+    if (filteredSongs.length > 0) {
+      setSelectedIndex(0);
+      setShowDropdown(true);
+    } else {
+      setShowDropdown(false);
+    }
+  }, [filteredSongs.length]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -68,11 +88,46 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
-      handleSearch();
+      // If dropdown is showing and there's a selected song, load it
+      if (
+        showDropdown &&
+        filteredSongs.length > 0 &&
+        filteredSongs[selectedIndex]
+      ) {
+        if (onSelectSong) {
+          onSelectSong(filteredSongs[selectedIndex]);
+          setShowDropdown(false);
+          setSearchTerm("");
+          updateSearchQuery("");
+          // Blur the input so keyboard events work elsewhere
+          inputRef.current?.blur();
+        }
+      } else {
+        // Otherwise, trigger search
+        handleSearch();
+      }
     } else if (e.key === "Escape") {
       setSearchTerm("");
       updateSearchQuery("");
       setShowDropdown(false);
+      // Blur the input
+      inputRef.current?.blur();
+    } else if (
+      e.key === "ArrowDown" &&
+      showDropdown &&
+      filteredSongs.length > 0
+    ) {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev + 1) % filteredSongs.length);
+    } else if (
+      e.key === "ArrowUp" &&
+      showDropdown &&
+      filteredSongs.length > 0
+    ) {
+      e.preventDefault();
+      setSelectedIndex(
+        (prev) => (prev - 1 + filteredSongs.length) % filteredSongs.length
+      );
     }
   };
 
@@ -95,7 +150,7 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
           onChange={(e) => setSearchTerm(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Search songs... (Press Enter)"
-          className="w-full pl-8 pr-8 py-1.5 rounded-3xl border-none border-app-border focus:outline-none focus:ring-1 focus:ring-app-surface-hover text-ew-xs bg-app-bg text-app-text placeholder:text-app-text-muted"
+          className="w-full pl-8 pr-8 py-1.5 rounded-3xl border-none border-app-border focus:outline-none focus:ring-1 focus:ring-app-surface-hover text-ew-xs bg-white/20 dark:bg-app-bg text-app-text placeholder:text-app-text-muted"
           spellCheck={false}
         />
         {searchTerm && (
@@ -117,11 +172,12 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute top-full left-0 right-0 mt-1 z-[9999] max-h-80 overflow-y-auto no-scrollbar bg-app-bg border border-app-border rounded-lg  p-1"
+            className="absolute top-full w-[80%] left-0 right-0 mt-1 z-[9999] max-h-[80vh] min-h-[60vh] overflow-y-auto no-scrollbar bg-white dark:bg-app-bg border border-app-border rounded-lg  p-1"
           >
             <GamyCard
               isDarkMode={isDarkMode}
-              transparent={true}
+              // transparent={true}
+              className="h-[70vh] "
               style={{ boxShadow: "none" }}
             >
               {filteredSongs.length === 0 ? (
@@ -129,7 +185,7 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="p-8 flex flex-col items-center justify-center text-center text-app-text-muted text-ew-xs col-span-2"
+                  className="p-8 flex flex-col  items-center justify-center text-center text-app-text-muted text-ew-xs col-span-2"
                 >
                   <img
                     src="./no_files.svg"
@@ -142,41 +198,82 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
                   </p>
                 </motion.div>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  {filteredSongs.map((song, index) => (
-                    <motion.div
-                      key={song.path}
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.03, duration: 0.2 }}
-                      onClick={() => {
-                        if (onSelectSong) {
-                          onSelectSong(song);
-                          setShowDropdown(false);
-                          setSearchTerm("");
-                          updateSearchQuery("");
-                        }
-                      }}
-                    >
-                      <GamyCard
-                        isDarkMode={isDarkMode}
-                        className="cursor-pointer px-2 py-0.5 hover:bg-app-surface-hover transition-colors"
-                      >
-                        <div
-                          className="flex items-center justify-between gap-2"
-                          onMouseEnter={() => setHoveredSong(song.path)}
-                          onMouseLeave={() => setHoveredSong(null)}
+                <div className="flex gap-2 h-full">
+                  {/* Song List - Left Column */}
+                  <div className="w-[35%] h-full overflow-y-auto">
+                    <div className="space-y-1">
+                      {filteredSongs.map((song, index) => (
+                        <motion.div
+                          key={song.path}
+                          initial={{ opacity: 0, x: -5 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.02, duration: 0.2 }}
+                          onClick={() => {
+                            if (onSelectSong) {
+                              onSelectSong(song);
+                              setShowDropdown(false);
+                              setSearchTerm("");
+                              updateSearchQuery("");
+                              // Blur the input so keyboard events work elsewhere
+                              inputRef.current?.blur();
+                            }
+                          }}
                         >
-                          {/* Song Info */}
-                          <div className="flex-1 min-w-0">
-                            <span className="text-ew-sm font-medium text-app-text truncate block">
-                              {song.title}
-                            </span>
+                          <GamyCard
+                            isDarkMode={isDarkMode}
+                            className={`cursor-pointer px-2 py-0 transition-colors rounded-none ${
+                              selectedIndex === index
+                                ? "bg-app-blue/20 border-app-blue"
+                                : "hover:bg-app-surface-hover"
+                            }`}
+                            style={{
+                              boxShadow: "none",
+                              borderRadius: "5px",
+                            }}
+                          >
+                            <div
+                              className="flex items-center gap-2"
+                              onMouseEnter={() => setSelectedIndex(index)}
+                            >
+                              <span className="text-ew-sm font-medium text-app-text truncate block">
+                                {song.title}
+                              </span>
+                            </div>
+                          </GamyCard>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Lyrics Preview - Right Column */}
+                  <div className="flex-1 h-full overflow-y-auto ">
+                    <GamyCard
+                      isDarkMode={isDarkMode}
+                      className="h-full p-3 app "
+                      style={{ border: "none" }}
+                    >
+                      {filteredSongs[selectedIndex] && (
+                        <motion.div
+                          key={filteredSongs[selectedIndex].path}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <h3 className="text-ew-sm font-semibold text-app-text-muted mb-2">
+                            {filteredSongs[selectedIndex].title}
+                          </h3>
+                          <div className="text-ew-xs text-app-text whitespace-pre-wrap leading-relaxed">
+                            {filteredSongs[selectedIndex].slides &&
+                            filteredSongs[selectedIndex].slides!.length > 0
+                              ? filteredSongs[selectedIndex]
+                                  .slides!.map((slide, idx) => slide.content)
+                                  .join("\n\n")
+                              : filteredSongs[selectedIndex].content}
                           </div>
-                        </div>
-                      </GamyCard>
-                    </motion.div>
-                  ))}
+                        </motion.div>
+                      )}
+                    </GamyCard>
+                  </div>
                 </div>
               )}
             </GamyCard>

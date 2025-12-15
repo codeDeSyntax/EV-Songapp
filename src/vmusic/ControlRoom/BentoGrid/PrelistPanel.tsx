@@ -40,7 +40,10 @@ export const PrelistPanel: React.FC<PrelistPanelProps> = ({ isDarkMode }) => {
     <GamyCard
       isDarkMode={isDarkMode}
       // transparent={true}
-      className="h-full flex flex-col px-2 py-1"
+      className="h-full flex flex-col px-2 py-1 bg-white/30 dark:bg-app-surface"
+      style={{
+        border: "none",
+      }}
     >
       <div className="p-2 border-b border-app-border flex items-center justify-between flex-shrink-0">
         <span className="text-app-text font-semibold">Prelist</span>

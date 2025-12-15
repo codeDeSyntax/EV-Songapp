@@ -218,7 +218,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
   };
   return (
     <div
-      className="h-full flex flex-col rounded-md bg-app-surface dark:bg-black  px-0 py-0"
+      className="h-full flex flex-col rounded-md bg-white/50 dark:bg-black  px-0 py-0"
       style={{
         border: "none",
         boxShadow: "none",
@@ -314,9 +314,9 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
                   <div className="absolute inset-0 bg-black/30 " />
 
                   {/* Content */}
-                  <div className="relative h-[90%] p-2 flex items-start justify-center overflow-hidden mb-4">
+                  <div className="relative h-[90%] p-2 flex  items-start justify-between overflow-hidden mb-4">
                     {/* Slide Header */}
-                    <div className="absolute p-2 gap-2 top-0 left-0 flex flex-col items-center justify-between mb-1 flex-shrink-0">
+                    <div className=" p-2 gap-2 top-0 left-0 flex flex-col items-center justify-between mb-1 flex-shrink-0">
                       <span className="text-[10px] font-bold text-white drop-shadow-md">
                         {slide.label}
                       </span>
@@ -334,9 +334,9 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
                     </div>
 
                     {/* Slide Content Preview - Vertical Text */}
-                    <div className="flex- overflow-hidden flex items-center justify-center ">
+                    <div className="flex-1 overflow-hidden flex items-start justify-start ">
                       <span
-                        className="text-[12px] text-app-accent dark:text-white leading-tight whitespace-pre-wrap line-clmp-4 font-sans text-center"
+                        className="text-[12px] text-white/70 dark:text-white leading-tight whitespace-pre-wrap line-clamp-5 font-sans text-left"
                         style={{
                           textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
                         }}

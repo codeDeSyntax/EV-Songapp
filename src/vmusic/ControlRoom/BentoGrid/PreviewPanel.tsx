@@ -214,8 +214,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
       if (slides.length === 0) return;
 
-      // Handle Enter key for projection
-      if (e.key === "Enter") {
+      // Handle Space bar for projection
+      if (e.key === " ") {
         e.preventDefault();
         handleProjectCurrentSong();
         return;
@@ -238,7 +238,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [slides, currentIndex, isEditingSlide, dispatch]);
+  }, [slides, currentIndex, isEditingSlide, dispatch, songTitle, addToast]);
 
   // Handle projection of current song
   const handleProjectCurrentSong = async () => {
@@ -579,7 +579,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
               onCancel={() => dispatch(setShowAddSlideDialog(false))}
             />
           ) : currentSlide ? (
-            <div className="text-app-accent dark:text-white text-center max-w-6xl w-full overflow-y-scroll h-[95%] max-h-[54vh] px-4 no-scrollbar">
+            <div className="text-white text-center max-w-6xl w-full overflow-y-scroll h-[95%] max-h-[54vh] px-4 no-scrollbar">
               <pre
                 className="font-sans text-2xl leading-relaxed whitespace-pre-wrap text-shadow-lg"
                 style={{
@@ -604,21 +604,21 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
                     maskRepeat: "no-repeat",
                     maskSize: "contain",
                     maskPosition: "center",
-                    backgroundColor: isDarkMode ? "#e5e7eb" : "#1f2937",
+                    backgroundColor: isDarkMode ? "#e5e7eb" : "#ebeef2",
                   }}
                 />
                 <div className="absolute inset-0 bg-app-accent/20 rounded-full blur-xl animate-pulse" />
               </div>
-              <p className="text-app-text font-semibold text-ew-base mb-2">
+              <p className="text-white font-mono font-semibold text-ew-base mb-2">
                 Ready to paste lyrics
               </p>
-              <p className="text-app-text-muted text-ew-sm mb-1">
+              <p className="text-white font-mono text-ew-sm mb-1">
                 Click here and press{" "}
-                <kbd className="px-2 py-1 bg-app-surface border border-app-border rounded text-ew-xs font-mono">
+                <kbd className="px-2 py-1 bg-app-surface border border-app-border rounded text-sm font-mono">
                   Ctrl+V
                 </kbd>
               </p>
-              <p className="text-app-text-muted text-ew-xs mt-3">
+              <p className="text-white font-mono text-ew-xs mt-3">
                 Your song will be automatically organized into slides
               </p>
             </div>

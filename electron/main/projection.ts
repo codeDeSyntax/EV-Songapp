@@ -203,7 +203,7 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
     frame: false,
     show: false,
     alwaysOnTop: false,
-    skipTaskbar: true,
+    skipTaskbar: false,
     resizable: false,
     minimizable: false,
     maximizable: false,
@@ -215,9 +215,9 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
     icon: path.join(process.env.VITE_PUBLIC || "", "evsongsicon.png"),
     webPreferences: {
       preload,
-          nodeIntegration: false,
-          contextIsolation: true,
-          zoomFactor: 1.0,
+      nodeIntegration: false,
+      contextIsolation: true,
+      zoomFactor: 1.0,
       devTools: !!VITE_DEV_SERVER_URL,
     },
   };
@@ -247,8 +247,6 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
     displayCount: screen.getAllDisplays().length,
   });
 
-  
-
   // Load the React-based song presentation display page
   if (VITE_DEV_SERVER_URL) {
     songPresentationWin.loadURL(
@@ -265,7 +263,10 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
   // Show window after loading content
   console.log("🎭 Showing projection window");
   songPresentationWin.show();
-  console.log("✅ Projection window shown");
+
+  // Explicitly set fullscreen to ensure it takes effect
+  songPresentationWin.setFullScreen(true);
+  console.log("✅ Projection window shown and set to fullscreen");
 
   // Setup event listeners for single window
   songPresentationWin.on("closed", () => {
