@@ -337,6 +337,10 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     if (text && text.trim()) {
       const parsed = parseLyrics(text);
       dispatch(setSlides(parsed.slides));
+      // Set current slide to first slide to ensure projection works
+      if (parsed.slides.length > 0) {
+        dispatch(setCurrentSlide(parsed.slides[0].id));
+      }
     }
   };
 

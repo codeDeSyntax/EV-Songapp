@@ -1,4 +1,10 @@
-import React, { useRef, useEffect, useMemo } from "react";
+import React, {
+  useRef,
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+} from "react";
 
 interface SlideContentProps {
   content: string;
@@ -19,6 +25,10 @@ export const SlideContent: React.FC<SlideContentProps> = ({
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textContentRef = useRef<HTMLDivElement>(null);
+  const [calculatedFontSize, setCalculatedFontSize] = useState(baseFontSize);
+  const [isResizing, setIsResizing] = useState(false);
 
   useEffect(() => {
     // Force font to load
@@ -78,52 +88,93 @@ export const SlideContent: React.FC<SlideContentProps> = ({
     return content.split("\n").filter((line) => line.trim());
   }, [content]);
 
-  // Calculate dynamic line height based on line count
-  const dynamicLineHeight = useMemo(() => {
-    const lineCount = contentLines.length;
-    if (lineCount === 1) return 1.0;
-    if (lineCount === 2) return 1.4;
-    if (lineCount === 3) return 1.35;
-    if (lineCount === 4) return 1.3;
-    if (lineCount <= 6) return 1.25;
-    return 1.2;
-  }, [contentLines.length]);
+  // Binary search auto-sizing to find maximum font size that fits
+  const resizeToFit = useCallback(() => {
+    if (!textContentRef.current || !containerRef.current) return;
+    if (isResizing) return;
 
-  // Calculate font size based on line count
-  const calculatedFontSize = useMemo(() => {
-    if (!contentLines.length) return baseFontSize;
+    setIsResizing(true);
 
-    const lineCount = contentLines.length;
-    let baseSize: number;
+    const contentElement = textContentRef.current;
+    const containerElement = containerRef.current;
 
-    if (lineCount === 1) {
-      baseSize = baseFontSize * 2.5;
-    } else if (lineCount === 2) {
-      baseSize = baseFontSize * 2.0;
-    } else if (lineCount === 3) {
-      baseSize = baseFontSize * 1.7;
-    } else if (lineCount === 4) {
-      baseSize = baseFontSize * 1.5;
-    } else if (lineCount <= 6) {
-      baseSize = baseFontSize * 1.3;
-    } else if (lineCount <= 8) {
-      baseSize = baseFontSize * 1.1;
-    } else {
-      baseSize = baseFontSize * 1.0;
+    // Available space - account for p-12 padding (3rem = 48px on each side)
+    const paddingVertical = 96; // 48px top + 48px bottom
+    const availableHeight = containerElement.clientHeight - paddingVertical;
+
+    // Binary search for optimal font size
+    let low = 12;
+    let high = 500 * fontSizeMultiplier;
+    let optimalSize = low;
+
+    // Very small safety margin (1%) to prevent edge overflow while maximizing size
+    const heightMargin = availableHeight * 0.01;
+
+    // Binary search with 30 iterations for precision
+    for (let i = 0; i < 30; i++) {
+      const testSize = Math.floor((low + high) / 2);
+
+      // Apply test size
+      contentElement.style.fontSize = `${testSize}px`;
+
+      // Calculate dynamic line height based on font size
+      let lineHeight = 1.2;
+      if (testSize >= 100) lineHeight = 1.0;
+      else if (testSize >= 80) lineHeight = 1.2;
+      else if (testSize >= 60) lineHeight = 1.2;
+      else if (testSize >= 40) lineHeight = 1.2;
+      else lineHeight = 1.3;
+
+      contentElement.style.lineHeight = `${lineHeight}`;
+
+      // Force layout reflow to get accurate measurements
+      contentElement.offsetHeight;
+
+      // Measure actual rendered height
+      const contentHeight = contentElement.scrollHeight;
+
+      // Check if content fits
+      if (contentHeight <= availableHeight - heightMargin) {
+        // Fits - try larger
+        optimalSize = testSize;
+        low = testSize + 1;
+      } else {
+        // Too big - try smaller
+        high = testSize - 1;
+      }
     }
 
-    return Math.floor(baseSize * fontSizeMultiplier);
-  }, [contentLines.length, baseFontSize, fontSizeMultiplier]);
+    setCalculatedFontSize(optimalSize);
+    setIsResizing(false);
+  }, [isResizing, fontSizeMultiplier, contentLines.length]);
 
-  // Calculate line spacing
-  const lineSpacing = useMemo(() => {
-    const lineCount = contentLines.length;
-    if (lineCount === 1) return 0;
-    if (lineCount === 2) return 0.08;
-    if (lineCount <= 4) return 0.12;
-    if (lineCount <= 6) return 0.15;
-    return 0.15;
-  }, [contentLines.length]);
+  // Trigger resize on content change
+  useEffect(() => {
+    if (textContentRef.current && containerRef.current && content) {
+      requestAnimationFrame(() => {
+        resizeToFit();
+      });
+    }
+  }, [content, fontFamily, fontSizeMultiplier, resizeToFit]);
+
+  // Trigger resize when refs become ready
+  useEffect(() => {
+    if (textContentRef.current && containerRef.current && content) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            resizeToFit();
+          }, 100);
+        });
+      });
+    }
+  }, [textContentRef.current, containerRef.current, content]);
+
+  // Window resize listener
+  useEffect(() => {
+    window.addEventListener("resize", resizeToFit);
+    return () => window.removeEventListener("resize", resizeToFit);
+  }, [resizeToFit]);
 
   return (
     <div className="absolute inset-0 flex items-center justify-center">
@@ -168,14 +219,16 @@ export const SlideContent: React.FC<SlideContentProps> = ({
 
       {/* Content container */}
       <div
-        ref={contentRef}
+        ref={containerRef}
         className="relative z-10 w-full h-full flex items-center justify-center p-12"
       >
         <div
+          ref={textContentRef}
           className="text-center"
           style={{
             fontFamily: fontFamily,
-            lineHeight: dynamicLineHeight,
+            fontSize: `${calculatedFontSize}px`,
+            lineHeight: calculatedFontSize >= 100 ? 1.0 : 1.2,
           }}
         >
           {contentLines.map((line, index) => (
@@ -183,14 +236,13 @@ export const SlideContent: React.FC<SlideContentProps> = ({
               key={index}
               className="m-0 font-bold text-white drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]"
               style={{
-                fontSize: `${calculatedFontSize}px`,
+                fontFamily: fontFamily,
                 marginBottom:
                   index < contentLines.length - 1
-                    ? `${Math.floor(calculatedFontSize * lineSpacing)}px`
+                    ? `${Math.floor(calculatedFontSize * 0.1)}px`
                     : "0",
                 whiteSpace: "normal",
                 wordWrap: "break-word",
-                fontFamily: fontFamily,
               }}
             >
               {line.trim() || " "}

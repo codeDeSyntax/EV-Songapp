@@ -75,26 +75,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
         </div>
       )}
 
-      {/* Controls overlay (only show if not external display) */}
-      <ProjectionControls
-        currentIndex={currentIndex}
-        totalSlides={slides.length}
-        fontSizeMultiplier={fontSizeMultiplier}
-        onNext={goToNext}
-        onPrevious={goToPrevious}
-        onIncreaseFontSize={increaseFontSize}
-        onDecreaseFontSize={decreaseFontSize}
-        isExternalDisplay={isExternalDisplay}
-      />
-
-      {/* Song title overlay (for debugging) */}
-      {songTitle && !isExternalDisplay && (
-        <div className="absolute top-4 left-4 z-40">
-          <div className="bg-black/50 rounded-md px-3 py-2 border border-white/10">
-            <p className="text-white text-xs font-mono">{songTitle}</p>
-          </div>
-        </div>
-      )}
+     
     </div>
   );
 };
