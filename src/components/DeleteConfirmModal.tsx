@@ -86,7 +86,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   const confirmButtonText = deleteType === "prelist" ? "Remove" : "Delete";
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 rounded-md dark:bg-black/30 backdrop-blur-sm">
       <GamyCard isDarkMode={isDarkMode} className="p-6 max-w-sm mx-4">
         <h3 className="text-lg font-semibold text-app-text mb-2">
           {modalTitle}

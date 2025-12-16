@@ -10,6 +10,7 @@ import { openDeleteConfirmModal } from "@/store/slices/uiSlice";
 import { parseLyrics } from "../utils/lyricsParser";
 import { Song } from "@/types";
 import { Trash2 } from "lucide-react";
+import { HistoryPanel } from "./HistoryPanel";
 
 interface PrelistPanelProps {
   isDarkMode: boolean;
@@ -39,73 +40,98 @@ export const PrelistPanel: React.FC<PrelistPanelProps> = ({ isDarkMode }) => {
   return (
     <GamyCard
       isDarkMode={isDarkMode}
-      // transparent={true}
-      className="h-full flex flex-col px-2 py-1 bg-white/30 dark:bg-app-surface"
+      className="h-full flex flex-row gap-2 px-2 py-1 bg-white/50 dark:bg-app-surface"
       style={{
         border: "none",
-        width:"100%"
+        width: "100%",
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "center",
       }}
     >
-      <div className="p-2 border-b border-app-border flex items-center justify-between flex-shrink-0">
-        <span className="text-app-text font-semibold">Prelist</span>
-        <p className="text-app-text-muted text-xs mt-1">
-          {prelistedSongs.length} song{prelistedSongs.length !== 1 ? "s" : ""}
-        </p>
-      </div>
-      <div className="flex-1 overflow-y-auto p-2">
-        {prelistedSongs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center gap-3">
-            <img
-              src="./no_files.svg"
-              alt="No songs"
-              className="w-20 h-20 opacity-50"
-            />
-            <div>
-              <p className="text-app-text-muted text-sm">No songs in prelist</p>
-              <p className="text-app-text-muted text-xs mt-2">
-                Click the blue button to add current song
-              </p>
-            </div>
+      <div className="h-full w-full flex flex-row">
+        {/* Left Half - Prelist */}
+        <div className="w-[70%] flex flex-col border-r border-app-border pr-2">
+          <div className="p-2 border-b border-app-border flex items-center justify-between flex-shrink-0">
+            <span className="text-app-text font-semibold text-sm">Prelist</span>
+            <span className="text-app-text-muted text-xs">
+              {prelistedSongs.length} song
+              {prelistedSongs.length !== 1 ? "s" : ""}
+            </span>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            {prelistedSongs.map((song) => (
-              <div
-                key={song.id}
-                onClick={() => handleSongClick(song)}
-                onMouseEnter={() => setHoveredSong(song.id)}
-                onMouseLeave={() => setHoveredSong(null)}
-              >
-                <GamyCard
-                  isDarkMode={isDarkMode}
-                  className="cursor-pointer rounded-sm h-8 px-2 py-1 border-none hover:bg-app-surface-hover transition-colors"
-                  style={{
-                    borderRadius: "10px",
-                    border: "none",
-                    boxShadow:"none"
-                  }}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <span className="text-ew-sm font-medium text-app-text truncate block">
-                        {song.title}
-                      </span>
-                    </div>
-                    {hoveredSong === song.id && (
-                      <div
-                        onClick={(e) => handleDeleteClick(e, song)}
-                        className=" dark:bg-app-bg  hover:bg-red-500/20 rounded transition-colors"
-                        title="Remove from prelist"
-                      >
-                        <Trash2 className=" h-3 w-3 text-red-500" />
-                      </div>
-                    )}
-                  </div>
-                </GamyCard>
+          <div className="flex-1 overflow-y-auto p-2 no-scrollbar">
+            {prelistedSongs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center gap-2">
+                <img
+                  src="./no_files.svg"
+                  alt="No songs"
+                  className="w-16 h-16 opacity-50"
+                />
+                <div>
+                  <p className="text-app-text-muted text-xs">
+                    No songs in prelist
+                  </p>
+                  <p className="text-app-text-muted text-[10px] mt-1">
+                    Click the blue button to add
+                  </p>
+                </div>
               </div>
-            ))}
+            ) : (
+              <div className="grid grid-cols-4 gap-2">
+                {prelistedSongs.map((song) => {
+                  const firstSlide = song.slides?.[0];
+                  const slideContent =
+                    typeof firstSlide === "string"
+                      ? firstSlide
+                      : firstSlide?.content || "";
+                  return (
+                    <div
+                      key={song.id}
+                      onClick={() => handleSongClick(song)}
+                      onMouseEnter={() => setHoveredSong(song.id)}
+                      onMouseLeave={() => setHoveredSong(null)}
+                      className="cursor-pointer bg-app-bg hover:border-blue-500 transition-all rounded overflow-hidden group relative"
+                      style={{
+                        border: "1px solid var(--app-border)",
+                        aspectRatio: "16/9",
+                      }}
+                    >
+                      {/* Mini Preview Screen */}
+                      <div className="w-full h-full bg-black flex items-center justify-center p-2 relative">
+                        <div className="text-white text-center text-[10px] leading-tight overflow-hidden">
+                          {slideContent.split("\n").slice(0, 4).join("\n")}
+                        </div>
+
+                        {/* Delete button overlay */}
+                        {hoveredSong === song.id && (
+                          <div
+                            onClick={(e) => handleDeleteClick(e, song)}
+                            className="absolute top-1 right-1 bg-red-500/90 hover:bg-red-500 rounded p-1 transition-all"
+                            title="Remove from prelist"
+                          >
+                            <Trash2 className="h-2.5 w-2.5 text-white" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Title bar */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-black p-1.5">
+                        <span className="text-[12px] font-medium text-white truncate block">
+                          {song.title}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-        )}
+        </div>
+
+        {/* Right Half - Projection History */}
+        <div className="w-[30%] flex flex-col pl-2">
+          <HistoryPanel isDarkMode={isDarkMode} />
+        </div>
       </div>
     </GamyCard>
   );

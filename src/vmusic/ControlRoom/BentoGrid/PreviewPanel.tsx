@@ -26,6 +26,7 @@ import { encodeSongData, validateSongForSave } from "../utils/songFileFormat";
 import { useProjectionState } from "@/features/songs/hooks/useProjectionState";
 import { Song } from "@/types";
 import { updateSong } from "@/store/slices/songSlice";
+import { addProjectionEntry } from "@/store/slices/projectionHistorySlice";
 
 interface PreviewPanelProps {
   isDarkMode: boolean;
@@ -56,9 +57,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   addToast,
 }) => {
   const dispatch = useAppDispatch();
-  const { slides, currentSlideId, songTitle, isSaving } = useAppSelector(
-    (state) => state.songSlides
-  );
+  const { slides, currentSlideId, songTitle, isSaving, currentSongId } =
+    useAppSelector((state) => state.songSlides);
+  const songs = useAppSelector((state) => state.songs.songs);
   const {
     showSettings,
     isEditingSlide,
@@ -259,6 +260,15 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       };
 
       await window.api.projectSong(songData);
+
+      // Add to projection history
+      dispatch(
+        addProjectionEntry({
+          songId: currentSongId || `temp-${Date.now()}`,
+          songTitle: songTitle,
+        })
+      );
+
       addToast(`Projecting: ${songTitle}`, "success");
     } catch (error) {
       console.error("Error projecting song:", error);
@@ -311,7 +321,17 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           return;
         }
 
-        const encodedContent = encodeSongData(songTitle, updatedSlides);
+        // Get current song to preserve isPrelisted status
+        const currentSong = currentSongId
+          ? songs.find((s) => s.id === currentSongId)
+          : null;
+        const isPrelisted = currentSong?.isPrelisted || false;
+
+        const encodedContent = encodeSongData(
+          songTitle,
+          updatedSlides,
+          isPrelisted
+        );
         await window.api.saveSong("", songTitle, encodedContent);
         onSaveSuccess(
           `${slideToDelete.label} deleted and saved to "${songTitle}".evsong`
@@ -427,7 +447,17 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         const updatedSlides = slides.map((s) =>
           s.id === id ? { ...s, content } : s
         );
-        const encodedContent = encodeSongData(songTitle, updatedSlides);
+        // Get current song to preserve isPrelisted status
+        const currentSong = currentSongId
+          ? songs.find((s) => s.id === currentSongId)
+          : null;
+        const isPrelisted = currentSong?.isPrelisted || false;
+
+        const encodedContent = encodeSongData(
+          songTitle,
+          updatedSlides,
+          isPrelisted
+        );
         await window.api.saveSong("", songTitle, encodedContent);
         onSaveSuccess(`Slide updated and saved to \"${songTitle}\".evsong`);
         // Reload songs to refresh the list
@@ -470,7 +500,17 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     if (songTitle) {
       try {
         const updatedSlides = [...slides, newSlide];
-        const encodedContent = encodeSongData(songTitle, updatedSlides);
+        // Get current song to preserve isPrelisted status
+        const currentSong = currentSongId
+          ? songs.find((s) => s.id === currentSongId)
+          : null;
+        const isPrelisted = currentSong?.isPrelisted || false;
+
+        const encodedContent = encodeSongData(
+          songTitle,
+          updatedSlides,
+          isPrelisted
+        );
         await window.api.saveSong("", songTitle, encodedContent);
         onSaveSuccess(
           `New ${type} slide added and saved to \"${songTitle}\".evsong`

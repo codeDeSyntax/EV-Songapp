@@ -38,6 +38,7 @@ import { useToast } from "./hooks/useToast";
 import { Toaster } from "../shared/Notification";
 import { setSongRepo } from "@/store/slices/songSlice";
 import { setFontFamily } from "@/store/slices/projectionSlice";
+import { addProjectionEntry } from "@/store/slices/projectionHistorySlice";
 
 interface ActionBarProps {
   isDarkMode: boolean;
@@ -242,6 +243,14 @@ export const ActionBar: React.FC<ActionBarProps> = ({
         };
 
         await window.api.projectSong(songData);
+
+        // Add to projection history
+        dispatch(
+          addProjectionEntry({
+            songId: currentSong?.id || `temp-${Date.now()}`,
+            songTitle: songTitle || currentSong?.title || "Untitled Song",
+          })
+        );
 
         // Wait a moment for window to be ready, then send the first slide
         setTimeout(async () => {

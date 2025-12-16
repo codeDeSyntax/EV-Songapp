@@ -59,7 +59,7 @@ export const TitleInputDialog: React.FC<TitleInputDialogProps> = ({
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Song title..."
-            className="flex-1 h-8 px-3 text-sm bg-transparent border-none border-app-border/30 rounded text-app-text placeholder-app-text-muted focus:outline-none focus:border-app-surface-hover transition-colors"
+            className="flex-1 h-8 px-3 text-sm bg-transparent border-none border-app-border/30 rounded text-white dark:white placeholder-app-text-muted focus:outline-none focus:border-app-surface-hover transition-colors"
             maxLength={100}
             spellCheck={false}
           />
