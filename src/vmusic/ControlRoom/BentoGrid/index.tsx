@@ -69,9 +69,9 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
           </div>
 
           {/* Bottom Two Equal Panels - Takes 40% height */}
-          <div className="h-[38%] grid grid-cols-2 gap-2 overflow-hidden">
+          <div className="h-[38%] grid grid-cols-1 gap-2 overflow-hidden">
             <PrelistPanel isDarkMode={isDarkMode} />
-            <BottomRightPanel isDarkMode={isDarkMode} />
+            {/* <BottomRightPanel isDarkMode={isDarkMode} /> */}
           </div>
         </div>
       </div>

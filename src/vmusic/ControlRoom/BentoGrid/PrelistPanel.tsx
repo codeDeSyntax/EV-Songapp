@@ -43,6 +43,7 @@ export const PrelistPanel: React.FC<PrelistPanelProps> = ({ isDarkMode }) => {
       className="h-full flex flex-col px-2 py-1 bg-white/30 dark:bg-app-surface"
       style={{
         border: "none",
+        width:"100%"
       }}
     >
       <div className="p-2 border-b border-app-border flex items-center justify-between flex-shrink-0">
@@ -81,6 +82,7 @@ export const PrelistPanel: React.FC<PrelistPanelProps> = ({ isDarkMode }) => {
                   style={{
                     borderRadius: "10px",
                     border: "none",
+                    boxShadow:"none"
                   }}
                 >
                   <div className="flex items-center justify-between gap-2">

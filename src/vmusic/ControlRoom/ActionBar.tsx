@@ -18,10 +18,12 @@ import {
   MonitorStop,
   BellPlus,
   Sheet,
+  Music,
 } from "lucide-react";
 import { Tooltip } from "antd";
 import { GamyCard } from "../shared/GamyCard";
 import { SearchWithDropdown } from "./ActionBar/SearchWithDropdown";
+import { SongsListDropdown } from "./ActionBar/SongsListDropdown";
 import { Song } from "@/types";
 import { useAppSelector, useAppDispatch } from "@/store";
 import {
@@ -75,6 +77,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
   const [selectedFont, setSelectedFont] = useState("Arial");
   const [showFontDropdown, setShowFontDropdown] = useState(false);
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
+  const [showSongsListDropdown, setShowSongsListDropdown] = useState(false);
   const [fontSearchQuery, setFontSearchQuery] = useState("");
 
   const fontDropdownRef = useRef<HTMLDivElement>(null);
@@ -299,10 +302,26 @@ export const ActionBar: React.FC<ActionBarProps> = ({
   };
 
   return (
-    <div className="w-full border-b border-app-border bg-app-surface dark:bg-black rounded-full">
+    <div className="w-full border-b border-app-border bg-app-surface dark:bg-black rounded-full relative">
       <div className="h-10 flex items-center justify-between px-3 gap-3">
         {/* Left: Main Actions */}
         <div className="flex items-center gap-1.5">
+          {/* Songs Library Button */}
+          <Tooltip title="Browse All Songs" placement="bottom">
+            <button
+              onClick={() => setShowSongsListDropdown(!showSongsListDropdown)}
+              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all border border-app-border ${
+                showSongsListDropdown
+                  ? "bg-blue-500 text-white"
+                  : "bg-app-bg text-app-text hover:bg-app-surface-hover"
+              }`}
+            >
+              <Music className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
+
+          <div className="w-px h-6 mx-1 bg-app-border"></div>
+
           <Tooltip title="Add Current Song to Prelist" placement="bottom">
             <button
               onClick={() => {
@@ -676,6 +695,16 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           )}
         </div>
       </div>
+
+      {/* Songs List Dropdown */}
+      {showSongsListDropdown && (
+        <SongsListDropdown
+          songs={songs}
+          isDarkMode={isDarkMode}
+          onSelectSong={onSelectSongFromSearch}
+          onClose={() => setShowSongsListDropdown(false)}
+        />
+      )}
     </div>
   );
 };

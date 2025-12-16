@@ -99,7 +99,7 @@ export const SlideContent: React.FC<SlideContentProps> = ({
     const containerElement = containerRef.current;
 
     // Available space - account for p-12 padding (3rem = 48px on each side)
-    const paddingVertical = 96; // 48px top + 48px bottom
+    const paddingVertical = 64; // 32px top + 32px bottom
     const availableHeight = containerElement.clientHeight - paddingVertical;
 
     // Binary search for optimal font size
@@ -120,9 +120,9 @@ export const SlideContent: React.FC<SlideContentProps> = ({
       // Calculate dynamic line height based on font size
       let lineHeight = 1.2;
       if (testSize >= 100) lineHeight = 1.0;
-      else if (testSize >= 80) lineHeight = 1.2;
-      else if (testSize >= 60) lineHeight = 1.2;
-      else if (testSize >= 40) lineHeight = 1.2;
+      else if (testSize >= 80) lineHeight = 1.3;
+      else if (testSize >= 60) lineHeight = 1.3;
+      else if (testSize >= 40) lineHeight = 1.3;
       else lineHeight = 1.3;
 
       contentElement.style.lineHeight = `${lineHeight}`;
@@ -220,7 +220,7 @@ export const SlideContent: React.FC<SlideContentProps> = ({
       {/* Content container */}
       <div
         ref={containerRef}
-        className="relative z-10 w-full h-full flex items-center justify-center p-12"
+        className="relative z-10 w-full h-full flex items-center justify-center px-8 py-4"
       >
         <div
           ref={textContentRef}
