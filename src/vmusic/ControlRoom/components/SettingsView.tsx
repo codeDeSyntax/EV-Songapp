@@ -112,7 +112,29 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   const handlePresetColor = (color: string) => {
-    setSolidColor(color);
+    // Check if it's a gradient (contains any gradient type)
+    if (color.includes("gradient")) {
+      // It's a gradient preset - apply it directly
+      const backgroundValue = `gradient:${color}`;
+      localStorage.setItem("bmusicpresentationbg", backgroundValue);
+      setSelectedBgSrc(backgroundValue);
+
+      // Switch to gradient mode
+      // setBgType("gradient");
+
+      // Dispatch storage event for updates
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: "bmusicpresentationbg",
+          oldValue: null,
+          newValue: backgroundValue,
+          storageArea: localStorage,
+        })
+      );
+    } else {
+      // It's a solid color
+      setSolidColor(color);
+    }
   };
 
   return (

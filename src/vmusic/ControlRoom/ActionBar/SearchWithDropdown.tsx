@@ -198,9 +198,9 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
                   </p>
                 </motion.div>
               ) : (
-                <div className="flex gap-2 h-full">
+                <div className="flex justify-between gap-2 h-full">
                   {/* Song List - Left Column */}
-                  <div className="w-[35%] h-full overflow-y-auto">
+                  <div className="w-[50%] h-full overflow-y-auto">
                     <div className="space-y-1">
                       {filteredSongs.map((song, index) => (
                         <motion.div
@@ -221,21 +221,26 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
                         >
                           <GamyCard
                             isDarkMode={isDarkMode}
-                            className={`cursor-pointer px-2 py-0 transition-colors rounded-none ${
+                            className={`cursor-pointer px-2 py-0 transition-colors  shadow rounded-none ${
                               selectedIndex === index
-                                ? "bg-app-blue/20 border-app-blue"
-                                : "hover:bg-app-surface-hover"
+                                ? "bg-app-surface text-white border-app-blue"
+                                : "hover:bg-app-surface-hover bg-[#e6e6e6]"
                             }`}
                             style={{
                               boxShadow: "none",
-                              borderRadius: "5px",
+                              borderRadius: "100px",
+                              border: "none",
                             }}
                           >
                             <div
                               className="flex items-center gap-2"
                               onMouseEnter={() => setSelectedIndex(index)}
                             >
-                              <span className="text-ew-sm font-medium text-app-text truncate block">
+                              <span
+                                className={`text-ew-sm font-medium  truncate block ${
+                                  selectedIndex === index ? "text-white " : ""
+                                }`}
+                              >
                                 {song.title}
                               </span>
                             </div>
@@ -246,7 +251,7 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
                   </div>
 
                   {/* Lyrics Preview - Right Column */}
-                  <div className="flex-1 h-full overflow-y-auto ">
+                  <div className="flex- w-[50%] h-full overflow-y-auto ">
                     <GamyCard
                       isDarkMode={isDarkMode}
                       className="h-full p-3 app "

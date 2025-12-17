@@ -81,6 +81,62 @@ const songSlidesSlice = createSlice({
         state.currentSlideId = state.slides[0].id;
       }
     },
+    reorderSlides: (
+      state,
+      action: PayloadAction<{ fromIndex: number; toIndex: number }>
+    ) => {
+      const { fromIndex, toIndex } = action.payload;
+
+      // Validate indices
+      if (
+        fromIndex < 0 ||
+        fromIndex >= state.slides.length ||
+        toIndex < 0 ||
+        toIndex >= state.slides.length
+      ) {
+        return;
+      }
+
+      // Create a new array and move the slide
+      const newSlides = [...state.slides];
+      const [movedSlide] = newSlides.splice(fromIndex, 1);
+      newSlides.splice(toIndex, 0, movedSlide);
+
+      // Renumber slides by type
+      // Chorus labels stay as "Chorus" but verses get renumbered
+      const renumberedSlides = newSlides.map((slide, index) => {
+        // Count how many slides of the same type come before this one
+        const sameTypeBefore = newSlides
+          .slice(0, index)
+          .filter((s) => s.type === slide.type).length;
+
+        const newNumber = sameTypeBefore + 1;
+
+        // Format label based on type
+        let newLabel: string;
+        if (slide.type === "chorus") {
+          // Chorus stays as just "Chorus" (no number for single chorus)
+          // Or "Chorus 2" if multiple choruses exist
+          const totalSameType = newSlides.filter(
+            (s) => s.type === slide.type
+          ).length;
+          newLabel = totalSameType === 1 ? "Chorus" : `Chorus ${newNumber}`;
+        } else {
+          // Other types always show number
+          newLabel = `${
+            slide.type.charAt(0).toUpperCase() + slide.type.slice(1)
+          } ${newNumber}`;
+        }
+
+        return {
+          ...slide,
+          number: newNumber,
+          label: newLabel,
+        };
+      });
+
+      state.slides = renumberedSlides;
+    },
   },
 });
 
@@ -94,6 +150,7 @@ export const {
   addSlide,
   updateSlide,
   removeSlide,
+  reorderSlides,
 } = songSlidesSlice.actions;
 
 export default songSlidesSlice.reducer;

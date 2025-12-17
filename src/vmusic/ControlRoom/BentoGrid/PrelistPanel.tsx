@@ -38,20 +38,20 @@ export const PrelistPanel: React.FC<PrelistPanelProps> = ({ isDarkMode }) => {
   };
 
   return (
-    <GamyCard
-      isDarkMode={isDarkMode}
-      className="h-full flex flex-row gap-2 px-2 py-1 bg-white/50 dark:bg-app-surface"
+    <div
+      // isDarkMode={isDarkMode}
+      className="h-full rounded-md flex flex-row gap-2 px-2 py-1 bg-white/50 dark:bg-app-surface"
       style={{
         border: "none",
-        width: "100%",
+        // width: "100%",
         display: "flex",
         flexDirection: "row",
         justifyContent: "center",
       }}
     >
-      <div className="h-full w-full flex flex-row">
+      <div className="h-full w-full flex flex-row ">
         {/* Left Half - Prelist */}
-        <div className="w-[70%] flex flex-col border-r border-app-border pr-2">
+        <div className="w-[70%] flex  flex-col border-r border-app-border pr-2">
           <div className="p-2 border-b border-app-border flex items-center justify-between flex-shrink-0">
             <span className="text-app-text font-semibold text-sm">Prelist</span>
             <span className="text-app-text-muted text-xs">
@@ -59,9 +59,9 @@ export const PrelistPanel: React.FC<PrelistPanelProps> = ({ isDarkMode }) => {
               {prelistedSongs.length !== 1 ? "s" : ""}
             </span>
           </div>
-          <div className="flex-1 overflow-y-auto p-2 no-scrollbar">
+          <div className="f overflow-y-auto  p-2 no-scrollbar flex items-center justify-center">
             {prelistedSongs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center gap-2">
+              <div className="flex flex-col items-center  justify-center h-full text-center gap-2">
                 <img
                   src="./no_files.svg"
                   alt="No songs"
@@ -133,6 +133,6 @@ export const PrelistPanel: React.FC<PrelistPanelProps> = ({ isDarkMode }) => {
           <HistoryPanel isDarkMode={isDarkMode} />
         </div>
       </div>
-    </GamyCard>
+    </div>
   );
 };

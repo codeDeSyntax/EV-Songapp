@@ -43,10 +43,10 @@ export const TitleInputDialog: React.FC<TitleInputDialogProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+    <div className="absolute inset-0 z-50 flex items-center rounded-md justify-center bg-black/30 backdrop-blur-sm"  onClick={(e) => e.stopPropagation()}>
       <GamyCard
         isDarkMode={isDarkMode}
-        className="p-2 rounded-full"
+        className="p-2 rounded-md"
         style={{
           borderRadius: "9999px",
         }}
@@ -56,7 +56,11 @@ export const TitleInputDialog: React.FC<TitleInputDialogProps> = ({
             ref={inputRef}
             type="text"
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value)
+              // e.preventDefault()
+              // e.stopPropagation()
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Song title..."
             className="flex-1 h-8 px-3 text-sm bg-transparent border-none border-app-border/30 rounded text-white dark:white placeholder-app-text-muted focus:outline-none focus:border-app-surface-hover transition-colors"

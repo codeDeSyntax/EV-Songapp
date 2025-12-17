@@ -200,14 +200,10 @@ export const SlideContent: React.FC<SlideContentProps> = ({
           style={{ background: backgroundValue }}
         />
       ) : (
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `url(${backgroundValue})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-          }}
+        <img
+          className="absolute inset-0 w-full h-full object-cover"
+          src={backgroundValue}
+          alt="Background"
         />
       )}
 

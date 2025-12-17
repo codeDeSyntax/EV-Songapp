@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Sparkles } from "lucide-react";
+import { strandPresets } from "./colorStrandPresets";
 
 interface ColorGradientCardProps {
   isDarkMode: boolean;
@@ -250,27 +251,16 @@ export const ColorGradientCard: React.FC<ColorGradientCardProps> = ({
             {/* Preset Colors */}
             <div>
               <label className="text-app-text-muted text-[11px] mb-2 block ">
-                Quick Presets
+                Strand Themes
               </label>
-              <div className="grid grid-cols-6 gap-2 w-1/2">
-                {[
-                  "#000000",
-                  "#1a1a1a",
-                  "#2c3e50",
-                  "#34495e",
-                  "#7f8c8d",
-                  "#95a5a6",
-                ].map((color) => (
+              <div className="grid grid-cols-6 gap-1">
+                {strandPresets.map((theme) => (
                   <button
-                    key={color}
-                    onClick={() => onPresetColorSelect(color)}
-                    className={` h-6 w-6 rounded-lg border-none p-2 border transition-all hover:scale-105 ${
-                      solidColor === color
-                        ? "border-app-accent ring-1 ring-app-accent/20"
-                        : "border-app-border hover:border-app-accent/50"
-                    }`}
-                    style={{ backgroundColor: color }}
-                    title={color}
+                    key={theme.name}
+                    onClick={() => onPresetColorSelect(theme.gradient)}
+                    className="h-8 rounded-lg border border-app-border transition-all hover:scale-105 hover:border-app-accent/50"
+                    style={{ background: theme.gradient }}
+                    title={theme.name}
                   />
                 ))}
               </div>

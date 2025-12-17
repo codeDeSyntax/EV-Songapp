@@ -308,19 +308,41 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     dispatch(removeSlide(currentSlideId));
     dispatch(setIsEditingSlide(false));
 
+    // Filter out the deleted slide
+    const updatedSlides = slides.filter((s) => s.id !== currentSlideId);
+
+    // If no slides left, show warning (for saved songs only)
+    if (updatedSlides.length === 0 && songTitle) {
+      onSaveError(
+        "Cannot save song with no slides. Please add at least one slide or delete the song."
+      );
+      return;
+    }
+
+    // Renumber slides by type (important for both saved and unsaved songs)
+    const renumberedSlides = updatedSlides.map((slide) => {
+      // Count how many slides of the same type come before this one
+      const sameTypeBefore = updatedSlides
+        .slice(0, updatedSlides.indexOf(slide))
+        .filter((s) => s.type === slide.type).length;
+
+      const newNumber = sameTypeBefore + 1;
+
+      return {
+        ...slide,
+        number: newNumber,
+        label: `${
+          slide.type.charAt(0).toUpperCase() + slide.type.slice(1)
+        } ${newNumber}`,
+      };
+    });
+
+    // Update Redux state with renumbered slides
+    dispatch(setSlides(renumberedSlides));
+
     // Auto-save to file if we have a title
     if (songTitle) {
       try {
-        const updatedSlides = slides.filter((s) => s.id !== currentSlideId);
-
-        // If no slides left, show warning
-        if (updatedSlides.length === 0) {
-          onSaveError(
-            "Cannot save song with no slides. Please add at least one slide or delete the song."
-          );
-          return;
-        }
-
         // Get current song to preserve isPrelisted status
         const currentSong = currentSongId
           ? songs.find((s) => s.id === currentSongId)
@@ -329,7 +351,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
         const encodedContent = encodeSongData(
           songTitle,
-          updatedSlides,
+          renumberedSlides,
           isPrelisted
         );
         await window.api.saveSong("", songTitle, encodedContent);

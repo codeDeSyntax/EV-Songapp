@@ -13,8 +13,36 @@ interface ProjectionHistoryState {
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000; // 2 weeks in milliseconds
 
+// Load from localStorage
+const loadHistoryFromStorage = (): ProjectionHistoryEntry[] => {
+  try {
+    const stored = localStorage.getItem("projectionHistory");
+    if (stored) {
+      const parsed = JSON.parse(stored) as ProjectionHistoryEntry[];
+      // Filter out old entries on load
+      const now = Date.now();
+      return parsed.filter((entry) => now - entry.projectedAt < TWO_WEEKS_MS);
+    }
+  } catch (error) {
+    console.error(
+      "Failed to load projection history from localStorage:",
+      error
+    );
+  }
+  return [];
+};
+
+// Save to localStorage
+const saveHistoryToStorage = (history: ProjectionHistoryEntry[]) => {
+  try {
+    localStorage.setItem("projectionHistory", JSON.stringify(history));
+  } catch (error) {
+    console.error("Failed to save projection history to localStorage:", error);
+  }
+};
+
 const initialState: ProjectionHistoryState = {
-  history: [],
+  history: loadHistoryFromStorage(),
 };
 
 const projectionHistorySlice = createSlice({
@@ -51,10 +79,15 @@ const projectionHistorySlice = createSlice({
         seenSongs.add(entry.songId);
         return true;
       });
+
+      // Persist to localStorage
+      saveHistoryToStorage(state.history);
     },
 
     clearProjectionHistory: (state) => {
       state.history = [];
+      // Clear from localStorage
+      saveHistoryToStorage([]);
     },
 
     removeOldEntries: (state) => {
@@ -62,6 +95,8 @@ const projectionHistorySlice = createSlice({
       state.history = state.history.filter(
         (entry) => now - entry.projectedAt < TWO_WEEKS_MS
       );
+      // Persist to localStorage
+      saveHistoryToStorage(state.history);
     },
   },
 });

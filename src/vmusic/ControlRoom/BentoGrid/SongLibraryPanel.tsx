@@ -5,6 +5,7 @@ import {
   setCurrentSlide,
   removeSlide,
   setSlides,
+  reorderSlides,
 } from "@/store/slices/songSlidesSlice";
 import { useProjectionState } from "@/hooks/useProjectionState";
 import { Trash2 } from "lucide-react";
@@ -24,11 +25,14 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
   loadSongs,
 }) => {
   const dispatch = useAppDispatch();
-  const { slides, currentSlideId, songTitle } = useAppSelector(
+  const { slides, currentSlideId, songTitle, currentSongId } = useAppSelector(
     (state) => state.songSlides
   );
+  const songs = useAppSelector((state) => state.songs.songs);
   const { isActive: isProjectionActive } = useProjectionState();
   const [selectedBgSrc, setSelectedBgSrc] = useState<string>("");
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // Detect background type
   const backgroundType = React.useMemo(() => {
@@ -173,7 +177,17 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
         // Update Redux state with renumbered slides
         dispatch(setSlides(renumberedSlides));
 
-        const encodedContent = encodeSongData(songTitle, renumberedSlides);
+        // Get current song to preserve isPrelisted status
+        const currentSong = currentSongId
+          ? songs.find((s) => s.id === currentSongId)
+          : null;
+        const isPrelisted = currentSong?.isPrelisted || false;
+
+        const encodedContent = encodeSongData(
+          songTitle,
+          renumberedSlides,
+          isPrelisted
+        );
         await window.api.saveSong("", songTitle, encodedContent);
         onSaveSuccess(`Slide deleted and saved to "${songTitle}".evsong`);
         // Reload songs to refresh the list
@@ -216,6 +230,118 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
       }
     }
   };
+
+  // Drag and drop handlers
+  const handleDragStart = (
+    e: React.DragEvent<HTMLDivElement>,
+    index: number
+  ) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/html", e.currentTarget.innerHTML);
+    // Add a slight opacity to the dragged element
+    e.currentTarget.style.opacity = "0.5";
+  };
+
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    e.currentTarget.style.opacity = "1";
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragOver = (
+    e: React.DragEvent<HTMLDivElement>,
+    index: number
+  ) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+
+    if (draggedIndex === null || draggedIndex === index) {
+      return;
+    }
+
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = async (
+    e: React.DragEvent<HTMLDivElement>,
+    dropIndex: number
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    // Reorder slides in Redux
+    dispatch(reorderSlides({ fromIndex: draggedIndex, toIndex: dropIndex }));
+
+    // Auto-save if song has a title
+    if (songTitle) {
+      try {
+        // Get the updated slides after reordering
+        const updatedSlides = [...slides];
+        const [movedSlide] = updatedSlides.splice(draggedIndex, 1);
+        updatedSlides.splice(dropIndex, 0, movedSlide);
+
+        // Renumber slides by type (same logic as in Redux)
+        const renumberedSlides = updatedSlides.map((slide, index) => {
+          const sameTypeBefore = updatedSlides
+            .slice(0, index)
+            .filter((s) => s.type === slide.type).length;
+
+          const newNumber = sameTypeBefore + 1;
+
+          let newLabel: string;
+          if (slide.type === "chorus") {
+            const totalSameType = updatedSlides.filter(
+              (s) => s.type === slide.type
+            ).length;
+            newLabel = totalSameType === 1 ? "Chorus" : `Chorus ${newNumber}`;
+          } else {
+            newLabel = `${
+              slide.type.charAt(0).toUpperCase() + slide.type.slice(1)
+            } ${newNumber}`;
+          }
+
+          return {
+            ...slide,
+            number: newNumber,
+            label: newLabel,
+          };
+        });
+
+        // Get current song to preserve isPrelisted status
+        const currentSong = currentSongId
+          ? songs.find((s) => s.id === currentSongId)
+          : null;
+        const isPrelisted = currentSong?.isPrelisted || false;
+
+        const encodedContent = encodeSongData(
+          songTitle,
+          renumberedSlides,
+          isPrelisted
+        );
+        await window.api.saveSong("", songTitle, encodedContent);
+        onSaveSuccess(`Slides reordered and saved to "${songTitle}".evsong`);
+        loadSongs();
+      } catch (error) {
+        console.error("Error saving after reorder:", error);
+        onSaveError("Slides reordered but failed to save to file.");
+      }
+    }
+
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
   return (
     <div
       className="h-full flex flex-col rounded-md bg-white/50 dark:bg-black  px-0 py-0"
@@ -261,18 +387,28 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
             </p>
           </div>
         ) : (
-          slides.map((slide) => (
+          slides.map((slide, index) => (
             <div
               key={slide.id}
+              draggable={true}
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragEnd={handleDragEnd}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, index)}
               onClick={() => handleSlideSelect(slide.id)}
-              className="cursor-pointer "
+              className={`cursor-move transition-all ${
+                dragOverIndex === index && draggedIndex !== index
+                  ? "border-2 border-app-accent border-dashed"
+                  : ""
+              }`}
+              style={{
+                opacity: draggedIndex === index ? 0.5 : 1,
+              }}
             >
-              <GamyCard
-                isDarkMode={isDarkMode}
+              <div
                 className={`overflow-hidden w-[90%] rounded-2xl  m-auto transition-all hover:scale-[1.02] h-24 px-0 py-0 ${
-                  currentSlideId === slide.id
-                    ? "ring-2 ring-app-text-muted"
-                    : ""
+                  currentSlideId === slide.id ? "ring- ring-app-text-muted" : ""
                 }`}
                 style={{
                   borderRadius: "20px",
@@ -346,7 +482,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
                     </div>
                   </div>
                 </div>
-              </GamyCard>
+              </div>
             </div>
           ))
         )}
