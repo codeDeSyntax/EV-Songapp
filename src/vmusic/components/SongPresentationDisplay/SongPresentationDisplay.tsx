@@ -64,6 +64,8 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
           fontSizeMultiplier={fontSizeMultiplier}
           backgroundImage={backgroundImage}
           overlayOpacity={overlayOpacity}
+          sectionType={displaySlide.type}
+          sectionNumber={displaySlide.number}
         />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center bg-app-surface dark:bg-black">
@@ -74,8 +76,6 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
           />
         </div>
       )}
-
-     
     </div>
   );
 };

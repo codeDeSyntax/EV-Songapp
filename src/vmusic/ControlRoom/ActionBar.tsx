@@ -19,6 +19,7 @@ import {
   BellPlus,
   Sheet,
   Music,
+  BarChart3,
 } from "lucide-react";
 import { Tooltip } from "antd";
 import { GamyCard } from "../shared/GamyCard";
@@ -29,6 +30,7 @@ import { useAppSelector, useAppDispatch } from "@/store";
 import {
   openDeleteConfirmModal,
   toggleSettings,
+  toggleStatistics,
   setIsEditingSlide,
   setShowAddSlideDialog,
   setShowTitleDialog,
@@ -138,7 +140,9 @@ export const ActionBar: React.FC<ActionBarProps> = ({
   const { slides, isSaving, currentSlideId, currentSongId, songTitle } =
     useAppSelector((state) => state.songSlides);
   const songRepo = useAppSelector((state) => state.songs.songRepo);
-  const { showSettings, isEditingSlide } = useAppSelector((state) => state.ui);
+  const { showSettings, showStatistics, isEditingSlide } = useAppSelector(
+    (state) => state.ui
+  );
 
   // Get the currently loaded song from the songs list (using songs prop)
   const currentSong = songs.find((song) => song.id === currentSongId);
@@ -429,6 +433,19 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               }`}
             >
               <Settings className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
+
+          <Tooltip title="Statistics" placement="bottom">
+            <button
+              onClick={() => dispatch(toggleStatistics())}
+              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all border border-app-border ${
+                showStatistics
+                  ? "bg-app-accent text-white"
+                  : "bg-app-bg text-app-text hover:bg-app-surface-hover"
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
             </button>
           </Tooltip>
 

@@ -27,6 +27,7 @@ import { useProjectionState } from "@/features/songs/hooks/useProjectionState";
 import { Song } from "@/types";
 import { updateSong } from "@/store/slices/songSlice";
 import { addProjectionEntry } from "@/store/slices/projectionHistorySlice";
+import { StatisticsView } from "../components/StatisticsView";
 
 interface PreviewPanelProps {
   isDarkMode: boolean;
@@ -62,6 +63,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   const songs = useAppSelector((state) => state.songs.songs);
   const {
     showSettings,
+    showStatistics,
     isEditingSlide,
     showAddSlideDialog,
     showTitleDialog,
@@ -610,6 +612,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
             style={{ opacity: overlayOpacity }}
           />
         )}
+
+        {/* Statistics View Overlay */}
+        {showStatistics && <StatisticsView isDarkMode={isDarkMode} />}
 
         {/* Settings View Overlay */}
         {showSettings && (

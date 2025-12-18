@@ -70,15 +70,7 @@ const projectionHistorySlice = createSlice({
 
       state.history.unshift(newEntry); // Add to beginning
 
-      // Keep only unique songs in recent history (remove duplicates)
-      const seenSongs = new Set<string>();
-      state.history = state.history.filter((entry) => {
-        if (seenSongs.has(entry.songId)) {
-          return false;
-        }
-        seenSongs.add(entry.songId);
-        return true;
-      });
+      // Do NOT remove duplicates; keep all projection events for accurate statistics
 
       // Persist to localStorage
       saveHistoryToStorage(state.history);

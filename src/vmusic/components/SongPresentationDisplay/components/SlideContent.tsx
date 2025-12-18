@@ -13,6 +13,8 @@ interface SlideContentProps {
   backgroundImage: string;
   overlayOpacity?: number;
   baseFontSize?: number;
+  sectionType?: string;
+  sectionNumber?: number;
 }
 
 export const SlideContent: React.FC<SlideContentProps> = ({
@@ -22,6 +24,8 @@ export const SlideContent: React.FC<SlideContentProps> = ({
   backgroundImage,
   overlayOpacity = 0.3,
   baseFontSize = 70,
+  sectionType,
+  sectionNumber,
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -245,6 +249,12 @@ export const SlideContent: React.FC<SlideContentProps> = ({
             </p>
           ))}
         </div>
+        {/* Section number at bottom right */}
+        {sectionType && sectionNumber !== undefined && (
+          <div className="absolute bottom-4 right-8 text-white text-lg font-bold bg-black/60 px-4 py-1 rounded-xl shadow-lg select-none pointer-events-none z-20">
+            {sectionType} {sectionNumber}
+          </div>
+        )}
       </div>
     </div>
   );

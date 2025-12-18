@@ -50,7 +50,7 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
         {/* Right Side - Two Rows */}
         <div className="col-span-9 h-full flex flex-col gap-2 overflow-hidden ">
           {/* Top Row - Preview and Background Selector */}
-          <div className="h-[62%]   grid grid-cols-5 gap-2 overflow-hidden">
+          <div className="h-[60%]   grid grid-cols-5 gap-2 overflow-hidden">
             <div className="col-span-4  h-full">
               <PreviewPanel
                 isDarkMode={isDarkMode}
@@ -69,7 +69,7 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
           </div>
 
           {/* Bottom Two Equal Panels - Takes 40% height */}
-          <div className="h-[38%] grid grid-cols-1 gap-2 overflow-hidden">
+          <div className="h-[40%] grid grid-cols-1 gap-2 overflow-hidden">
             <PrelistPanel isDarkMode={isDarkMode} />
             {/* <BottomRightPanel isDarkMode={isDarkMode} /> */}
           </div>

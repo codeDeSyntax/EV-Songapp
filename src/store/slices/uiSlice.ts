@@ -6,6 +6,7 @@ interface UIState {
   songToDelete: Song | null;
   deleteType: "prelist" | "permanent" | null;
   showSettings: boolean;
+  showStatistics: boolean;
   isEditingSlide: boolean;
   showAddSlideDialog: boolean;
   showTitleDialog: boolean;
@@ -17,6 +18,7 @@ const initialState: UIState = {
   songToDelete: null,
   deleteType: null,
   showSettings: false,
+  showStatistics: false,
   isEditingSlide: false,
   showAddSlideDialog: false,
   showTitleDialog: false,
@@ -43,6 +45,9 @@ const uiSlice = createSlice({
     toggleSettings: (state) => {
       state.showSettings = !state.showSettings;
     },
+    toggleStatistics: (state) => {
+      state.showStatistics = !state.showStatistics;
+    },
     setIsEditingSlide: (state, action: PayloadAction<boolean>) => {
       state.isEditingSlide = action.payload;
     },
@@ -62,6 +67,7 @@ export const {
   openDeleteConfirmModal,
   closeDeleteConfirmModal,
   toggleSettings,
+  toggleStatistics,
   setIsEditingSlide,
   setShowAddSlideDialog,
   setShowTitleDialog,
