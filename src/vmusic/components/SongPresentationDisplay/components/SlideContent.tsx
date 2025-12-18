@@ -15,6 +15,7 @@ interface SlideContentProps {
   baseFontSize?: number;
   sectionType?: string;
   sectionNumber?: number;
+  isLastSlide?: boolean;
 }
 
 export const SlideContent: React.FC<SlideContentProps> = ({
@@ -26,6 +27,7 @@ export const SlideContent: React.FC<SlideContentProps> = ({
   baseFontSize = 70,
   sectionType,
   sectionNumber,
+  isLastSlide,
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -251,8 +253,14 @@ export const SlideContent: React.FC<SlideContentProps> = ({
         </div>
         {/* Section number at bottom right */}
         {sectionType && sectionNumber !== undefined && (
-          <div className="absolute bottom-4 right-8 text-white text-lg font-bold bg-black/60 px-4 py-1 rounded-xl shadow-lg select-none pointer-events-none z-20">
+          <div className="absolute bottom-1 right-8 text-white text-4xl font-teko font-bold px-4  rounded-xl select-none pointer-events-none z-20">
             {sectionType} {sectionNumber}
+          </div>
+        )}
+        {/* Last Verse badge at top right */}
+        {isLastSlide && (
+          <div className="absolute bottom-1 left-4 text-black text-2xl animate-pulse  font-mono font-bold bg-white px-4 py-1 rounded-full shadow-lg select-none pointer-events-none z-20">
+            Last Verse
           </div>
         )}
       </div>

@@ -157,7 +157,7 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
           width: isMinimized ? "200px" : "200px",
           minWidth: "200px",
         }}
-        className="bg-black border-4 border-solid shadow-inner  border-gray-900 rounded  overflow-hidden"
+        className="bg-black border-4 border-solid shadow-inner  border-app-border rounded  overflow-hidden"
       >
         {/* Minimal Draggable Header */}
         <div

@@ -10,11 +10,13 @@ export interface Song {
   categories: string[];
   dateModified: string;
   isPrelisted?: boolean;
+  language?: string; // NEW: language property
   slides?: SongSlide[]; // Decoded slides from backend
   metadata?: {
     created: string;
     modified: string;
     isPrelisted?: boolean;
+    language?: string; // NEW: language in metadata for .evsong
   };
 }
 

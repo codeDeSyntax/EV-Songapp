@@ -16,6 +16,7 @@ export const SongsListDropdown: React.FC<SongsListDropdownProps> = ({
   onClose,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [languageFilter, setLanguageFilter] = useState<string>("All");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,15 +40,27 @@ export const SongsListDropdown: React.FC<SongsListDropdownProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
-  // Filter and sort songs
+  // Filter and sort songs by language and title
   const filteredSongs = useMemo(() => {
-    const filtered = songs.filter((song) =>
+    let filtered = songs.filter((song) =>
       song.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    return filtered.sort((a, b) => a.title.localeCompare(b.title));
-  }, [songs, searchQuery]);
+    if (languageFilter !== "All") {
+      filtered = filtered.filter(
+        (song) => (song.language || "English") === languageFilter
+      );
+    }
+    // Sort by language, then title
+    return filtered.sort((a, b) => {
+      const langA = (a.language || "English").localeCompare(
+        b.language || "English"
+      );
+      if (langA !== 0) return langA;
+      return a.title.localeCompare(b.title);
+    });
+  }, [songs, searchQuery, languageFilter]);
 
-  // Split songs into 4 columns
+  // Split songs into 5 columns
   const columnCount = 5;
   const itemsPerColumn = Math.ceil(filteredSongs.length / columnCount);
   const columns = Array.from({ length: columnCount }, (_, i) =>
@@ -75,6 +88,28 @@ export const SongsListDropdown: React.FC<SongsListDropdownProps> = ({
           </h3>
         </div>
 
+        {/* Language Filter */}
+        <div className="flex items-center gap-2">
+          <label
+            htmlFor="language-filter"
+            className="text-xs text-app-text-muted"
+          >
+            Language:
+          </label>
+          <select
+            id="language-filter"
+            value={languageFilter}
+            onChange={(e) => setLanguageFilter(e.target.value)}
+            className="h-8 px-2 text-xs rounded border border-app-border/30 bg-app-surface text-app-text focus:outline-none"
+          >
+            <option value="All">All</option>
+            <option value="English">English</option>
+            <option value="Twi">Twi</option>
+            <option value="Ga">Ga</option>
+            <option value="Ewe">Ewe</option>
+          </select>
+        </div>
+
         {/* Search Box */}
         <div className="flex-1 max-w-md relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-app-text-muted" />
@@ -100,13 +135,13 @@ export const SongsListDropdown: React.FC<SongsListDropdownProps> = ({
       <div
         className="p-4"
         style={{
-          maxHeight: "calc(95vh - 80px)",
+          height: "calc(95vh - 80px)",
         }}
       >
         {filteredSongs.length === 0 ? (
-          <div className="text-center py-12 text-app-text-muted">
-            <Music className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p className="text-sm">No songs found</p>
+          <div className="text-center py-12 text-app-text-muted flex flex-col items-center justify-center">
+            <img src="./error_bug.svg" alt="empty" className="h-40 animate-bounce " />
+            No songs found
           </div>
         ) : (
           <div
@@ -132,8 +167,11 @@ export const SongsListDropdown: React.FC<SongsListDropdownProps> = ({
                         {columnIndex * itemsPerColumn + index + 1}
                       </span>
                     </div>
-                    <span className="truncate  group-hover:text-blue-500 transition-colors">
+                    <span className="truncate group-hover:text-blue-500 transition-colors">
                       {song.title}
+                    </span>
+                    <span className="ml-2 text-xs text-app-text-muted font-semibold">
+                      {song.language || "English"}
                     </span>
                   </button>
                 ))}

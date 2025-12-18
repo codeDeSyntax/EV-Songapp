@@ -672,6 +672,7 @@ ipcMain.handle("fetch-songs", async (event, directory) => {
             isPrelisted,
             slides: songData.slides || [], // Include slides data
             metadata: songData.metadata, // Include full metadata
+            language: songData.metadata?.language || "English", // Ensure top-level language
           };
         })
     );

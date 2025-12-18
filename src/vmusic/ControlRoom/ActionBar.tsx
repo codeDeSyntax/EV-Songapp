@@ -95,7 +95,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
         setSystemFonts(fonts);
 
         // Load saved font from localStorage
-        const savedFont = localStorage.getItem("bmusicfontFamily");
+        const savedFont = localStorage.getItem("bmusicfontFamily"); 
         if (savedFont) {
           setSelectedFont(savedFont);
         } else if (fonts.length > 0 && !selectedFont) {
@@ -373,7 +373,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           <Tooltip title="Add New Slide" placement="bottom">
             <button
               onClick={() => dispatch(setShowAddSlideDialog(true))}
-              className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-text-muted daek:bg-app-surface text-white hover:bg-app-accent/80 border border-app-border"
+              className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-text-muted dark:bg-app-surface text-white hover:bg-app-accent/80 border border-app-border"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -413,7 +413,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
             <button
               onClick={handleSaveClick}
               disabled={isSaving || slides.length === 0}
-              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-text-muted text-white ${
+              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-text-muted dark:bg-app-surface text-white ${
                 !isSaving && slides.length > 0
                   ? "hover:bg-app-surface-hover"
                   : "opacity-50 cursor-not-allowed"

@@ -15,6 +15,7 @@ export interface SongFileData {
     created: string; // ISO timestamp
     modified: string; // ISO timestamp
     isPrelisted?: boolean;
+    language?: string; // NEW: language in metadata
   };
   title: string;
   slides: SongSlide[];
@@ -27,7 +28,8 @@ export const encodeSongData = (
   title: string,
   slides: SongSlide[],
   isPrelisted?: boolean,
-  existingCreatedDate?: string
+  existingCreatedDate?: string,
+  language?: string
 ): string => {
   const songData: SongFileData = {
     version: SONG_FILE_VERSION,
@@ -35,6 +37,7 @@ export const encodeSongData = (
       created: existingCreatedDate || new Date().toISOString(),
       modified: new Date().toISOString(),
       isPrelisted: isPrelisted || false,
+      language: language || "English",
     },
     title,
     slides,

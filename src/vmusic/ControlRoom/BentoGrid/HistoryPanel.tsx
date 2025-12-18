@@ -90,7 +90,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ isDarkMode }) => {
             {history.map((entry) => (
               <div
                 key={entry.id}
-                className="bg-app-bg border border-app-border rounded-full px-2 py-1.5 hover:bg-app-hover transition-colors relative overflow-visible "
+                className="bg-app-bg dark:bg-app-surface border border-app-border rounded-full px-2 py-1.5 hover:bg-app-hover transition-colors relative overflow-visible "
               >
                 {/* Time badge absolutely positioned */}
                 <span
@@ -111,8 +111,8 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ isDarkMode }) => {
       </div>
 
       {/* Footer info */}
-      <div className="  border-t border-app-border flex-shrink-0 bg-transparent dark:bg-app-surface absolute bottom-2 ">
-        <span className="text-[12px] text-app-text text-center">
+      <div className="  border-t border-app-border flex-shrink-0 bg-transparent dark:bg-blue-800/20 px-2 absolute bottom-4  rounded-full">
+        <span className="text-[12px] text-blue-400 text-center">
           {history.length} {history.length === 1 ? "song" : "songs"} •
           Auto-deletes after{" "}
           <span className="font-bold text-black dark:text-white">2 weeks</span>

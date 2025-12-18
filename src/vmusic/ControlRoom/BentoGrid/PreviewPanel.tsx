@@ -27,6 +27,7 @@ import { useProjectionState } from "@/features/songs/hooks/useProjectionState";
 import { Song } from "@/types";
 import { updateSong } from "@/store/slices/songSlice";
 import { addProjectionEntry } from "@/store/slices/projectionHistorySlice";
+import { recordProjection } from "@/store/slices/statisticsSlice";
 import { StatisticsView } from "../components/StatisticsView";
 
 interface PreviewPanelProps {
@@ -78,6 +79,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     const saved = localStorage.getItem("bmusicOverlayOpacity");
     return saved ? parseFloat(saved) : 0.3;
   });
+  const [language, setLanguage] = useState<string>("English");
   const contentRef = useRef<HTMLDivElement>(null);
   const { isProjectionActive } = useProjectionState();
 
@@ -259,6 +261,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           type: s.type,
           number: s.number,
         })),
+        language: language || "English",
       };
 
       await window.api.projectSong(songData);
@@ -268,6 +271,15 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         addProjectionEntry({
           songId: currentSongId || `temp-${Date.now()}`,
           songTitle: songTitle,
+        })
+      );
+
+      // Persist statistics
+      dispatch(
+        recordProjection({
+          songId: currentSongId || `temp-${Date.now()}`,
+          songTitle: songTitle,
+          projectedAt: Date.now(),
         })
       );
 
@@ -385,7 +397,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   };
 
   // Handle save song
-  const handleSaveSong = async (title: string) => {
+  const handleSaveSong = async (title: string, lang: string) => {
+    setLanguage(lang);
     const validation = validateSongForSave(title, slides);
     if (!validation.valid) {
       onSaveError(validation.error || "Invalid song data");
@@ -395,7 +408,18 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     try {
       dispatch(setIsSaving(true));
       dispatch(setSongTitle(title));
-      const encodedContent = encodeSongData(title, slides);
+      // Preserve isPrelisted from current song
+      const currentSong = currentSongId
+        ? songs.find((s) => s.id === currentSongId)
+        : null;
+      const isPrelisted = currentSong?.isPrelisted || false;
+      const encodedContent = encodeSongData(
+        title,
+        slides,
+        isPrelisted,
+        undefined,
+        lang
+      );
       const result = await window.api.saveSong("", title, encodedContent);
 
       onSaveSuccess(
@@ -403,6 +427,23 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           slides.length !== 1 ? "s" : ""
         } saved`
       );
+      // Update Redux song list with new language so UI reflects change immediately
+      if (currentSongId) {
+        const updatedSong = {
+          id: currentSongId,
+          title: result.sanitizedTitle || title,
+          path: result.filePath || "",
+          content: encodedContent,
+          categories: [],
+          dateModified: new Date().toISOString(),
+          size: encodedContent.length,
+          isPrelisted,
+          language: lang,
+        };
+        dispatch(updateSong(updatedSong));
+        // Also update selectedSong in Redux so UI reflects new language
+        dispatch({ type: "songs/setSelectedSong", payload: updatedSong });
+      }
       dispatch(setShowTitleDialog(false));
       // Reload songs to refresh the list
       loadSongs();
@@ -417,7 +458,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   };
 
   // Handle save to prelist
-  const handleSaveToPrelist = async (title: string) => {
+  const handleSaveToPrelist = async (title: string, lang: string) => {
+    setLanguage(lang);
     const validation = validateSongForSave(title, slides);
     if (!validation.valid) {
       onSaveError(validation.error || "Invalid song data");
@@ -425,7 +467,13 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     }
 
     try {
-      const encodedContent = encodeSongData(title, slides, true);
+      const encodedContent = encodeSongData(
+        title,
+        slides,
+        true,
+        undefined,
+        lang
+      );
       const result = await window.api.saveSong("", title, encodedContent);
 
       const newSong: Song = {
@@ -437,6 +485,13 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         dateModified: new Date().toISOString(),
         size: encodedContent.length,
         isPrelisted: true,
+        language: lang || "English",
+        metadata: {
+          created: new Date().toISOString(),
+          modified: new Date().toISOString(),
+          isPrelisted: true,
+          language: lang || "English",
+        },
       };
 
       dispatch(updateSong(newSong));
@@ -553,6 +608,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       <TitleInputDialog
         isOpen={showTitleDialog}
         initialTitle={songTitle}
+        initialLanguage={language}
         isDarkMode={isDarkMode}
         onClose={() => dispatch(setShowTitleDialog(false))}
         onSave={handleSaveSong}
@@ -561,6 +617,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       <TitleInputDialog
         isOpen={showPrelistTitleDialog}
         initialTitle={songTitle}
+        initialLanguage={language}
         isDarkMode={isDarkMode}
         onClose={() => dispatch(setShowPrelistTitleDialog(false))}
         onSave={handleSaveToPrelist}

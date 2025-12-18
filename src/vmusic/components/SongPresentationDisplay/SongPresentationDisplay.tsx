@@ -66,6 +66,9 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
           overlayOpacity={overlayOpacity}
           sectionType={displaySlide.type}
           sectionNumber={displaySlide.number}
+          isLastSlide={
+            slides && slides.length > 0 && currentIndex === slides.length - 1
+          }
         />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center bg-app-surface dark:bg-black">

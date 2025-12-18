@@ -89,7 +89,7 @@ const ControlRoom = () => {
     setShowPrelistTitleDialog(true);
   };
 
-  const saveToPrelist = async (title: string) => {
+  const saveToPrelist = async (title: string, language: string) => {
     const validation = validateSongForSave(title, slides);
     if (!validation.valid) {
       addToast(validation.error || "Invalid song data", "error");
@@ -97,7 +97,13 @@ const ControlRoom = () => {
     }
 
     try {
-      const encodedContent = encodeSongData(title, slides, true);
+      const encodedContent = encodeSongData(
+        title,
+        slides,
+        true,
+        undefined,
+        language
+      );
       const result = await window.api.saveSong("", title, encodedContent);
 
       const newSong: Song = {
@@ -109,6 +115,7 @@ const ControlRoom = () => {
         dateModified: new Date().toISOString(),
         size: encodedContent.length,
         isPrelisted: true,
+        language: language,
       };
 
       dispatch(updateSong(newSong));

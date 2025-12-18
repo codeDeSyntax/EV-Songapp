@@ -42,6 +42,8 @@ const TitleBar = () => {
     (state) => state.songSlides.currentSlideId
   );
   const slides = useAppSelector((state) => state.songSlides.slides);
+  // Get the selected song from Redux for language display
+  const selectedSong = useAppSelector((state) => state.songs.selectedSong);
   const { isDarkMode, toggleDarkMode } = useTheme();
 
   // Get current slide info
@@ -153,29 +155,26 @@ const TitleBar = () => {
               onMouseLeave={() => setIsHovered(null)}
               className="w-4 h-4 rounded-full bg-[#FF5F57] hover:bg-red-600 hover:cursor-pointer flex items-center justify-center"
             >
-              {isHovered === "close" && (
-                <X className="text-white z-20 size-6" />
-              )}
+              {/* {isHovered === "close" && ( */}
+              <X className="text-white z-20 size-5" />
             </div>
             <div
               onClick={handleMinimize}
               onMouseEnter={() => setIsHovered("minimize")}
               onMouseLeave={() => setIsHovered(null)}
-              className="w-4 h-4 text-white rounded-full bg-[#FFBD2E] hover:bg-yellow-600 hover:cursor-pointer flex items-center justify-center hover:text-white"
+              className="w-4 h-4 text-white rounded-full bg-black hover:bg-yellow-600 hover:cursor-pointer flex items-center justify-center hover:text-white"
             >
-              {isHovered === "minimize" && (
-                <Minus className="text-white z-20 size-6" />
-              )}
+              {/* {isHovered === "minimize" && ( */}
+              <Minus className="text-white z-20 size-6" />
             </div>
             <div
               onClick={handleMaximize}
               onMouseEnter={() => setIsHovered("maximize")}
               onMouseLeave={() => setIsHovered(null)}
-              className="w-4 h-4 rounded-full bg-[#28CA41] hover:bg-green-600 hover:cursor-pointer flex items-center justify-center"
+              className="w-4 h-4 rounded-full bg-black hover:bg-green-600 hover:cursor-pointer flex items-center justify-center"
             >
-              {isHovered === "maximize" && (
-                <Square className="text-white z-20 size-3" />
-              )}
+              {/* {isHovered === "maximize" && ( */}
+              <Square className="text-white z-20 size-2" />
             </div>
             <div className="flex items-center justify-center gap-2">
               <div
@@ -227,7 +226,20 @@ const TitleBar = () => {
                     <div className="flex items-center gap-2 px-3 py-1 bg-app-surface/50 rounded-full border border-app-border/30 backdrop-blur-sm">
                       <FileText className="w-3 h-3 text-app-text-muted" />
                       <span className="text-sm font-medium text-app-text max-w-[200px] truncate">
-                        {displayTitle}
+                        {displayTitle && (
+                          <div className="flex items-center gap-2 px-3 py-1 bg-app-surface/50 rounded-full border border-app-border/30 backdrop-blur-sm">
+                            <FileText className="w-3 h-3 text-app-text-muted" />
+                            <span className="text-sm font-medium text-app-text max-w-[200px] truncate">
+                              {displayTitle}
+                            </span>
+                            {/* Show language for debugging */}
+                            <span className="ml-2 text-xs text-app-text-muted">
+                              {selectedSong?.language ||
+                                selectedSong?.metadata?.language ||
+                                "N/A"}
+                            </span>
+                          </div>
+                        )}
                       </span>
                     </div>
                   )}

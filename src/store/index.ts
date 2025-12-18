@@ -5,7 +5,9 @@ import songSlice from "./slices/songSlice";
 import songSlidesSlice from "./slices/songSlidesSlice";
 import uiSlice from "./slices/uiSlice";
 import projectionSlice from "./slices/projectionSlice";
+
 import projectionHistorySlice from "./slices/projectionHistorySlice";
+import statisticsSlice from "./slices/statisticsSlice";
 
 /**
  * Redux store configuration optimized for large song collections.
@@ -21,6 +23,7 @@ export const store = configureStore({
     ui: uiSlice,
     projection: projectionSlice,
     projectionHistory: projectionHistorySlice,
+    statistics: statisticsSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

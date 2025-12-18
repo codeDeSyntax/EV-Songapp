@@ -49,9 +49,9 @@ export const PrelistPanel: React.FC<PrelistPanelProps> = ({ isDarkMode }) => {
         justifyContent: "center",
       }}
     >
-      <div className="h-full w-full flex flex-row ">
+      <div className="h-full w-full flex flex-row gap-3">
         {/* Left Half - Prelist */}
-        <div className="w-[70%] flex  flex-col border-r border-app-border pr-2">
+        <div className="w-[70%] flex  flex-col border-r border-app-border p-2 bg-app-bg rounded-2xl">
           <div className="p-2 border-b border-app-border flex items-center justify-between flex-shrink-0">
             <span className="text-app-text font-semibold text-sm">Prelist</span>
             <span className="text-app-text-muted text-xs">
@@ -129,7 +129,7 @@ export const PrelistPanel: React.FC<PrelistPanelProps> = ({ isDarkMode }) => {
         </div>
 
         {/* Right Half - Projection History */}
-        <div className="w-[30%] flex flex-col pl-2">
+        <div className="w-[30%] flex flex-col p-2 bg-app-bg rounded-2xl ">
           <HistoryPanel isDarkMode={isDarkMode} />
         </div>
       </div>

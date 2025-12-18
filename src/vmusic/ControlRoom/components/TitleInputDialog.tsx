@@ -5,32 +5,37 @@ import { GamyCard } from "../../shared/GamyCard";
 interface TitleInputDialogProps {
   isOpen: boolean;
   initialTitle: string;
+  initialLanguage?: string;
   isDarkMode: boolean;
   onClose: () => void;
-  onSave: (title: string) => void;
+  onSave: (title: string, language: string) => void;
 }
 
-export const TitleInputDialog: React.FC<TitleInputDialogProps> = ({
-  isOpen,
-  initialTitle,
-  isDarkMode,
-  onClose,
-  onSave,
-}) => {
+export const TitleInputDialog: React.FC<TitleInputDialogProps> = (props) => {
+  const {
+    isOpen,
+    initialTitle,
+    initialLanguage = "English",
+    isDarkMode,
+    onClose,
+    onSave,
+  } = props;
   const [title, setTitle] = useState(initialTitle);
+  const [language, setLanguage] = useState(initialLanguage);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setTitle(initialTitle);
+      setLanguage(initialLanguage);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [isOpen, initialTitle]);
+  }, [isOpen, initialTitle, initialLanguage]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim()) {
-      onSave(title.trim());
+      onSave(title.trim(), language);
     }
   };
 
@@ -43,7 +48,10 @@ export const TitleInputDialog: React.FC<TitleInputDialogProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center rounded-md justify-center bg-black/30 backdrop-blur-sm"  onClick={(e) => e.stopPropagation()}>
+    <div
+      className="absolute inset-0 z-50 flex items-center rounded-md justify-center bg-black/30 backdrop-blur-sm"
+      onClick={(e) => e.stopPropagation()}
+    >
       <GamyCard
         isDarkMode={isDarkMode}
         className="p-2 rounded-md"
@@ -57,9 +65,7 @@ export const TitleInputDialog: React.FC<TitleInputDialogProps> = ({
             type="text"
             value={title}
             onChange={(e) => {
-              setTitle(e.target.value)
-              // e.preventDefault()
-              // e.stopPropagation()
+              setTitle(e.target.value);
             }}
             onKeyDown={handleKeyDown}
             placeholder="Song title..."
@@ -67,6 +73,19 @@ export const TitleInputDialog: React.FC<TitleInputDialogProps> = ({
             maxLength={100}
             spellCheck={false}
           />
+          {/* Language Selector */}
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="h-8 px-2 text-xs rounded border border-app-border/30 bg-app-surface text-app-text focus:outline-none"
+            style={{ minWidth: 80 }}
+          >
+            <option value="English">English</option>
+            <option value="Twi">Twi</option>
+            <option value="Ga">Ga</option>
+            <option value="Ewe">Ewe</option>
+          </select>
+          {/* ...existing code... */}
 
           <GamyCard isDarkMode={isDarkMode} className="rounded-full py-1">
             <button
