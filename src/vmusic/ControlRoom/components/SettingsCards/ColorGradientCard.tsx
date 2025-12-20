@@ -253,12 +253,12 @@ export const ColorGradientCard: React.FC<ColorGradientCardProps> = ({
               <label className="text-app-text-muted text-[11px] mb-2 block ">
                 Strand Themes
               </label>
-              <div className="grid grid-cols-6 gap-1">
+              <div className="grid grid-cols-8 gap-1">
                 {strandPresets.map((theme) => (
                   <button
                     key={theme.name}
                     onClick={() => onPresetColorSelect(theme.gradient)}
-                    className="h-8 rounded-lg border border-app-border transition-all hover:scale-105 hover:border-app-accent/50"
+                    className="h-6 rounded border border-app-border transition-all hover:scale-105 hover:border-app-accent/50"
                     style={{ background: theme.gradient }}
                     title={theme.name}
                   />

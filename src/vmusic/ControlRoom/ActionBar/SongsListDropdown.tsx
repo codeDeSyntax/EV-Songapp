@@ -17,6 +17,16 @@ export const SongsListDropdown: React.FC<SongsListDropdownProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [languageFilter, setLanguageFilter] = useState<string>("All");
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -140,7 +150,11 @@ export const SongsListDropdown: React.FC<SongsListDropdownProps> = ({
       >
         {filteredSongs.length === 0 ? (
           <div className="text-center py-12 text-app-text-muted flex flex-col items-center justify-center">
-            <img src="./error_bug.svg" alt="empty" className="h-40 animate-bounce " />
+            <img
+              src="./error_bug.svg"
+              alt="empty"
+              className="h-40 animate-bounce "
+            />
             No songs found
           </div>
         ) : (

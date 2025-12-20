@@ -604,7 +604,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   };
 
   return (
-    <div onClick={handleClick} className="h-full relative">
+    <div onClick={handleClick} className="h-full relative z-10">
       <TitleInputDialog
         isOpen={showTitleDialog}
         initialTitle={songTitle}

@@ -91,4 +91,29 @@ export const strandPresets: StrandPreset[] = [
     gradient:
       "linear-gradient(to right, #1f0a01 0%, #6b2a09 10%, #b74a16 20%, #ff6a25 30%, #ffa854 40%, #ff6a25 50%, #b74a16 60%, #6b2a09 70%, #321203 80%, #1f0a01 90%, #000000 100%), radial-gradient(ellipse at 30% 50%, rgba(255, 106, 37, 0.3) 0%, transparent 50%), radial-gradient(ellipse at 70% 50%, rgba(255, 168, 84, 0.3) 0%, transparent 50%)",
   },
+  {
+    name: "Violet Dreamscape",
+    gradient:
+      "linear-gradient(120deg, #3a0ca3 0%, #7209b7 25%, #f72585 50%, #b5179e 75%, #560bad 100%)",
+  },
+  {
+    name: "Aurora Lagoon",
+    gradient:
+      "radial-gradient(circle at 60% 40%, #00f2fe 0%, #4facfe 40%, #43e97b 70%, #38f9d7 100%)",
+  },
+  {
+    name: "Crimson Ember",
+    gradient:
+      "linear-gradient(90deg, #2d0606 0%, #a40606 30%, #ff4e00 60%, #ff9500 100%)",
+  },
+  {
+    name: "Celestial Mint",
+    gradient:
+      "conic-gradient(from 180deg at 50% 50%, #e0ffef 0deg, #a8ff78 90deg, #78ffd6 180deg, #a8ff78 270deg, #e0ffef 360deg)",
+  },
+  {
+    name: "Golden Rose Mirage",
+    gradient:
+      "linear-gradient(135deg, #ffd6e0 0%, #ffb07c 40%, #ffe066 70%, #ffd6e0 100%)",
+  },
 ];

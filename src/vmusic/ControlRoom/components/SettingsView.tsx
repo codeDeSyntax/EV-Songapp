@@ -138,7 +138,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   return (
-    <div className="absolute inset-0 z-50 overflow-hidden bg-app-surface dark:bg-black">
+    <div className="absolute inset-0 z-30 overflow-hidden bg-app-surface dark:bg-black">
       <div className="h-full p-6 flex flex-col overflow-hidden">
         {/* Settings Container - Horizontal Scrollable */}
         <div className="flex gap-4 overflow-x-auto overflow-y-hidden no-scrollbar h-full">

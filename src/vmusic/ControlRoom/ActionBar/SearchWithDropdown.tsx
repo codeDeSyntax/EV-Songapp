@@ -25,10 +25,24 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [hoveredSong, setHoveredSong] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(
+    () => localStorage.getItem("lastSearchTerm") || ""
+  );
   const [selectedIndex, setSelectedIndex] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Persist search term to localStorage
+  useEffect(() => {
+    localStorage.setItem("lastSearchTerm", searchTerm);
+  }, [searchTerm]);
+
+  // On mount, auto-select the input text if there is a last search
+  useEffect(() => {
+    if (inputRef.current && searchTerm) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, []);
 
   // Filter songs based on search query (only after Enter is pressed)
   const filteredSongs = searchQuery.trim()
@@ -97,10 +111,7 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
         if (onSelectSong) {
           onSelectSong(filteredSongs[selectedIndex]);
           setShowDropdown(false);
-          setSearchTerm("");
-          updateSearchQuery("");
-          // Blur the input so keyboard events work elsewhere
-          inputRef.current?.blur();
+          // Do NOT clear the search term or updateSearchQuery here
         }
       } else {
         // Otherwise, trigger search
@@ -152,6 +163,7 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
           placeholder="Search songs... (Press Enter)"
           className="w-full pl-8 pr-8 py-1.5 rounded-3xl border-none border-app-border focus:outline-none focus:ring-1 focus:ring-app-surface-hover text-ew-xs bg-white/20 dark:bg-app-bg text-app-text placeholder:text-app-text-muted"
           spellCheck={false}
+          autoFocus={!!searchTerm}
         />
         {searchTerm && (
           <button
@@ -198,9 +210,9 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
                   </p>
                 </motion.div>
               ) : (
-                <div className="flex justify-between gap-2 h-full">
+                <div className="flex justify-between gap-2 h-full no-scrollbar">
                   {/* Song List - Left Column */}
-                  <div className="w-[50%] h-full overflow-y-auto">
+                  <div className="w-[50%] h-full overflow-y-auto no-scrollbar">
                     <div className="space-y-1">
                       {filteredSongs.map((song, index) => (
                         <motion.div
@@ -212,10 +224,8 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
                             if (onSelectSong) {
                               onSelectSong(song);
                               setShowDropdown(false);
-                              setSearchTerm("");
-                              updateSearchQuery("");
-                              // Blur the input so keyboard events work elsewhere
-                              inputRef.current?.blur();
+                              // Do NOT clear the search term or updateSearchQuery here
+                              // inputRef.current?.blur(); // Optionally keep focus
                             }
                           }}
                         >
@@ -223,8 +233,8 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
                             isDarkMode={isDarkMode}
                             className={`cursor-pointer px-2 py-0 transition-colors  shadow rounded-none ${
                               selectedIndex === index
-                                ? "bg-app-surface text-white border-app-blue"
-                                : "hover:bg-app-surface-hover bg-[#e6e6e6]"
+                                ? "bg-app-surface dark:bg-black text-white border-app-blue"
+                                : "hover:bg-app-surface-hover bg-[#e6e6e6] dark:bg-app-surface border-app-border text-app-text"
                             }`}
                             style={{
                               boxShadow: "none",
@@ -249,7 +259,6 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
                       ))}
                     </div>
                   </div>
-
                   {/* Lyrics Preview - Right Column */}
                   <div className="flex- w-[50%] h-full overflow-y-auto ">
                     <GamyCard

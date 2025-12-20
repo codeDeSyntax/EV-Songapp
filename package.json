@@ -2,7 +2,7 @@
   "name": "song-cast",
   "version": "1.0.0",
   "main": "dist-electron/main/index.js",
-  "description": "Electron Vite React boilerplate.",
+  "description": "Song projection application",
   "author": "dlcentimemessage>",
   "license": "MIT",
   "private": true,
@@ -14,11 +14,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && electron-builder",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "pree2e": "vite build --mode=test",
     "e2e": "playwright test",
-    "package": "electron-packager . evsongapp --platform=win32 --arch=x64  --icon=J:\\electron\\songsapp\\public\\evsongsicon.ico --out=release/ --overwrite --asar"
+    "package": "electron-packager . songscast --platform=win32 --arch=x64  --icon=J:\\electron\\songsapp\\public\\evsongsicon.ico --out=release/ --overwrite --asar"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",

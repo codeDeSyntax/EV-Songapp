@@ -54,12 +54,12 @@ export const TitleInputDialog: React.FC<TitleInputDialogProps> = (props) => {
     >
       <GamyCard
         isDarkMode={isDarkMode}
-        className="p-2 rounded-md"
+        className="p-2 rounded-md px-1 w-[65%]"
         style={{
           borderRadius: "9999px",
         }}
       >
-        <form onSubmit={handleSubmit} className="flex items-center gap-3">
+        <form onSubmit={handleSubmit} className="flex items-center gap-3 mr-2 ">
           <input
             ref={inputRef}
             type="text"
@@ -69,21 +69,29 @@ export const TitleInputDialog: React.FC<TitleInputDialogProps> = (props) => {
             }}
             onKeyDown={handleKeyDown}
             placeholder="Song title..."
-            className="flex-1 h-8 px-3 text-sm bg-transparent border-none border-app-border/30 rounded text-white dark:white placeholder-app-text-muted focus:outline-none focus:border-app-surface-hover transition-colors"
-            maxLength={100}
+            className="flex-1 h-8 px-3 text-sm font-serif bg-transparent border-none border-app-border/30 rounded text-white dark:white placeholder-app-text-muted placeholder:font-oswald focus:outline-none focus:border-app-surface-hover transition-colors"
+            // maxLength={100}
             spellCheck={false}
           />
           {/* Language Selector */}
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="h-8 px-2 text-xs rounded border border-app-border/30 bg-app-surface text-app-text focus:outline-none"
+            className="h-8 px-2 text-xs ronded border border-app-border/30 bg-transparent rounded-full text-app-text focus:outline-none font-teko"
             style={{ minWidth: 80 }}
           >
-            <option value="English">English</option>
-            <option value="Twi">Twi</option>
-            <option value="Ga">Ga</option>
-            <option value="Ewe">Ewe</option>
+            <option className="bg-app-bg " value="English">
+              English
+            </option>
+            <option className="bg-app-bg " value="Twi">
+              Twi
+            </option>
+            <option className="bg-app-bg " value="Ga">
+              Ga
+            </option>
+            <option className="bg-app-bg " value="Ewe">
+              Ewe
+            </option>
           </select>
           {/* ...existing code... */}
 
