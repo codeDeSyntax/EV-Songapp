@@ -12,7 +12,7 @@ import { parseLyrics } from "./utils/lyricsParser";
 import { encodeSongData, validateSongForSave } from "./utils/songFileFormat";
 import { Song } from "@/types";
 import TitleBar from "../../shared/TitleBar";
-import DeletePopup from "../DeletePopup";
+import DeletePopup from "./components/DeletePopup";
 import { useProjectionState } from "@/hooks/useProjectionState";
 import { GamyCard } from "../shared/GamyCard";
 import { ActionBar } from "./ActionBar";
@@ -76,6 +76,8 @@ const ControlRoom = () => {
     if (slides.length > 0) {
       dispatch(setCurrentSlide(slides[0].id));
     }
+    // Ensure selectedSong in Redux is updated (for TitleBar language display)
+    dispatch({ type: "songs/setSelectedSong", payload: song });
     addToast(`Loaded "${song.title}" with ${slides.length} slides`, "success");
   };
 

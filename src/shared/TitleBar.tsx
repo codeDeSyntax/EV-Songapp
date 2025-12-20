@@ -1,20 +1,13 @@
 import { useState, useEffect } from "react";
 import {
-  ArrowLeftFromLine,
-  GalleryHorizontal,
-  GalleryThumbnails,
-  Group,
   Minus,
   Square,
-  SwitchCamera,
   User2Icon,
   X,
-  MoreHorizontal,
-  Settings,
   FileText,
 } from "lucide-react";
 import { HomeFilled } from "@ant-design/icons";
-import { Switch } from "antd";
+
 import { useAppSelector, useAppDispatch } from "@/store";
 import {
   setCurrentScreen,
@@ -24,7 +17,6 @@ import {
   closeApp,
 } from "@/store/slices/appSlice";
 import { ThemeToggle } from "./ThemeToggler";
-import { current } from "@reduxjs/toolkit";
 import { useTheme } from "@/Provider/Theme";
 
 const TitleBar = () => {

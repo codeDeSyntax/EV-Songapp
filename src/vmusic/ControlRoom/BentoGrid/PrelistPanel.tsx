@@ -30,6 +30,8 @@ export const PrelistPanel: React.FC<PrelistPanelProps> = ({ isDarkMode }) => {
     dispatch(setSongTitle(song.title));
     // Track which song is currently loaded
     dispatch(setCurrentSongId(song.id));
+    // Ensure selectedSong in Redux is updated (for TitleBar language display)
+    dispatch({ type: "songs/setSelectedSong", payload: song });
   };
 
   const handleDeleteClick = (e: React.MouseEvent, song: Song) => {
@@ -90,7 +92,7 @@ export const PrelistPanel: React.FC<PrelistPanelProps> = ({ isDarkMode }) => {
                       onClick={() => handleSongClick(song)}
                       onMouseEnter={() => setHoveredSong(song.id)}
                       onMouseLeave={() => setHoveredSong(null)}
-                      className="cursor-pointer bg-app-bg hover:border-blue-500 transition-all rounded overflow-hidden group relative"
+                      className="cursor-pointer bg-app-bg hover:border-blue-500 transition-all rounded-2xl overflow-hidden group relative"
                       style={{
                         border: "1px solid var(--app-border)",
                         aspectRatio: "16/9",

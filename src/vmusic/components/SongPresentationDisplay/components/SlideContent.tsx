@@ -16,6 +16,8 @@ interface SlideContentProps {
   sectionType?: string;
   sectionNumber?: number;
   isLastSlide?: boolean;
+  totalVerses?: number;
+  showVerseFraction?: boolean;
 }
 
 export const SlideContent: React.FC<SlideContentProps> = ({
@@ -28,6 +30,8 @@ export const SlideContent: React.FC<SlideContentProps> = ({
   sectionType,
   sectionNumber,
   isLastSlide,
+  totalVerses,
+  showVerseFraction,
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -251,10 +255,20 @@ export const SlideContent: React.FC<SlideContentProps> = ({
             </p>
           ))}
         </div>
-        {/* Section number at bottom right */}
+        {/* Section number at bottom right, with total verses if verse */}
         {sectionType && sectionNumber !== undefined && (
-          <div className="absolute bottom-1 right-8 text-white text-4xl font-teko font-bold px-4  rounded-xl select-none pointer-events-none z-20">
-            {sectionType} {sectionNumber}
+          <div className="absolute bottom-1 right-8 text-white text-4xl font-teko font-bold px-4 rounded-xl select-none pointer-events-none z-20">
+            {sectionType.toLowerCase() === "verse" &&
+            showVerseFraction &&
+            totalVerses ? (
+              <>
+                Verse {sectionNumber} / {totalVerses}
+              </>
+            ) : (
+              <>
+                {sectionType} {sectionNumber}
+              </>
+            )}
           </div>
         )}
         {/* Last Verse badge at top right */}

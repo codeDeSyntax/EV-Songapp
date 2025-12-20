@@ -11,18 +11,17 @@ if (pdfFonts && (pdfFonts as any).pdfMake) {
   (pdfMake as any).vfs = pdfFonts;
 }
 
-// Color mapping for different slide types
+// Use only black and ash (gray) for all section labels
 const getSlideColor = (type: string): string => {
-  const colorMap: Record<string, string> = {
-    verse: "#3B82F6", // blue
-    chorus: "#10B981", // green
-    bridge: "#F59E0B", // amber
-    pre_chorus: "#8B5CF6", // purple
-    outro: "#EF4444", // red
-    intro: "#06B6D4", // cyan
-    tag: "#EC4899", // pink
-  };
-  return colorMap[type] || "#6B7280"; // gray default
+  return type === "verse" ||
+    type === "chorus" ||
+    type === "bridge" ||
+    type === "pre_chorus" ||
+    type === "outro" ||
+    type === "intro" ||
+    type === "tag"
+    ? "#222" // black
+    : "#888"; // ash gray
 };
 
 // Helper function to convert image to base64
@@ -54,87 +53,97 @@ const createCoverPage = async (
   });
 
   // Load cover image
-  const coverImageData = await getImageDataUrl("/cover.png");
+  const coverImageData = await getImageDataUrl("/cover.jpg");
   console.log("Cover image loaded:", coverImageData ? "YES" : "NO");
 
   const content: Content[] = [];
 
-  // Background cover image - use stack with absolute positioning
+  // Background cover image - properly sized for A4
   if (coverImageData) {
     content.push({
       stack: [
+        // Background image
         {
           image: coverImageData,
-          width: 515,
-          fit: [515, 842],
+          width: 595, // A4 width in points (72 dpi)
+          height: 842, // A4 height in points
+          absolutePosition: { x: 0, y: 0 },
         } as any,
-        {
-          text: "EAST VOICE SONGAPP",
-          fontSize: 11,
-          color: "#FFFFFF",
-          margin: [-515, -700, 0, 60] as [number, number, number, number],
-          alignment: "center",
-          bold: true,
-        },
-        {
-          text: title.toUpperCase(),
-          fontSize: 42,
-          bold: true,
-          color: "#FFFFFF",
-          alignment: "center",
-          margin: [0, 0, 0, 15] as [number, number, number, number],
-        },
-        {
-          canvas: [
-            {
-              type: "rect",
-              x: 197,
-              y: 0,
-              w: 120,
-              h: 4,
-              color: "#FFFFFF",
-            },
-          ],
-          margin: [0, 0, 0, 15] as [number, number, number, number],
-        } as any,
-        {
-          text: subtitle,
-          fontSize: 18,
-          color: "#FFFFFF",
-          alignment: "center",
-          margin: [0, 0, 0, 200] as [number, number, number, number],
-          bold: true,
-        },
+        // Overlay content
         {
           stack: [
             {
-              text: "GENERATED ON",
-              fontSize: 9,
+              text: "ZION SONG AND LOCALS",
+              fontSize: 11,
+              color: "#0d0d0d",
+              alignment: "center",
+              bold: true,
+              margin: [0, 120, 0, 20],
+            },
+            {
+              text: title.toUpperCase(),
+              fontSize: 36,
+              bold: true,
+              color: "#050505",
+              alignment: "center",
+              margin: [0, 0, 0, 15],
+            },
+            {
+              canvas: [
+                {
+                  type: "rect",
+                  x: 0,
+                  y: 0,
+                  w: 120,
+                  h: 3,
+                  color: "#FFFFFF",
+                },
+              ],
+              alignment: "center",
+              margin: [0, 0, 0, 20],
+            } as any,
+            {
+              text: subtitle,
+              fontSize: 18,
               color: "#FFFFFF",
               alignment: "center",
-              margin: [0, 0, 0, 8] as [number, number, number, number],
+              margin: [0, 0, 0, 280],
               bold: true,
             },
             {
-              text: currentDate,
-              fontSize: 13,
-              color: "#FFFFFF",
-              alignment: "center",
-              bold: true,
+              stack: [
+                {
+                  text: "GENERATED ON",
+                  fontSize: 9,
+                  color: "#010101",
+                  alignment: "center",
+                  margin: [0, 0, 0, 5],
+                  bold: true,
+                },
+                {
+                  text: currentDate,
+                  fontSize: 13,
+                  color: "#090909",
+                  alignment: "center",
+                  bold: true,
+                },
+              ],
             },
           ],
+          absolutePosition: { x: 40, y: 0 },
+          width: 515, // A4 width minus margins
         },
       ],
-      margin: [0, 0, 0, 0] as [number, number, number, number],
+      height: 842,
     } as any);
   } else {
     // Fallback without image
     content.push(
       {
-        text: "EAST VOICE SONGAPP",
+        text: "ZION SONG AND LOCALS",
         fontSize: 11,
         color: "#1E293B",
-        margin: [0, 180, 0, 60] as [number, number, number, number],
+        margin: [0, 180, 0, 60],
         alignment: "center",
         bold: true,
       },
@@ -144,7 +153,7 @@ const createCoverPage = async (
         bold: true,
         color: "#1E293B",
         alignment: "center",
-        margin: [0, 0, 0, 15] as [number, number, number, number],
+        margin: [0, 0, 0, 15],
       },
       {
         canvas: [
@@ -158,14 +167,14 @@ const createCoverPage = async (
           },
         ],
         alignment: "center",
-        margin: [0, 0, 0, 15] as [number, number, number, number],
+        margin: [0, 0, 0, 15],
       },
       {
         text: subtitle,
         fontSize: 18,
         color: "#1E293B",
         alignment: "center",
-        margin: [0, 0, 0, 200] as [number, number, number, number],
+        margin: [0, 0, 0, 200],
         bold: true,
       },
       {
@@ -175,7 +184,7 @@ const createCoverPage = async (
             fontSize: 9,
             color: "#1E293B",
             alignment: "center",
-            margin: [0, 0, 0, 8] as [number, number, number, number],
+            margin: [0, 0, 0, 8],
             bold: true,
           },
           {
@@ -186,7 +195,7 @@ const createCoverPage = async (
             bold: true,
           },
         ],
-        margin: [0, 0, 0, 0] as [number, number, number, number],
+        alignment: "center",
       }
     );
   }
@@ -206,9 +215,10 @@ const createSongContent = (song: Song, index: number): Content => {
   // Song header
   const songHeader: Content = {
     text: `${index + 1}. ${song.title}`,
-    fontSize: 14,
+    fontSize: 12,
     bold: true,
-    margin: [0, 0, 0, 8] as [number, number, number, number],
+    margin: [0, 0, 0, 6],
+    color: "#1E293B",
   };
 
   // If no slides, show message
@@ -217,10 +227,10 @@ const createSongContent = (song: Song, index: number): Content => {
       songHeader,
       {
         text: "No slides available",
-        fontSize: 10,
+        fontSize: 9,
         italics: true,
         color: "#9CA3AF",
-        margin: [0, 0, 0, 15] as [number, number, number, number],
+        margin: [0, 0, 0, 12],
       },
     ];
   }
@@ -232,19 +242,21 @@ const createSongContent = (song: Song, index: number): Content => {
       stack: [
         {
           text: slideLabel.toUpperCase(),
-          fontSize: 9,
+          fontSize: 8,
           bold: true,
           color: getSlideColor(slide.type),
-          margin: [0, 0, 0, 3] as [number, number, number, number],
+          margin: [0, 0, 0, 2],
         },
         {
           text: slide.content || "",
           fontSize: 9,
-          margin: [0, 0, 0, 8] as [number, number, number, number],
+          color: "#374151", // dark gray for slide text
+          margin: [0, 0, 0, 6],
           preserveLeadingSpaces: true,
+          lineHeight: 1.2,
         },
       ],
-      margin: [0, 0, 0, 5] as [number, number, number, number],
+      margin: [0, 0, 0, 8],
     };
   });
 
@@ -252,9 +264,19 @@ const createSongContent = (song: Song, index: number): Content => {
     songHeader,
     ...slideContent,
     {
-      text: "",
-      margin: [0, 0, 0, 15] as [number, number, number, number],
-    },
+      canvas: [
+        {
+          type: "line",
+          x1: 0,
+          y1: 0,
+          x2: 240, // Column width (adjusted for proper fit)
+          y2: 0,
+          lineWidth: 0.5,
+          lineColor: "#E5E7EB",
+        },
+      ],
+      margin: [0, 8, 0, 16],
+    } as any,
   ];
 };
 
@@ -269,40 +291,69 @@ export const generatePrelistPDF = async (songs: Song[]): Promise<void> => {
     `${songs.length} Selected Songs`
   );
 
+  // Calculate column width based on available space
+  // A4 width (595) - margins (40+40=80) = 515 points available
+  // Allow 20 points for gutter between columns
+  const availableWidth = 515 - 20; // 495 points for content
+  const columnWidth = availableWidth / 2; // ~247.5 points per column
+
   const docDefinition: TDocumentDefinitions = {
     pageSize: "A4",
-    pageMargins: [40, 40, 40, 40] as [number, number, number, number],
+    pageMargins: [40, 40, 40, 40],
     content: [
       ...coverPage,
       {
         columns: [
           {
-            width: "48%",
+            width: columnWidth,
             stack: songs
               .filter((_, i) => i % 2 === 0)
               .map((song, i) => createSongContent(song, i * 2)),
           },
           {
-            width: "4%",
+            width: 20,
             text: "",
           },
           {
-            width: "48%",
+            width: columnWidth,
             stack: songs
               .filter((_, i) => i % 2 === 1)
               .map((song, i) => createSongContent(song, i * 2 + 1)),
           },
         ],
+        columnGap: 0,
       },
     ],
     defaultStyle: {
       font: "Roboto",
+      fontSize: 9,
+      lineHeight: 1.2,
+      color: "#222",
+    },
+    styles: {
+      songTitle: {
+        fontSize: 12,
+        bold: true,
+        margin: [0, 0, 0, 8],
+        color: "#1E293B",
+      },
+      slideLabel: {
+        fontSize: 8,
+        bold: true,
+        margin: [0, 0, 0, 2],
+      },
+      slideContent: {
+        fontSize: 9,
+        margin: [0, 0, 0, 8],
+        lineHeight: 1.2,
+        color: "#374151",
+      },
     },
   };
 
   (pdfMake as any)
     .createPdf(docDefinition)
-    .download(`Prelist-${Date.now()}.pdf`);
+    .download(`Prelist-${new Date().toISOString().split("T")[0]}.pdf`);
 };
 
 // Generate PDF for all songs in database
@@ -314,42 +365,71 @@ export const generateSongsDatabasePDF = async (
   }
 
   const coverPage = await createCoverPage(
-    "Complete Song Database",
+    "ZION SONGS AND LOCALS",
     `${songs.length} Total Songs`
   );
 
+  // Calculate column width based on available space
+  // A4 width (595) - margins (40+40=80) = 515 points available
+  // Allow 20 points for gutter between columns
+  const availableWidth = 515 - 20; // 495 points for content
+  const columnWidth = availableWidth / 2; // ~247.5 points per column
+
   const docDefinition: TDocumentDefinitions = {
     pageSize: "A4",
-    pageMargins: [40, 40, 40, 40] as [number, number, number, number],
+    pageMargins: [40, 40, 40, 40],
     content: [
       ...coverPage,
       {
         columns: [
           {
-            width: "48%",
+            width: columnWidth,
             stack: songs
               .filter((_, i) => i % 2 === 0)
               .map((song, i) => createSongContent(song, i * 2)),
           },
           {
-            width: "4%",
+            width: 20,
             text: "",
           },
           {
-            width: "48%",
+            width: columnWidth,
             stack: songs
               .filter((_, i) => i % 2 === 1)
               .map((song, i) => createSongContent(song, i * 2 + 1)),
           },
         ],
+        columnGap: 0,
       },
     ],
     defaultStyle: {
       font: "Roboto",
+      fontSize: 9,
+      lineHeight: 1.2,
+      color: "#222",
+    },
+    styles: {
+      songTitle: {
+        fontSize: 12,
+        bold: true,
+        margin: [0, 0, 0, 8],
+        color: "#1E293B",
+      },
+      slideLabel: {
+        fontSize: 8,
+        bold: true,
+        margin: [0, 0, 0, 2],
+      },
+      slideContent: {
+        fontSize: 9,
+        margin: [0, 0, 0, 8],
+        lineHeight: 1.2,
+        color: "#374151",
+      },
     },
   };
 
   (pdfMake as any)
     .createPdf(docDefinition)
-    .download(`SongDatabase-${Date.now()}.pdf`);
+    .download(`SongDatabase-${new Date().toISOString().split("T")[0]}.pdf`);
 };

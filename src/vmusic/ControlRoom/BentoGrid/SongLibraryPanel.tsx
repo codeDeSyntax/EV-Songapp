@@ -472,7 +472,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
                     {/* Slide Content Preview - Vertical Text */}
                     <div className="flex-1 overflow-hidden flex items-start justify-start ">
                       <span
-                        className="text-[12px] text-white/70 dark:text-white leading-tight whitespace-pre-wrap line-clamp-5 font-sans text-left"
+                        className="text-[12px] text-white/70 dark:text-white leading-tight whitespace-pre-wrap line-clamp-5 font-sans text-left truncate"
                         style={{
                           textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
                         }}

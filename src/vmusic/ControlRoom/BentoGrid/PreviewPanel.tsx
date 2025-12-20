@@ -79,7 +79,13 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     const saved = localStorage.getItem("bmusicOverlayOpacity");
     return saved ? parseFloat(saved) : 0.3;
   });
-  const [language, setLanguage] = useState<string>("English");
+  // Prefill language with current song's language if available
+  const currentSong = currentSongId
+    ? songs.find((s) => s.id === currentSongId)
+    : null;
+  const [language, setLanguage] = useState<string>(
+    currentSong?.language || "English"
+  );
   const contentRef = useRef<HTMLDivElement>(null);
   const { isProjectionActive } = useProjectionState();
 
@@ -617,7 +623,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       <TitleInputDialog
         isOpen={showPrelistTitleDialog}
         initialTitle={songTitle}
-        initialLanguage={language}
+        initialLanguage={currentSong?.language || language}
         isDarkMode={isDarkMode}
         onClose={() => dispatch(setShowPrelistTitleDialog(false))}
         onSave={handleSaveToPrelist}

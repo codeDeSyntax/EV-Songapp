@@ -494,6 +494,14 @@ export const useProjectionData = () => {
     }
   }, [currentIndex, slides]);
 
+  // Expose setCurrentIndex for direct navigation
+  const setCurrentIndexDirect = useCallback(
+    (idx: number) => {
+      dispatch(setCurrentIndex(idx));
+    },
+    [dispatch]
+  );
+
   return {
     // State
     slides,
@@ -515,5 +523,6 @@ export const useProjectionData = () => {
     goToPrevious: handlePrevious,
     handleSongData,
     resetProjection: () => dispatch(resetProjection()),
+    setCurrentIndex: setCurrentIndexDirect,
   };
 };
