@@ -11,6 +11,7 @@ import { parseLyrics } from "../utils/lyricsParser";
 import { Song } from "@/types";
 import { Trash2 } from "lucide-react";
 import { HistoryPanel } from "./HistoryPanel";
+import { NeuralNetworkBackground } from "./NeuralNetworkBackground";
 
 interface PrelistPanelProps {
   isDarkMode: boolean;
@@ -41,17 +42,18 @@ export const PrelistPanel: React.FC<PrelistPanelProps> = ({ isDarkMode }) => {
 
   return (
     <div
-      // isDarkMode={isDarkMode}
-      className="h-full rounded-2xl flex flex-row gap-2 px-2 py-1 bg-white/50 dark:bg-app-surface"
+      className="h-full rounded-2xl flex flex-row gap-2 px-2 py-1 bg-white/50 dark:bg-app-surface relative overflow-hidden"
       style={{
         border: "none",
-        // width: "100%",
         display: "flex",
         flexDirection: "row",
         justifyContent: "center",
       }}
     >
-      <div className="h-full w-full flex flex-row gap-3">
+      {/* Neural Network Canvas Background */}
+      <NeuralNetworkBackground isDarkMode={isDarkMode} opacity={0.25} />
+
+      <div className="h-full w-full flex flex-row gap-3 relative z-10">
         {/* Left Half - Prelist */}
         <div className="w-[68%] flex  flex-col border-r border-app-border p-2 bg-transparent  rounded-2xl">
           <div className="p-2 border-b border-app-border flex items-center justify-between flex-shrink-0">

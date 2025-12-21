@@ -292,7 +292,7 @@ const WorkspaceSelector = () => {
                   Welcome to{" "}
                   <span className="font-bold text-[#c77c5d]">Zion Music</span>
                 </p>
-                <p className="text-sm lg:text-base text-[#8c6e63] leading-relaxed font-ThePriest">
+                <p className="text-sm lg:text-base text-[#8c6e63]  font-ThePriest">
                   Let me listen to what kind of music you're playing on your
                   radio. Let me see what kind of pictures you got in your house.
                   I'll tell you what you're made out of.

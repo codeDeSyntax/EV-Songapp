@@ -161,96 +161,28 @@ button:hover {
   font-style: normal;
 }
 
-@font-face {
-  font-family: "Archivo Black";
-  src: url("/fonts/archivoblack.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
-@font-face {
-  font-family: "Roboto Thin";
-  src: url("/fonts/robotovw.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
-@font-face {
-  font-family: "Cooper Black";
-  src: url("/fonts/COOPBL.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
-@font-face {
-  font-family: "Haettenschweiler";
-  src: url("/fonts/HATTEN.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
-@font-face {
-  font-family: "Impact";
-  src: url("/fonts/impact.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
+
+
 @font-face {
   font-family: "Teko Light";
   src: url("/fonts/teko.ttf") format("truetype");
   font-weight: bold;
   font-style: normal;
 }
-@font-face {
-  font-family: "Alumini Sans Black";
-  src: url("/fonts/aluminisans.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
+
 @font-face {
   font-family: "LTFuzz";
-  src: url("./fonts/LTFuzz-Regular.ttf") format("truetype");
+  src: url("/fonts/LTFuzz-Regular.ttf") format("truetype");
   /* font-weight: bold;
   font-style: normal; */
 }
 @font-face {
-  font-family: "ThePriest";
+  font-family: "thepriest";
   src: url("./fonts/thepriest.ttf") format("truetype");
   /* font-weight: bold;
   font-style: normal; */
 }
-@font-face {
-  font-family: "Rowdies";
-  src: url("./fonts/Rowdies-Bold.ttf") format("truetype");
-  /* font-weight: bold;
-  font-style: normal; */
-}
-@font-face {
-  font-family: "Rubik Dirt";
-  src: url("./fonts/RubikDirt-Regular.ttf") format("truetype");
-  /* font-weight: bold;
-  font-style: normal; */
-}
-@font-face {
-  font-family: "Milkyway DEMO";
-  src: url("./fonts/milkyway-demo.regular.ttf") format("truetype");
-  /* font-weight: bold;
-  font-style: normal; */
-}
-@font-face {
-  font-family: "Moliga DEMO";
-  src: url("./fonts/moliga-demo.regular.otf") format("truetype");
-  /* font-weight: bold;
-  font-style: normal; */
-}
-@font-face {
-  font-family: "Ketchup Manis Demo";
-  src: url("./fonts/ketchup-manis-demo.regular.ttf") format("truetype");
-  /* font-weight: bold;
-  font-style: normal; */
-}
-@font-face {
-  font-family: "Merich";
-  src: url("./fonts/merich.regular.otf") format("truetype");
-  /* font-weight: bold;
-  font-style: normal; */
-}
+
 
 /* Custom utilities for sleek presentation */
 .bg-gradient-radial {

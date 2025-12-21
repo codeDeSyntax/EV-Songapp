@@ -44,22 +44,12 @@ export default {
         "ew-3xl": ["1.5rem", { lineHeight: "2.25rem" }], // 24px
       },
       fontFamily: {
-        anton: ['"Anton SC"', "sans-serif"],
-        bigshoulders: ['"Big Shoulders Thin"', "sans-serif"],
-        bitter: ['"Bitter Thin"', "sans-serif"],
         oswald: ['"Oswald ExtraLight"', "sans-serif"],
-        archivo: ['"Archivo Black"', "sans-serif"],
-        roboto: ['"Roboto Thin"', "sans-serif"],
-        cooper: ['"Cooper Black"', "sans-serif"],
-        haettenschweiler: ['"Haettenschweiler"', "sans-serif"],
-        impact: ['"Impact"', "sans-serif"],
         teko: ['"Teko Light"', "sans-serif"],
         alumini: ['"Alumini Sans Black"', "sans-serif"],
         LTFuzz: ['"LTFuzz"', "sans-serif"],
         ThePriest: ['"thepriest"', "sans-serif"],
-        // Add clean fonts for control room
-        inter: ["Inter", "system-ui", "sans-serif"],
-        segoe: ['"Segoe UI"', "Tahoma", "sans-serif"],
+        
       },
     },
   },
