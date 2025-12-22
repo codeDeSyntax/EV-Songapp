@@ -9,6 +9,8 @@ import {
   addSlide,
   removeSlide,
   setCurrentSlide,
+  setCurrentDisplayIndex,
+  selectDisplaySlides,
 } from "@/store/slices/songSlidesSlice";
 import {
   setIsEditingSlide,
@@ -59,8 +61,15 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   addToast,
 }) => {
   const dispatch = useAppDispatch();
-  const { slides, currentSlideId, songTitle, isSaving, currentSongId } =
-    useAppSelector((state) => state.songSlides);
+  const {
+    slides,
+    currentSlideId,
+    songTitle,
+    isSaving,
+    currentSongId,
+    currentDisplayIndex,
+  } = useAppSelector((state) => state.songSlides);
+  const displaySlides = useAppSelector(selectDisplaySlides); // Display slides with chorus repetition
   const songs = useAppSelector((state) => state.songs.songs);
   const {
     showSettings,
@@ -125,9 +134,26 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     return backgroundType === "video";
   }, [backgroundType]);
 
-  // Get current slide
+  // Get current slide from original slides (for editing)
   const currentSlide = slides.find((s) => s.id === currentSlideId) || null;
   const currentIndex = slides.findIndex((s) => s.id === currentSlideId);
+
+  // Log displaySlides for debugging
+  React.useEffect(() => {
+    console.log(
+      "DisplaySlides array:",
+      displaySlides.map(
+        (s, i) => `${i}: ${s.type} ${s.number || ""} - ${s.label}`
+      )
+    );
+  }, [displaySlides]);
+
+  // Get current display slide (for showing label and content)
+  // currentDisplayIndex comes from Redux state
+  const currentDisplaySlide =
+    currentDisplayIndex >= 0 && currentDisplayIndex < displaySlides.length
+      ? displaySlides[currentDisplayIndex]
+      : null;
 
   // Load saved background and font on mount and poll for changes
   useEffect(() => {
@@ -223,7 +249,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         return;
       }
 
-      if (slides.length === 0) return;
+      if (displaySlides.length === 0) return;
 
       // Handle Space bar for projection
       if (e.key === " ") {
@@ -234,26 +260,76 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
       if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         e.preventDefault();
-        const nextIndex = currentIndex + 1;
-        if (nextIndex < slides.length) {
-          dispatch(setCurrentSlide(slides[nextIndex].id));
+        const nextIndex = currentDisplayIndex + 1;
+        console.log(
+          `Arrow Right: currentDisplayIndex=${currentDisplayIndex}, nextIndex=${nextIndex}, displaySlides.length=${displaySlides.length}`
+        );
+        if (nextIndex < displaySlides.length) {
+          console.log(`  Dispatching setCurrentDisplayIndex(${nextIndex})`);
+          dispatch(setCurrentDisplayIndex(nextIndex));
         }
       } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
         e.preventDefault();
-        const prevIndex = currentIndex - 1;
+        const prevIndex = currentDisplayIndex - 1;
+        console.log(
+          `Arrow Left: currentDisplayIndex=${currentDisplayIndex}, prevIndex=${prevIndex}`
+        );
         if (prevIndex >= 0) {
-          dispatch(setCurrentSlide(slides[prevIndex].id));
+          console.log(`  Dispatching setCurrentDisplayIndex(${prevIndex})`);
+          dispatch(setCurrentDisplayIndex(prevIndex));
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [slides, currentIndex, isEditingSlide, dispatch, songTitle, addToast]);
+  }, [
+    displaySlides,
+    currentDisplayIndex,
+    isEditingSlide,
+    dispatch,
+    songTitle,
+    addToast,
+  ]);
+
+  // Send updates to projection window when display index changes
+  useEffect(() => {
+    if (!isProjectionActive || !currentDisplaySlide) return;
+
+    const sendProjectionUpdate = async () => {
+      const slideData = {
+        type: "SLIDE_UPDATE",
+        slide: {
+          content: currentDisplaySlide.content,
+          type: currentDisplaySlide.type,
+          number: currentDisplaySlide.number,
+        },
+        songTitle: songTitle || "Untitled Song",
+        currentIndex: currentDisplayIndex,
+        totalSlides: displaySlides.length,
+        backgroundColor: "#000000",
+        slides: displaySlides.map((slide) => ({
+          content: slide.content,
+          type: slide.type,
+          number: slide.number,
+        })),
+      };
+
+      await window.api.sendToSongProjection(slideData);
+    };
+
+    sendProjectionUpdate();
+  }, [
+    currentDisplayIndex,
+    isProjectionActive,
+    currentDisplaySlide,
+    displaySlides,
+    songTitle,
+  ]);
 
   // Handle projection of current song
   const handleProjectCurrentSong = async () => {
-    if (!songTitle || slides.length === 0) {
+    if (!songTitle || displaySlides.length === 0) {
       addToast("No song to project", "warning");
       return;
     }
@@ -261,8 +337,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     try {
       const songData = {
         title: songTitle,
-        content: slides.map((s) => s.content).join("\n\n"),
-        slides: slides.map((s) => ({
+        content: displaySlides.map((s) => s.content).join("\n\n"),
+        slides: displaySlides.map((s) => ({
           content: s.content,
           type: s.type,
           number: s.number,
@@ -710,6 +786,12 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
             />
           ) : currentSlide ? (
             <div className="text-white text-center max-w-6xl w-full overflow-y-scroll h-[95%] max-h-[54vh] px-4 no-scrollbar">
+              {/* Show label if it's a Chorus Repeat */}
+              {currentDisplaySlide?.label === "Chorus Repeat" && (
+                <div className="mb-4 text-lg font-bold opacity-80 font-mono bg-blue-500/20 py-2 px-4 rounded-lg inline-block">
+                  [{currentDisplaySlide.label}]
+                </div>
+              )}
               <pre
                 className="font-sans text-2xl leading-relaxed whitespace-pre-wrap text-shadow-lg"
                 style={{

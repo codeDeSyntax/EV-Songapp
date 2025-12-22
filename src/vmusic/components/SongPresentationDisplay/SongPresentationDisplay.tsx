@@ -120,6 +120,13 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
       ? displaySlide.number
       : undefined;
 
+  // Check if this is the last verse (not chorus repeat)
+  const isLastVerse =
+    displaySlide &&
+    displaySlide.type &&
+    displaySlide.type.toLowerCase() === "verse" &&
+    displaySlide.number === totalVerses;
+
   return (
     <div className="w-screen h-screen relative overflow-hidden bg-black">
       {/* Main slide content */}
@@ -132,9 +139,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
           overlayOpacity={overlayOpacity}
           sectionType={displaySlide.type}
           sectionNumber={displaySlide.number}
-          isLastSlide={
-            slides && slides.length > 0 && currentIndex === slides.length - 1
-          }
+          // isLastSlide={isLastVerse}
           totalVerses={totalVerses}
           showVerseFraction={currentVerseNumber !== undefined}
         />

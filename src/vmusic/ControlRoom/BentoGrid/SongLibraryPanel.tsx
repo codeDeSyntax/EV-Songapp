@@ -6,10 +6,13 @@ import {
   removeSlide,
   setSlides,
   reorderSlides,
+  selectDisplaySlides,
+  setCurrentDisplayIndex,
 } from "@/store/slices/songSlidesSlice";
 import { useProjectionState } from "@/hooks/useProjectionState";
 import { Trash2 } from "lucide-react";
 import { encodeSongData } from "../utils/songFileFormat";
+import { NeuralNetworkBackground } from "./NeuralNetworkBackground";
 
 interface SongLibraryPanelProps {
   isDarkMode: boolean;
@@ -28,6 +31,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
   const { slides, currentSlideId, songTitle, currentSongId } = useAppSelector(
     (state) => state.songSlides
   );
+  const displaySlides = useAppSelector(selectDisplaySlides);
   const songs = useAppSelector((state) => state.songs.songs);
   const { isActive: isProjectionActive } = useProjectionState();
   const [selectedBgSrc, setSelectedBgSrc] = useState<string>("");
@@ -99,40 +103,42 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
   }, [selectedBgSrc]);
 
   // Keyboard navigation for slides when projection is active
-  useEffect(() => {
-    if (!isProjectionActive || slides.length === 0) return;
+  // NOTE: This is disabled because PreviewPanel handles arrow key navigation with display array
+  // Keeping this enabled causes conflicts and skips chorus repeats
+  // useEffect(() => {
+  //   if (!isProjectionActive || slides.length === 0) return;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle if not in an input/textarea
-      if (
-        document.activeElement?.tagName.toLowerCase() === "input" ||
-        document.activeElement?.tagName.toLowerCase() === "textarea"
-      ) {
-        return;
-      }
+  //   const handleKeyDown = (e: KeyboardEvent) => {
+  //     // Only handle if not in an input/textarea
+  //     if (
+  //       document.activeElement?.tagName.toLowerCase() === "input" ||
+  //       document.activeElement?.tagName.toLowerCase() === "textarea"
+  //     ) {
+  //       return;
+  //     }
 
-      const currentIndex = slides.findIndex((s) => s.id === currentSlideId);
+  //     const currentIndex = slides.findIndex((s) => s.id === currentSlideId);
 
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-        e.preventDefault();
-        // Go to next slide
-        if (currentIndex < slides.length - 1) {
-          const nextSlide = slides[currentIndex + 1];
-          handleSlideSelect(nextSlide.id);
-        }
-      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-        e.preventDefault();
-        // Go to previous slide
-        if (currentIndex > 0) {
-          const prevSlide = slides[currentIndex - 1];
-          handleSlideSelect(prevSlide.id);
-        }
-      }
-    };
+  //     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+  //       e.preventDefault();
+  //       // Go to next slide
+  //       if (currentIndex < slides.length - 1) {
+  //         const nextSlide = slides[currentIndex + 1];
+  //         handleSlideSelect(nextSlide.id);
+  //       }
+  //     } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+  //       e.preventDefault();
+  //       // Go to previous slide
+  //       if (currentIndex > 0) {
+  //         const prevSlide = slides[currentIndex - 1];
+  //         handleSlideSelect(prevSlide.id);
+  //       }
+  //     }
+  //   };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isProjectionActive, slides, currentSlideId]);
+  //   window.addEventListener("keydown", handleKeyDown);
+  //   return () => window.removeEventListener("keydown", handleKeyDown);
+  // }, [isProjectionActive, slides, currentSlideId]);
 
   const handleDeleteSlide = async () => {
     if (!currentSlideId) {
@@ -200,7 +206,15 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
   };
 
   const handleSlideSelect = async (slideId: string) => {
-    dispatch(setCurrentSlide(slideId));
+    // Find the FIRST occurrence of this slide in the display array
+    const displayIndex = displaySlides.findIndex((s) => s.id === slideId);
+
+    if (displayIndex !== -1) {
+      dispatch(setCurrentDisplayIndex(displayIndex));
+    } else {
+      // Fallback to original behavior if not found in display array
+      dispatch(setCurrentSlide(slideId));
+    }
 
     // If projection is active, send slide update to projection window
     if (isProjectionActive) {
@@ -344,14 +358,17 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
 
   return (
     <div
-      className="h-full flex flex-col rounded-md bg-white/50 dark:bg-black  px-0 py-0"
+      className="h-full flex flex-col rounded-md bg-white/50 dark:bg-app-surface  px-0 py-0 relative overflow-hidden"
       style={{
         border: "none",
         boxShadow: "none",
       }}
     >
+      {/* Neural Network Canvas Background */}
+      <NeuralNetworkBackground isDarkMode={isDarkMode} opacity={0.25} />
+
       {/* Header */}
-      <div className="p-3  border-b border-app-border flex items-center justify-between flex-shrink-0">
+      <div className="p-3  border-b border-app-border flex items-center justify-between flex-shrink-0 relative z-10">
         <span className="text-ew-sm font-medium text-app-text">
           Song Slides
         </span>
@@ -371,7 +388,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
       </div>
 
       {/* Slides List */}
-      <div className="flex-1 p-2  overflow-y-auto no-scrollbar pb-20 space-y-2 ">
+      <div className="flex-1 p-2  overflow-y-auto no-scrollbar pb-20 space-y-2 relative z-10">
         {slides.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gp text-center px-4">
             <img

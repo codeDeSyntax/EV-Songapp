@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { setBackgroundOverlayOpacity } from "@/store/slices/projectionSlice";
+import { setRepeatChorusAfterVerse } from "@/store/slices/songSlidesSlice";
 import {
   DarkModeCard,
   BackgroundOverlayCard,
   ColorGradientCard,
+  ChorusRepetitionCard,
 } from "./SettingsCards";
 
 interface SettingsViewProps {
@@ -19,6 +21,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const dispatch = useAppDispatch();
   const overlayOpacity = useAppSelector(
     (state) => state.projection.backgroundOverlayOpacity
+  );
+  const repeatChorus = useAppSelector(
+    (state) => state.songSlides.repeatChorusAfterVerse
   );
   const [localOpacity, setLocalOpacity] = useState(overlayOpacity * 100);
   const [selectedBgSrc, setSelectedBgSrc] = useState<string>("");
@@ -137,6 +142,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     }
   };
 
+  const handleChorusRepetitionToggle = (value: boolean) => {
+    dispatch(setRepeatChorusAfterVerse(value));
+  };
+
   return (
     <div className="absolute inset-0 z-30 overflow-hidden bg-app-surface dark:bg-black">
       <div className="h-full p-6 flex flex-col overflow-hidden">
@@ -170,6 +179,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             onGradientAngleChange={setGradientAngle}
             onPresetColorSelect={handlePresetColor}
             onApplyBackground={handleApplyBackground}
+          />
+
+          <ChorusRepetitionCard
+            isDarkMode={isDarkMode}
+            repeatChorus={repeatChorus}
+            onToggle={handleChorusRepetitionToggle}
           />
         </div>
       </div>

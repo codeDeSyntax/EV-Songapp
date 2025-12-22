@@ -16,6 +16,7 @@ import {
   setIsExternalDisplay,
   setLastProjectedSong,
   resetProjection,
+  selectProjectionDisplaySlides,
 } from "@/store/slices/projectionSlice";
 
 interface Slide {
@@ -68,6 +69,11 @@ export const useProjectionData = () => {
     isFontCalculated,
     lastProjectedSong,
   } = useSelector((state: RootState) => state.projection);
+
+  // Get display slides with chorus repetition
+  const displaySlides = useSelector((state: RootState) =>
+    selectProjectionDisplaySlides(state)
+  );
 
   // Helper functions for localStorage
   const getLocalStorageItem = (
@@ -504,7 +510,7 @@ export const useProjectionData = () => {
 
   return {
     // State
-    slides,
+    slides: displaySlides, // Use display slides with chorus repetition
     currentIndex,
     songTitle,
     fontSizeMultiplier,
@@ -513,7 +519,7 @@ export const useProjectionData = () => {
     overlayOpacity: backgroundOverlayOpacity,
     isExternalDisplay,
     isFontCalculated,
-    currentSlide: slides[currentIndex] || null,
+    currentSlide: displaySlides[currentIndex] || null,
     lastProjectedSong,
 
     // Actions

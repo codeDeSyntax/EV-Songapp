@@ -111,11 +111,11 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ isDarkMode }) => {
       </div>
 
       {/* Footer info */}
-      <div className="  border-t border-app-border flex-shrink-0 bg-transparent dark:bg-blue-950 px-2 absolute bottom-4  rounded-full">
-        <span className="text-[12px] text-black underline dark:text-blue-400 text-center">
+      <div className="  border-t border-app-border flex-shrink-0 bg-blue-950 dark:bg-blue-950 px-2 absolute bottom-4  rounded-full">
+        <span className="text-[12px] text-white underline dark:text-blue-400 text-center">
           {history.length} {history.length === 1 ? "song" : "songs"} •
           Auto-deletes after{" "}
-          <span className="font-bold text-black dark:text-white">2 weeks</span>
+          <span className="font-bold text-white dark:text-white">2 weeks</span>
         </span>
       </div>
     </div>

@@ -178,7 +178,7 @@ button:hover {
 }
 @font-face {
   font-family: "thepriest";
-  src: url("./fonts/thepriest.ttf") format("truetype");
+  src: url("/fonts/thepriest.ttf") format("truetype");
   /* font-weight: bold;
   font-style: normal; */
 }

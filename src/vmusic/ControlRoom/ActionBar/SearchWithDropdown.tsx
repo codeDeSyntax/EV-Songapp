@@ -29,6 +29,7 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
     () => localStorage.getItem("lastSearchTerm") || ""
   );
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [letterFilter, setLetterFilter] = useState<string>("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   // Persist search term to localStorage
@@ -45,7 +46,7 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
   }, []);
 
   // Filter songs based on search query (only after Enter is pressed)
-  const filteredSongs = searchQuery.trim()
+  let filteredSongs = searchQuery.trim()
     ? songs.filter((song) => {
         const lowerQuery = searchQuery.toLowerCase();
         const titleMatch = song.title.toLowerCase().includes(lowerQuery);
@@ -62,6 +63,13 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
       })
     : [];
 
+  // Apply letter filter if set
+  if (letterFilter) {
+    filteredSongs = filteredSongs.filter((song) =>
+      song.title.toLowerCase().startsWith(letterFilter.toLowerCase())
+    );
+  }
+
   // Reset selected index when filtered songs change
   useEffect(() => {
     if (filteredSongs.length > 0) {
@@ -71,6 +79,30 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
       setShowDropdown(false);
     }
   }, [filteredSongs.length]);
+
+  // Global keyboard handler for alphabet filtering when dropdown is open
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // Only handle if dropdown is open and input is not focused
+      if (!showDropdown || document.activeElement === inputRef.current) {
+        return;
+      }
+
+      // Check if it's a single alphabet key (a-z or A-Z)
+      if (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) {
+        e.preventDefault();
+        setLetterFilter(e.key);
+        setSelectedIndex(0);
+      } else if (e.key === "Backspace" || e.key === "Escape") {
+        e.preventDefault();
+        setLetterFilter("");
+        setSelectedIndex(0);
+      }
+    };
+
+    document.addEventListener("keydown", handleGlobalKeyDown);
+    return () => document.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [showDropdown]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -114,8 +146,9 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
           // Do NOT clear the search term or updateSearchQuery here
         }
       } else {
-        // Otherwise, trigger search
+        // Otherwise, trigger search and blur input to enable letter filtering
         handleSearch();
+        inputRef.current?.blur();
       }
     } else if (e.key === "Escape") {
       setSearchTerm("");
@@ -192,6 +225,21 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
               className="h-[70vh] "
               style={{ boxShadow: "none" }}
             >
+              {/* Letter Filter Indicator */}
+              {letterFilter && (
+                <div className="px-3 py-1 mb-2 bg-app-blue/10 border border-app-blue rounded-lg flex items-center justify-between">
+                  <span className="text-ew-xs text-app-text">
+                    Filtering by:{" "}
+                    <span className="font-bold uppercase">{letterFilter}</span>
+                  </span>
+                  <button
+                    onClick={() => setLetterFilter("")}
+                    className="text-app-text-muted hover:text-app-text"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
               {filteredSongs.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0 }}

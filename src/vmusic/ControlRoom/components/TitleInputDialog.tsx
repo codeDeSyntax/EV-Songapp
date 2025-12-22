@@ -77,7 +77,7 @@ export const TitleInputDialog: React.FC<TitleInputDialogProps> = (props) => {
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="h-8 px-2 text-xs ronded border border-app-border/30 bg-transparent rounded-full text-app-text focus:outline-none font-teko"
+            className="h-8 px-2 text-xs ronded border border-app-border/30 bg-transparent rounded-full text-app-text focus:outline-none font-teko text-white"
             style={{ minWidth: 80 }}
           >
             <option className="bg-app-bg " value="English">

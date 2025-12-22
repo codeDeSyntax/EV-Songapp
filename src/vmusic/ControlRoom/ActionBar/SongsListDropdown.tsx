@@ -181,7 +181,7 @@ export const SongsListDropdown: React.FC<SongsListDropdownProps> = ({
                         {columnIndex * itemsPerColumn + index + 1}
                       </span>
                     </div>
-                    <span className="truncate group-hover:text-blue-500 transition-colors">
+                    <span className="truncate group-hover:font-bold transition-colors">
                       {song.title}
                     </span>
                     <span className="ml-2 text-xs text-app-text-muted font-semibold">
