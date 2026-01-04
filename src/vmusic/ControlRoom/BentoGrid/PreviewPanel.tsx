@@ -98,6 +98,10 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const { isProjectionActive } = useProjectionState();
 
+  // Track if we're loading a new song to prevent auto-projection
+  const isLoadingSongRef = useRef(false);
+  const previousSongTitleRef = useRef(songTitle);
+
   // Detect background type (use previewBgSrc for display)
   const backgroundType = React.useMemo(() => {
     const bgSrc = previewBgSrc || selectedBgSrc;
@@ -237,6 +241,21 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   // The PreviewPanel used to sync on every slide change, causing duplicate navigation
   // Now only SongLibraryPanel sends slide updates when clicking slides directly
 
+  // Track song title changes to prevent auto-projection when loading a new song
+  useEffect(() => {
+    if (previousSongTitleRef.current !== songTitle) {
+      isLoadingSongRef.current = true;
+      previousSongTitleRef.current = songTitle;
+
+      // Clear the flag after a short delay to allow the song to fully load
+      const timer = setTimeout(() => {
+        isLoadingSongRef.current = false;
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [songTitle]);
+
   // Keyboard navigation for slides
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -258,24 +277,16 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         return;
       }
 
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      if (e.key === "ArrowRight") {
         e.preventDefault();
         const nextIndex = currentDisplayIndex + 1;
-        console.log(
-          `Arrow Right: currentDisplayIndex=${currentDisplayIndex}, nextIndex=${nextIndex}, displaySlides.length=${displaySlides.length}`
-        );
         if (nextIndex < displaySlides.length) {
-          console.log(`  Dispatching setCurrentDisplayIndex(${nextIndex})`);
           dispatch(setCurrentDisplayIndex(nextIndex));
         }
-      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      } else if (e.key === "ArrowLeft") {
         e.preventDefault();
         const prevIndex = currentDisplayIndex - 1;
-        console.log(
-          `Arrow Left: currentDisplayIndex=${currentDisplayIndex}, prevIndex=${prevIndex}`
-        );
         if (prevIndex >= 0) {
-          console.log(`  Dispatching setCurrentDisplayIndex(${prevIndex})`);
           dispatch(setCurrentDisplayIndex(prevIndex));
         }
       }
@@ -293,8 +304,18 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   ]);
 
   // Send updates to projection window when display index changes
+  // BUT ONLY if we're actively projecting (not just loading a song)
   useEffect(() => {
     if (!isProjectionActive || !currentDisplaySlide) return;
+
+    // Don't auto-project when song title changes (user is loading a new song)
+    // Only send updates when navigating within the same song
+    if (!songTitle) return;
+
+    // Prevent auto-projection during song loading
+    if (isLoadingSongRef.current) {
+      return;
+    }
 
     const sendProjectionUpdate = async () => {
       const slideData = {
@@ -324,7 +345,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     isProjectionActive,
     currentDisplaySlide,
     displaySlides,
-    songTitle,
+    // Removed songTitle from dependencies to prevent auto-projection on song change
   ]);
 
   // Handle projection of current song
@@ -788,14 +809,24 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
             <div className="text-white text-center max-w-6xl w-full overflow-y-scroll h-[95%] max-h-[54vh] px-4 no-scrollbar">
               {/* Show label if it's a Chorus Repeat */}
               {currentDisplaySlide?.label === "Chorus Repeat" && (
-                <div className="mb-4 text-lg font-bold opacity-80 font-mono bg-blue-500/20 py-2 px-4 rounded-lg inline-block">
+                <div className=" text-lg font-bold opacity-80 font-mono bg-black/20 py-1 px-4 rounded-lg inline-block">
                   [{currentDisplaySlide.label}]
                 </div>
               )}
               <pre
                 className="font-sans text-2xl leading-relaxed whitespace-pre-wrap text-shadow-lg"
                 style={{
-                  textShadow: "2px 2px 4px rgba(0,0,0,0.8)",
+                  textShadow: `
+                  0 0 8px rgba(0, 0, 0, 0.9),
+                  0 0 12px rgba(0, 0, 0, 0.8),
+                  0 0 16px rgba(0, 0, 0, 0.7),
+                  3px 3px 6px rgba(0, 0, 0, 0.8),
+                  -3px -3px 6px rgba(0, 0, 0, 0.8),
+                  3px -3px 6px rgba(0, 0, 0, 0.8),
+                  -3px 3px 6px rgba(0, 0, 0, 0.8),
+                  5px 5px 10px rgba(0, 0, 0, 0.6),
+                  -5px -5px 10px rgba(0, 0, 0, 0.6)
+                `,
                   fontFamily: fontFamily,
                 }}
               >

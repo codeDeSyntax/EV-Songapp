@@ -88,8 +88,30 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
         return;
       }
 
-      // Check if it's a single alphabet key (a-z or A-Z)
-      if (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) {
+      // Ignore events that originated from the input (prevents immediate selection after search)
+      if (e.target === inputRef.current) {
+        return;
+      }
+
+      // Handle arrow keys for navigation
+      if (e.key === "ArrowDown" && filteredSongs.length > 0) {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev + 1) % filteredSongs.length);
+      } else if (e.key === "ArrowUp" && filteredSongs.length > 0) {
+        e.preventDefault();
+        setSelectedIndex(
+          (prev) => (prev - 1 + filteredSongs.length) % filteredSongs.length
+        );
+      } else if (e.key === "Enter" && filteredSongs.length > 0) {
+        // Select the currently highlighted song
+        e.preventDefault();
+        e.stopPropagation(); // Prevent ControlRoom handler from catching this
+        if (onSelectSong && filteredSongs[selectedIndex]) {
+          onSelectSong(filteredSongs[selectedIndex]);
+          setShowDropdown(false);
+        }
+      } else if (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) {
+        // Check if it's a single alphabet key (a-z or A-Z)
         e.preventDefault();
         setLetterFilter(e.key);
         setSelectedIndex(0);
@@ -102,7 +124,7 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
 
     document.addEventListener("keydown", handleGlobalKeyDown);
     return () => document.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [showDropdown]);
+  }, [showDropdown, filteredSongs, selectedIndex, onSelectSong]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -134,6 +156,7 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
+      e.stopPropagation(); // Prevent ControlRoom handler from catching this
       // If dropdown is showing and there's a selected song, load it
       if (
         showDropdown &&
@@ -183,7 +206,7 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
   };
 
   return (
-    <div className="relative flex-1 max-w-md">
+    <div className="relative flex-1 max-w-md search-dropdown-container">
       {/* Search Input */}
       <div className="relative">
         <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-app-text-muted" />

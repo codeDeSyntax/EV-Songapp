@@ -280,10 +280,10 @@ export const BackgroundSelectorPanel: React.FC<
         border: "none",
         borderRadius: "8px",
       }}
-      className="h-full flex flex-col  overflow-hidden py-0 bg-white/50 dark:bg-app-surface"
+      className="h-full flex flex-col  overflow-hidden py-0 bg-white/50 dark:bg-black"
     >
       {/* Header - Fixed */}
-      <div className="sticky top-0 z-10  dark:bg-app-surface px-3 pt-2 pb-2 border-b border-app-border flex items-center justify-between flex-shrink-0">
+      <div className="sticky top-0 z-10  px-3 pt-2 pb-2 border-b border-app-border flex items-center justify-between flex-shrink-0">
         <h3 className="text-ew-sm font-medium text-app-text">Backgrounds</h3>
         <div className="flex items-center gap-2 relative">
           <div
@@ -375,11 +375,14 @@ export const BackgroundSelectorPanel: React.FC<
       </div>
 
       {/* Background Grid - Scrollable */}
-      <div className="flex-1 overflow-y-auto no-scrollbar p-3">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-2">
         {isLoading ? (
           <div className="grid grid-cols-2 gap-3">
             {[...Array(9)].map((_, i) => (
-              <div key={i} className="aspect-video rounded  animate-pulse" />
+              <div
+                key={i}
+                className="aspect-video rounded bg-app-surface-hover animate-pulse"
+              />
             ))}
           </div>
         ) : backgrounds.length === 0 ? (
@@ -401,7 +404,7 @@ export const BackgroundSelectorPanel: React.FC<
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             {backgrounds.map((background, index) => {
               const isSelected = selectedBackground?.src === background.src;
               const isPending = pendingBackground?.src === background.src;
@@ -410,50 +413,44 @@ export const BackgroundSelectorPanel: React.FC<
                 <div
                   key={`${background.src}-${index}`}
                   onClick={(e) => handleSelectBackground(background, e)}
-                  className="cursor-pointer aspect-video"
+                  className={`relative cursor-pointer aspect-video rounded-lg overflow-hidden transition-all duration-200 hover:scale-105 ${
+                    isPending
+                      ? "ring-2 ring-yellow-500"
+                      : isSelected
+                      ? "ring-2 ring-app-blue"
+                      : "ring-1 ring-app-border hover:ring-app-surface-hover"
+                  }`}
                 >
-                  <div
-                    className={`overflow-hidden rounded-lg transition-all hover:scale-105 ${
-                      isPending
-                        ? "ring-2 ring-yellow-500"
-                        : isSelected
-                        ? "ring-2 ring-app-surface-hover"
-                        : ""
-                    }`}
-                  >
-                    <div className="relative aspect-video">
-                      {mediaType === "videos" ? (
-                        <video
-                          src={background.src}
-                          className="w-full h-full object-cover rounded-lg"
-                          muted
-                          loop
-                          playsInline
-                        />
-                      ) : (
-                        <img
-                          src={background.src}
-                          alt={background.name}
-                          className="w-full h-full object-cover rounded-lg"
-                          loading="lazy"
-                        />
-                      )}
-                      {isPending && (
-                        <div className="absolute inset-0 bg-yellow-500/20 flex items-center justify-center rounded-lg">
-                          <div className="w-6 h-6 rounded-full bg-yellow-500 text-white flex items-center justify-center text-ew-xs">
-                            ?
-                          </div>
-                        </div>
-                      )}
-                      {isSelected && !isPending && (
-                        <div className="absolute inset-0 bg-app-blue/20 flex items-center justify-center rounded-lg">
-                          <div className="w-6 h-6 rounded-full bg-app-blue text-white flex items-center justify-center text-ew-xs">
-                            ✓
-                          </div>
-                        </div>
-                      )}
+                  {mediaType === "videos" ? (
+                    <video
+                      src={background.src}
+                      className="w-full h-full object-cover"
+                      muted
+                      loop
+                      playsInline
+                    />
+                  ) : (
+                    <img
+                      src={background.src}
+                      alt={background.name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  )}
+                  {isPending && (
+                    <div className="absolute inset-0 bg-yellow-500/20 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center text-sm font-bold shadow-lg">
+                        ?
+                      </div>
                     </div>
-                  </div>
+                  )}
+                  {isSelected && !isPending && (
+                    <div className="absolute inset-0 bg-app-blue/20 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-app-blue text-white flex items-center justify-center shadow-lg">
+                        <Check className="w-5 h-5" />
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

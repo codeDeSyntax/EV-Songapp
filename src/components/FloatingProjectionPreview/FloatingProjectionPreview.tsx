@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { X, Maximize2, Minimize2, Monitor } from "lucide-react";
+import { X, Maximize2, Minimize2, Monitor, Wifi } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SongSection {
@@ -175,22 +175,19 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
             <div className="w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
           </div>
 
-           <div className="text-lg font-impact font-medium text-white">
-                      {sectionDisplay || "No Section"}
-                    </div>
+          <div className="text-lg font-teko font-medium text-white">
+            {sectionDisplay || "No Section"}
+          </div>
 
           <div className="flex items-center space-x-1">
-           
             <button
-              onClick={onClose}
-              className="p-0.5 hover:bg-red-900/50 bg-red-800 rounded transition-colors"
+              // onClick={onClose}
+              className="p-0.5 bg-transparent rounded transition-colors"
             >
-              <X className="w-2.5 h-2.5 text-white hover:text-red-400" />
+              <img src="./alert.png" className="w-6 h-6 animate-pulse hover:animate-spin transition-all" />
             </button>
           </div>
         </div>
-
-    
       </motion.div>
     </AnimatePresence>
   );

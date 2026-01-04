@@ -18,6 +18,8 @@ interface SlideContentProps {
   isLastSlide?: boolean;
   totalVerses?: number;
   showVerseFraction?: boolean;
+  renderBackgroundOnly?: boolean;
+  renderTextOnly?: boolean;
 }
 
 export const SlideContent: React.FC<SlideContentProps> = ({
@@ -32,6 +34,8 @@ export const SlideContent: React.FC<SlideContentProps> = ({
   isLastSlide,
   totalVerses,
   showVerseFraction,
+  renderBackgroundOnly = false,
+  renderTextOnly = false,
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -120,8 +124,8 @@ export const SlideContent: React.FC<SlideContentProps> = ({
     // Very small safety margin (1%) to prevent edge overflow while maximizing size
     const heightMargin = availableHeight * 0.01;
 
-    // Binary search with 30 iterations for precision
-    for (let i = 0; i < 30; i++) {
+    // Binary search with 20 iterations for speed while maintaining precision
+    for (let i = 0; i < 20; i++) {
       const testSize = Math.floor((low + high) / 2);
 
       // Apply test size
@@ -158,27 +162,28 @@ export const SlideContent: React.FC<SlideContentProps> = ({
     setIsResizing(false);
   }, [isResizing, fontSizeMultiplier, contentLines.length]);
 
-  // Trigger resize on content change
+  // Trigger resize on content change - only when content actually changes
+  useEffect(() => {
+    if (
+      textContentRef.current &&
+      containerRef.current &&
+      content &&
+      !renderBackgroundOnly
+    ) {
+      requestAnimationFrame(() => {
+        resizeToFit();
+      });
+    }
+  }, [content, fontFamily, fontSizeMultiplier]);
+
+  // Trigger resize when refs become ready - single RAF is enough
   useEffect(() => {
     if (textContentRef.current && containerRef.current && content) {
       requestAnimationFrame(() => {
         resizeToFit();
       });
     }
-  }, [content, fontFamily, fontSizeMultiplier, resizeToFit]);
-
-  // Trigger resize when refs become ready
-  useEffect(() => {
-    if (textContentRef.current && containerRef.current && content) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            resizeToFit();
-          }, 100);
-        });
-      });
-    }
-  }, [textContentRef.current, containerRef.current, content]);
+  }, []);
 
   // Window resize listener
   useEffect(() => {
@@ -188,96 +193,113 @@ export const SlideContent: React.FC<SlideContentProps> = ({
 
   return (
     <div className="absolute inset-0 flex items-center justify-center">
-      {/* Background - Video, Image, Solid Color, or Gradient */}
-      {backgroundType === "video" ? (
-        <video
-          ref={videoRef}
-          className="absolute inset-0 w-full h-full object-cover"
-          src={backgroundValue}
-          autoPlay
-          loop
-          muted
-          playsInline
-        />
-      ) : backgroundType === "solid" ? (
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: backgroundValue }}
-        />
-      ) : backgroundType === "gradient" ? (
-        <div
-          className="absolute inset-0"
-          style={{ background: backgroundValue }}
-        />
-      ) : (
-        <img
-          className="absolute inset-0 w-full h-full object-cover"
-          src={backgroundValue}
-          alt="Background"
-        />
+      {/* Background - Video, Image, Solid Color, or Gradient (Only render if not text-only mode) */}
+      {!renderTextOnly && (
+        <>
+          {backgroundType === "video" ? (
+            <video
+              ref={videoRef}
+              className="absolute inset-0 w-full h-full object-cover"
+              src={backgroundValue}
+              autoPlay
+              loop
+              muted
+              playsInline
+            />
+          ) : backgroundType === "solid" ? (
+            <div
+              className="absolute inset-0"
+              style={{ backgroundColor: backgroundValue }}
+            />
+          ) : backgroundType === "gradient" ? (
+            <div
+              className="absolute inset-0"
+              style={{ background: backgroundValue }}
+            />
+          ) : (
+            <img
+              className="absolute inset-0 w-full h-full object-cover"
+              src={backgroundValue}
+              alt="Background"
+            />
+          )}
+
+          {/* Dark overlay for better text visibility */}
+          <div
+            className="absolute inset-0 bg-black transition-opacity duration-200"
+            style={{ opacity: overlayOpacity }}
+          />
+        </>
       )}
 
-      {/* Dark overlay for better text visibility */}
-      <div
-        className="absolute inset-0 bg-black transition-opacity duration-200"
-        style={{ opacity: overlayOpacity }}
-      />
-
-      {/* Content container */}
-      <div
-        ref={containerRef}
-        className="relative z-10 w-full h-full flex items-center justify-center px-8 py-4"
-      >
+      {/* Content container (Only render if not background-only mode) */}
+      {!renderBackgroundOnly && (
         <div
-          ref={textContentRef}
-          className="text-center"
-          style={{
-            fontFamily: fontFamily,
-            fontSize: `${calculatedFontSize}px`,
-            lineHeight: calculatedFontSize >= 100 ? 1.0 : 1.2,
-          }}
+          ref={containerRef}
+          className="relative z-10 w-full h-full flex items-center justify-center px-8 py-4"
         >
-          {contentLines.map((line, index) => (
-            <p
-              key={index}
-              className="m-0 font-bold text-white drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]"
-              style={{
-                fontFamily: fontFamily,
-                marginBottom:
-                  index < contentLines.length - 1
-                    ? `${Math.floor(calculatedFontSize * 0.1)}px`
-                    : "0",
-                whiteSpace: "normal",
-                wordWrap: "break-word",
-              }}
-            >
-              {line.trim() || " "}
-            </p>
-          ))}
+          <div
+            ref={textContentRef}
+            className="text-center"
+            style={{
+              fontFamily: fontFamily,
+              fontSize: `${calculatedFontSize}px`,
+              lineHeight: calculatedFontSize >= 100 ? 1.0 : 1.2,
+            }}
+          >
+            {contentLines.map((line, index) => (
+              <p
+                key={index}
+                className="m-0 font-bold text-white drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]"
+                style={{
+                  fontFamily: fontFamily,
+                  marginBottom:
+                    index < contentLines.length - 1
+                      ? `${Math.floor(calculatedFontSize * 0.1)}px`
+                      : "0",
+                  whiteSpace: "normal",
+                  wordWrap: "break-word",
+                  textShadow: `
+                  0 0 8px rgba(0, 0, 0, 0.9),
+                  0 0 12px rgba(0, 0, 0, 0.8),
+                  0 0 16px rgba(0, 0, 0, 0.7),
+                  3px 3px 6px rgba(0, 0, 0, 0.8),
+                  -3px -3px 6px rgba(0, 0, 0, 0.8),
+                  3px -3px 6px rgba(0, 0, 0, 0.8),
+                  -3px 3px 6px rgba(0, 0, 0, 0.8),
+                  5px 5px 10px rgba(0, 0, 0, 0.6),
+                  -5px -5px 10px rgba(0, 0, 0, 0.6)
+                `,
+                }}
+              >
+                {line.trim() || " "}
+              </p>
+            ))}
+          </div>
+          {/* Section number at bottom right, with total verses if verse */}
+          {sectionType && sectionNumber !== undefined && (
+            <div className="absolute bottom-1 right-8 text-white text-4xl font-teko font-bold px-4 rounded-xl select-none pointer-events-none z-20">
+              {sectionType.toLowerCase() === "verse" &&
+              showVerseFraction &&
+              totalVerses ? (
+                <>
+                  Verse {sectionNumber} / {totalVerses}
+                </>
+              ) : (
+                <>
+                  {sectionType} {sectionNumber}
+                </>
+              )}
+            </div>
+          )}
+          {/* Last Verse badge at top right */}
+          {isLastSlide && (
+            <div className="absolute bottom-1 left-4 text-black text-2xl animate-pulse  font-mono font-bold bg-white px-4 py-1 rounded-full shadow-lg select-none pointer-events-none z-20">
+              Last Verse
+            </div>
+          )}
         </div>
-        {/* Section number at bottom right, with total verses if verse */}
-        {sectionType && sectionNumber !== undefined && (
-          <div className="absolute bottom-1 right-8 text-white text-4xl font-teko font-bold px-4 rounded-xl select-none pointer-events-none z-20">
-            {sectionType.toLowerCase() === "verse" &&
-            showVerseFraction &&
-            totalVerses ? (
-              <>
-                Verse {sectionNumber} / {totalVerses}
-              </>
-            ) : (
-              <>
-                {sectionType} {sectionNumber}
-              </>
-            )}
-          </div>
-        )}
-        {/* Last Verse badge at top right */}
-        {isLastSlide && (
-          <div className="absolute bottom-1 left-4 text-black text-2xl animate-pulse  font-mono font-bold bg-white px-4 py-1 rounded-full shadow-lg select-none pointer-events-none z-20">
-            Last Verse
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };

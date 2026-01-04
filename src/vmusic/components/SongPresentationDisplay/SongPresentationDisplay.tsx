@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useProjectionData } from "./hooks/useProjectionData";
 import { SlideContent } from "./components/SlideContent";
 import { ProjectionControls } from "./components/ProjectionControls";
@@ -129,28 +130,66 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
 
   return (
     <div className="w-screen h-screen relative overflow-hidden bg-black">
-      {/* Main slide content */}
-      {displaySlide ? (
-        <SlideContent
-          content={displaySlide.content}
-          fontFamily={fontFamily}
-          fontSizeMultiplier={fontSizeMultiplier}
-          backgroundImage={backgroundImage}
-          overlayOpacity={overlayOpacity}
-          sectionType={displaySlide.type}
-          sectionNumber={displaySlide.number}
-          // isLastSlide={isLastVerse}
-          totalVerses={totalVerses}
-          showVerseFraction={currentVerseNumber !== undefined}
-        />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center bg-app-surface dark:bg-black">
+      {displaySlide && (
+        <>
+          {/* Static Background - Never transitions */}
+          <SlideContent
+            content={displaySlide.content}
+            fontFamily={fontFamily}
+            fontSizeMultiplier={fontSizeMultiplier}
+            backgroundImage={backgroundImage}
+            overlayOpacity={overlayOpacity}
+            sectionType={displaySlide.type}
+            sectionNumber={displaySlide.number}
+            totalVerses={totalVerses}
+            showVerseFraction={currentVerseNumber !== undefined}
+            renderBackgroundOnly={true}
+          />
+
+          {/* Animated Text Content Only */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentIndex}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{
+                duration: 0.15,
+                ease: "easeInOut",
+              }}
+              className="absolute inset-0"
+            >
+              <SlideContent
+                content={displaySlide.content}
+                fontFamily={fontFamily}
+                fontSizeMultiplier={fontSizeMultiplier}
+                backgroundImage={backgroundImage}
+                overlayOpacity={overlayOpacity}
+                sectionType={displaySlide.type}
+                sectionNumber={displaySlide.number}
+                totalVerses={totalVerses}
+                showVerseFraction={currentVerseNumber !== undefined}
+                renderTextOnly={true}
+              />
+            </motion.div>
+          </AnimatePresence>
+        </>
+      )}
+
+      {!displaySlide && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="absolute inset-0 flex items-center justify-center bg-app-surface dark:bg-black"
+        >
           <img
             src="./nosong.png"
             alt="No slide to display"
             className="max-w-md opacity-50"
           />
-        </div>
+        </motion.div>
       )}
     </div>
   );

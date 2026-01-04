@@ -146,9 +146,8 @@ const ControlRoom = () => {
 
       if (isInputField) return;
 
-      if (e.key === "Enter" && selectedSong) {
-        presentSong(selectedSong);
-      } else if (e.key === "Delete" && selectedSong) {
+      // Removed Enter key handler - use Spacebar in PreviewPanel to project
+      if (e.key === "Delete" && selectedSong) {
         showDeleteConfirmation();
       } else if (e.key === "Escape") {
         deselectSong();

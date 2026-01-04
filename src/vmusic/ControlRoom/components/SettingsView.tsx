@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store";
-import { setBackgroundOverlayOpacity } from "@/store/slices/projectionSlice";
+import {
+  setBackgroundOverlayOpacity,
+  setRepeatChorusAfterVerse as setRepeatChorusProjection,
+} from "@/store/slices/projectionSlice";
 import { setRepeatChorusAfterVerse } from "@/store/slices/songSlidesSlice";
 import {
   DarkModeCard,
@@ -144,6 +147,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
   const handleChorusRepetitionToggle = (value: boolean) => {
     dispatch(setRepeatChorusAfterVerse(value));
+    dispatch(setRepeatChorusProjection(value));
   };
 
   return (
