@@ -15,7 +15,7 @@ interface SlideContentProps {
   baseFontSize?: number;
   sectionType?: string;
   sectionNumber?: number;
-  isLastSlide?: boolean;
+  isLastVerse?: boolean;
   totalVerses?: number;
   showVerseFraction?: boolean;
   renderBackgroundOnly?: boolean;
@@ -28,10 +28,10 @@ export const SlideContent: React.FC<SlideContentProps> = ({
   fontSizeMultiplier,
   backgroundImage,
   overlayOpacity = 0.3,
-  baseFontSize = 70,
+  baseFontSize = 80,
   sectionType,
   sectionNumber,
-  isLastSlide,
+  isLastVerse,
   totalVerses,
   showVerseFraction,
   renderBackgroundOnly = false,
@@ -113,7 +113,7 @@ export const SlideContent: React.FC<SlideContentProps> = ({
     const containerElement = containerRef.current;
 
     // Available space - account for p-12 padding (3rem = 48px on each side)
-    const paddingVertical = 64; // 32px top + 32px bottom
+    const paddingVertical = 10; // 32px top + 32px bottom
     const availableHeight = containerElement.clientHeight - paddingVertical;
 
     // Binary search for optimal font size
@@ -134,9 +134,9 @@ export const SlideContent: React.FC<SlideContentProps> = ({
       // Calculate dynamic line height based on font size
       let lineHeight = 1.2;
       if (testSize >= 100) lineHeight = 1.0;
-      else if (testSize >= 80) lineHeight = 1.3;
-      else if (testSize >= 60) lineHeight = 1.3;
-      else if (testSize >= 40) lineHeight = 1.3;
+      else if (testSize >= 80) lineHeight = 1.4;
+      else if (testSize >= 60) lineHeight = 1.4;
+      else if (testSize >= 40) lineHeight = 1.4;
       else lineHeight = 1.3;
 
       contentElement.style.lineHeight = `${lineHeight}`;
@@ -278,26 +278,36 @@ export const SlideContent: React.FC<SlideContentProps> = ({
           </div>
           {/* Section number at bottom right, with total verses if verse */}
           {sectionType && sectionNumber !== undefined && (
-            <div className="absolute bottom-1 right-8 text-white text-4xl font-teko font-bold px-4 rounded-xl select-none pointer-events-none z-20">
+            <mark
+              className="absolute bottom-1 right-4 text-4xl font-teko font-bold px-4 select-none pointer-events-none z-20"
+              style={{
+                backgroundColor:
+                  sectionType.toLowerCase() === "verse" &&
+                  sectionNumber === totalVerses
+                    ? "#ef4444" // red-500
+                    : "#fef08a", // yellow-200 (default mark color)
+                color:
+                  sectionType.toLowerCase() === "verse" &&
+                  sectionNumber === totalVerses
+                    ? "white"
+                    : "black",
+              }}
+            >
               {sectionType.toLowerCase() === "verse" &&
               showVerseFraction &&
               totalVerses ? (
                 <>
-                  Verse {sectionNumber} / {totalVerses}
+                  {sectionNumber === totalVerses && "L - "}Verse {sectionNumber}{" "}
+                  / {totalVerses}
                 </>
               ) : (
                 <>
                   {sectionType} {sectionNumber}
                 </>
               )}
-            </div>
+            </mark>
           )}
-          {/* Last Verse badge at top right */}
-          {isLastSlide && (
-            <div className="absolute bottom-1 left-4 text-black text-2xl animate-pulse  font-mono font-bold bg-white px-4 py-1 rounded-full shadow-lg select-none pointer-events-none z-20">
-              Last Verse
-            </div>
-          )}
+        
         </div>
       )}
     </div>

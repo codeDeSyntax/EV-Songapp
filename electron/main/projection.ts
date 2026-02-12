@@ -264,9 +264,12 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
   console.log("🎭 Showing projection window");
   songPresentationWin.show();
 
-  // Explicitly set fullscreen to ensure it takes effect
+  // Explicitly set fullscreen to ensure it takes effect and hides taskbar
   songPresentationWin.setFullScreen(true);
-  console.log("✅ Projection window shown and set to fullscreen");
+  
+  // Use kiosk mode to ensure taskbar is completely hidden
+  songPresentationWin.setKiosk(true);
+  console.log("✅ Projection window shown in kiosk mode (taskbar hidden)");
 
   // Setup event listeners for single window
   songPresentationWin.on("closed", () => {

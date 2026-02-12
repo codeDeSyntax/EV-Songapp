@@ -44,7 +44,7 @@ interface PreviewPanelProps {
   onDeleteSlideComplete: () => void;
   addToast: (
     message: string,
-    type: "success" | "error" | "warning" | "info"
+    type: "success" | "error" | "warning" | "info",
   ) => void;
 }
 
@@ -93,7 +93,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     ? songs.find((s) => s.id === currentSongId)
     : null;
   const [language, setLanguage] = useState<string>(
-    currentSong?.language || "English"
+    currentSong?.language || "English",
   );
   const contentRef = useRef<HTMLDivElement>(null);
   const { isProjectionActive } = useProjectionState();
@@ -147,8 +147,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     console.log(
       "DisplaySlides array:",
       displaySlides.map(
-        (s, i) => `${i}: ${s.type} ${s.number || ""} - ${s.label}`
-      )
+        (s, i) => `${i}: ${s.type} ${s.number || ""} - ${s.label}`,
+      ),
     );
   }, [displaySlides]);
 
@@ -225,7 +225,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
     window.addEventListener(
       "preview-background-change",
-      handlePreviewBackgroundChange
+      handlePreviewBackgroundChange,
     );
     window.addEventListener("storage", handleStorageChange);
 
@@ -233,7 +233,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       clearInterval(interval);
       window.removeEventListener(
         "preview-background-change",
-        handlePreviewBackgroundChange
+        handlePreviewBackgroundChange,
       );
       window.removeEventListener("storage", handleStorageChange);
     };
@@ -288,6 +288,26 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         const prevIndex = currentDisplayIndex - 1;
         if (prevIndex >= 0) {
           dispatch(setCurrentDisplayIndex(prevIndex));
+        }
+      } else if (e.key.toLowerCase() === "c") {
+        // Jump to first chorus
+        e.preventDefault();
+        const chorusIndex = displaySlides.findIndex(
+          (slide) => slide.type.toLowerCase() === "chorus",
+        );
+        if (chorusIndex !== -1) {
+          dispatch(setCurrentDisplayIndex(chorusIndex));
+        }
+      } else if (/^[1-9]$/.test(e.key)) {
+        // Jump to specific verse (1-9)
+        e.preventDefault();
+        const verseNum = parseInt(e.key, 10);
+        const verseIndex = displaySlides.findIndex(
+          (slide) =>
+            slide.type.toLowerCase() === "verse" && slide.number === verseNum,
+        );
+        if (verseIndex !== -1) {
+          dispatch(setCurrentDisplayIndex(verseIndex));
         }
       }
     };
@@ -374,7 +394,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         addProjectionEntry({
           songId: currentSongId || `temp-${Date.now()}`,
           songTitle: songTitle,
-        })
+        }),
       );
 
       // Persist statistics
@@ -383,7 +403,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           songId: currentSongId || `temp-${Date.now()}`,
           songTitle: songTitle,
           projectedAt: Date.now(),
-        })
+        }),
       );
 
       addToast(`Projecting: ${songTitle}`, "success");
@@ -414,7 +434,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
     // Confirm deletion
     const confirmDelete = window.confirm(
-      `Delete ${slideToDelete.label}?\n\nThis will permanently remove this slide from the song.`
+      `Delete ${slideToDelete.label}?\n\nThis will permanently remove this slide from the song.`,
     );
 
     if (!confirmDelete) {
@@ -431,7 +451,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     // If no slides left, show warning (for saved songs only)
     if (updatedSlides.length === 0 && songTitle) {
       onSaveError(
-        "Cannot save song with no slides. Please add at least one slide or delete the song."
+        "Cannot save song with no slides. Please add at least one slide or delete the song.",
       );
       return;
     }
@@ -469,11 +489,11 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         const encodedContent = encodeSongData(
           songTitle,
           renumberedSlides,
-          isPrelisted
+          isPrelisted,
         );
         await window.api.saveSong("", songTitle, encodedContent);
         onSaveSuccess(
-          `${slideToDelete.label} deleted and saved to "${songTitle}".evsong`
+          `${slideToDelete.label} deleted and saved to "${songTitle}".evsong`,
         );
         // Reload songs to refresh the list
         loadSongs();
@@ -521,14 +541,14 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         slides,
         isPrelisted,
         undefined,
-        lang
+        lang,
       );
       const result = await window.api.saveSong("", title, encodedContent);
 
       onSaveSuccess(
         `Song "${title}" saved successfully! 🎵\n${slides.length} slide${
           slides.length !== 1 ? "s" : ""
-        } saved`
+        } saved`,
       );
       // Update Redux song list with new language so UI reflects change immediately
       if (currentSongId) {
@@ -553,7 +573,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     } catch (error) {
       console.error("Error saving song:", error);
       onSaveError(
-        "Failed to save song. Please check the directory and try again."
+        "Failed to save song. Please check the directory and try again.",
       );
     } finally {
       dispatch(setIsSaving(false));
@@ -575,7 +595,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         slides,
         true,
         undefined,
-        lang
+        lang,
       );
       const result = await window.api.saveSong("", title, encodedContent);
 
@@ -627,7 +647,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     if (songTitle) {
       try {
         const updatedSlides = slides.map((s) =>
-          s.id === id ? { ...s, content } : s
+          s.id === id ? { ...s, content } : s,
         );
         // Get current song to preserve isPrelisted status
         const currentSong = currentSongId
@@ -638,7 +658,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         const encodedContent = encodeSongData(
           songTitle,
           updatedSlides,
-          isPrelisted
+          isPrelisted,
         );
         await window.api.saveSong("", songTitle, encodedContent);
         onSaveSuccess(`Slide updated and saved to \"${songTitle}\".evsong`);
@@ -661,7 +681,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       | "prechorus"
       | "tag"
       | "ending"
-      | "intro"
+      | "intro",
   ) => {
     // Count how many slides of this type already exist
     const sameTypeCount = slides.filter((s) => s.type === type).length;
@@ -691,11 +711,11 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         const encodedContent = encodeSongData(
           songTitle,
           updatedSlides,
-          isPrelisted
+          isPrelisted,
         );
         await window.api.saveSong("", songTitle, encodedContent);
         onSaveSuccess(
-          `New ${type} slide added and saved to \"${songTitle}\".evsong`
+          `New ${type} slide added and saved to \"${songTitle}\".evsong`,
         );
         // Reload songs to refresh the list
         loadSongs();
