@@ -250,6 +250,28 @@ contextBridge.exposeInMainWorld("api", {
     mode: "extend" | "duplicate" | "internal" | "external",
   ) => ipcRenderer.invoke("set-windows-display-mode", mode),
   getWindowsDisplayMode: () => ipcRenderer.invoke("get-windows-display-mode"),
+
+  // ---- Backup & Google Drive ----
+  googleAuthStart: () => ipcRenderer.invoke("google-auth-start"),
+  googleDriveStatus: () => ipcRenderer.invoke("google-drive-status"),
+  googleDriveDisconnect: () => ipcRenderer.invoke("google-drive-disconnect"),
+  googleDriveBackup: (songsDir?: string) =>
+    ipcRenderer.invoke("google-drive-backup", songsDir),
+  backupSongsLocal: (songsDir?: string) =>
+    ipcRenderer.invoke("backup-songs-local", songsDir),
+  getLastBackupTime: () => ipcRenderer.invoke("get-last-backup-time"),
+  onBackupProgress: (
+    callback: (progress: { stage: "zipping" | "uploading" }) => void,
+  ) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      progress: { stage: "zipping" | "uploading" },
+    ) => callback(progress);
+    ipcRenderer.on("backup-progress", listener);
+    return () => ipcRenderer.removeListener("backup-progress", listener);
+  },
+  generatePdf: (type: "prelist" | "database", songs: any[]) =>
+    ipcRenderer.invoke("generate-pdf", type, songs),
 });
 
 // --------- Preload scripts loading ---------

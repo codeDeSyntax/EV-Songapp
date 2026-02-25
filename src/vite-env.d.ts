@@ -16,7 +16,7 @@ interface Window {
     saveSong: (
       directory: string,
       title: string,
-      content: string
+      content: string,
     ) => Promise<{
       success: boolean;
       filePath: string;
@@ -28,7 +28,7 @@ interface Window {
       directory: string,
       newTitle: string,
       content: string,
-      originalPath: string
+      originalPath: string,
     ) => void;
     searchSong: (directory: string, searchTerm: string) => Promise<Song[]>;
     fetchSongs: (directory: string) => Promise<Song[]>;
@@ -39,24 +39,24 @@ interface Window {
     isProjectionActive: () => Promise<boolean>;
     closeProjectionWindow: () => Promise<boolean>;
     onProjectionStateChanged: (
-      callback: (isActive: boolean) => void
+      callback: (isActive: boolean) => void,
     ) => () => void;
     onDisplaySong: (callback: (songData: Song) => void) => void;
     onDisplayInfo: (callback: (info: any) => void) => void;
     getImages: (dirPath: string) => Promise<string[]>;
     createEvPresentation: (
       path: string,
-      presentation: Omit<Presentation, "id" | "createdAt" | "updatedAt">
+      presentation: Omit<Presentation, "id" | "createdAt" | "updatedAt">,
     ) => Promise<Presentation>;
     loadEvPresentations: (path: string) => Promise<Presentation[]>;
     deleteEvPresentation: (id: string, directory: string) => Promise<void>;
     updateEvPresentation: (
       id: string,
       directoryPath: string,
-      presentation: Partial<Presentation>
+      presentation: Partial<Presentation>,
     ) => Promise<Presentation>;
     createBiblePresentationWindow: (
-      data: any
+      data: any,
     ) => Promise<{ success: boolean; error?: string }>;
     sendToBiblePresentation: (data: {
       type: string;
@@ -64,11 +64,11 @@ interface Window {
     }) => Promise<{ success: boolean; error?: string }>;
     focusMainWindow: () => Promise<{ success: boolean; error?: string }>;
     openFileInDefaultApp: (
-      filePath: string
+      filePath: string,
     ) => Promise<{ success: boolean; error?: string }>;
     constructFilePath: (
       basePath: string,
-      fileName: string
+      fileName: string,
     ) => Promise<{ success: boolean; path?: string; error?: string }>;
     getDisplayInfo: () => Promise<{
       success: boolean;
@@ -161,7 +161,7 @@ interface Window {
     }>;
     // Windows Display Mode Control (like Windows + P)
     setWindowsDisplayMode: (
-      mode: "extend" | "duplicate" | "internal" | "external"
+      mode: "extend" | "duplicate" | "internal" | "external",
     ) => Promise<{
       success: boolean;
       mode?: string;
@@ -174,5 +174,31 @@ interface Window {
       totalMonitors?: number;
       error?: string;
     }>;
+
+    // ── Backup & Google Drive ──────────────────────────────────────────────
+    googleAuthStart: () => Promise<{ success: boolean }>;
+    googleDriveStatus: () => Promise<{ connected: boolean; email?: string }>;
+    googleDriveDisconnect: () => Promise<{ success: boolean }>;
+    googleDriveBackup: (songsDir?: string) => Promise<{
+      success: boolean;
+      uploaded: number;
+      timestamp: string;
+      folderId: string;
+    }>;
+    backupSongsLocal: (songsDir?: string) => Promise<{
+      success: boolean;
+      cancelled?: boolean;
+      count?: number;
+      destDir?: string;
+      timestamp?: string;
+    }>;
+    getLastBackupTime: () => Promise<string | null>;
+    onBackupProgress: (
+      callback: (progress: { stage: "zipping" | "uploading" }) => void,
+    ) => () => void;
+    generatePdf: (
+      type: "prelist" | "database",
+      songs: any[],
+    ) => Promise<{ success: boolean; cancelled?: boolean; path?: string }>;
   };
 }

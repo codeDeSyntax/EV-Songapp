@@ -5,6 +5,7 @@ import { BackgroundSelectorPanel } from "./BackgroundSelectorPanel";
 import { PrelistPanel } from "./PrelistPanel";
 import { BottomRightPanel } from "./BottomRightPanel";
 import { FloatingSongEditor } from "./FloatingSongEditor";
+import { FloatingNewSongModal } from "./FloatingNewSongModal";
 import { useAppSelector } from "@/store";
 
 interface BentoGridProps {
@@ -18,7 +19,7 @@ interface BentoGridProps {
   onDeleteSlideComplete: () => void;
   addToast: (
     message: string,
-    type: "success" | "error" | "warning" | "info"
+    type: "success" | "error" | "warning" | "info",
   ) => void;
 }
 
@@ -35,6 +36,7 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
 }) => {
   const songRepo = useAppSelector((state) => state.songs.songRepo);
   const showSongEditor = useAppSelector((state) => state.ui.showSongEditor);
+  const showNewSongModal = useAppSelector((state) => state.ui.showNewSongModal);
 
   return (
     <div className="w-full h-full p-2 overflow-hidden ">
@@ -81,6 +83,11 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
       {/* Floating Song Editor */}
       {showSongEditor && (
         <FloatingSongEditor addToast={addToast} loadSongs={loadSongs} />
+      )}
+
+      {/* Floating New Song Modal */}
+      {showNewSongModal && (
+        <FloatingNewSongModal addToast={addToast} loadSongs={loadSongs} />
       )}
     </div>
   );

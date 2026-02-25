@@ -13,7 +13,45 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import os from "node:os";
+import http from "node:http";
+import { Readable } from "node:stream";
 import { v4 as uuidv4 } from "uuid";
+import { google } from "googleapis";
+import Store from "electron-store";
+import archiver from "archiver";
+
+// Build-time constants injected by Vite define (main process sub-config)
+declare const __GOOGLE_CLIENT_ID__: string;
+declare const __GOOGLE_CLIENT_SECRET__: string;
+
+// Runtime-safe reads — Vite replaces the declare consts above at build time;
+// fallback to process.env for any edge-case (e.g. running ts-node directly)
+const GOOGLE_CLIENT_ID: string =
+  (typeof __GOOGLE_CLIENT_ID__ !== "undefined" ? __GOOGLE_CLIENT_ID__ : null) ??
+  process.env.CLIENT_ID ??
+  "";
+const GOOGLE_CLIENT_SECRET: string =
+  (typeof __GOOGLE_CLIENT_SECRET__ !== "undefined"
+    ? __GOOGLE_CLIENT_SECRET__
+    : null) ??
+  process.env.CLIENT_SECRET ??
+  "";
+
+// ---- Google Drive auth setup ----
+const REDIRECT_PORT = 41235;
+const REDIRECT_URI = `http://localhost:${REDIRECT_PORT}/callback`;
+const tokenStore = new Store<{ tokens?: any; lastBackupTime?: string }>({
+  name: "ev-google-auth",
+} as any);
+const oauth2Client = new google.auth.OAuth2(
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
+  REDIRECT_URI,
+);
+// Restore persisted tokens
+const _savedTokens = tokenStore.get("tokens");
+if (_savedTokens) oauth2Client.setCredentials(_savedTokens as any);
+
 // Import secret logger
 import {
   secretLogger,
@@ -35,6 +73,8 @@ import {
   getSongPresentationWindow,
   getIsProjectionActive,
 } from "./projection";
+// Import PDF print handler
+import { registerPdfHandlers } from "./pdfPrinter";
 // Import font utilities
 import { getSystemFonts } from "./fontUtils";
 
@@ -280,6 +320,9 @@ app.whenReady().then(() => {
 
   // Register projection handlers
   registerProjectionHandlers();
+
+  // Register PDF print handlers
+  registerPdfHandlers();
 
   // Visual Song Book-style Display Change Handlers
   // Monitor Windows display changes and maintain proper app positioning
@@ -796,6 +839,222 @@ ipcMain.handle("delete-song", async (event, filePath) => {
     throw error;
   }
 });
+
+// ==================== BACKUP & GOOGLE DRIVE ====================
+
+/** Step 1: Open Google OAuth in the system browser and catch the redirect on a temp local server */
+ipcMain.handle("google-auth-start", async () => {
+  return new Promise<{ success: boolean }>((resolve, reject) => {
+    const authUrl = oauth2Client.generateAuthUrl({
+      access_type: "offline",
+      scope: ["https://www.googleapis.com/auth/drive.file"],
+      prompt: "consent",
+    });
+
+    let server: http.Server | null = null;
+    const authTimeout = setTimeout(
+      () => {
+        server?.close();
+        reject(new Error("Authentication timed out after 5 minutes."));
+      },
+      5 * 60 * 1000,
+    );
+
+    server = http.createServer(async (req, res) => {
+      if (!req.url?.startsWith("/callback")) return;
+      const url = new URL(req.url, `http://localhost:${REDIRECT_PORT}`);
+      const code = url.searchParams.get("code");
+      const error = url.searchParams.get("error");
+
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(
+        `<!DOCTYPE html><html><body style="font-family:Raleway,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;background:#fdf4d0;margin:0"><div style="text-align:center;color:#4a2c12"><h2 style="margin-bottom:8px">${error ? "❌ Failed" : "✅ Connected!"}</h2><p style="color:#78462a">${error ? error : "You can close this tab and return to East Voice."}</p></div></body></html>`,
+      );
+
+      clearTimeout(authTimeout);
+      server?.close();
+
+      if (error || !code) {
+        reject(new Error(error || "No authorisation code received."));
+        return;
+      }
+
+      try {
+        const { tokens } = await oauth2Client.getToken(code);
+        oauth2Client.setCredentials(tokens);
+        tokenStore.set("tokens", tokens);
+        resolve({ success: true });
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    server.listen(REDIRECT_PORT, () => {
+      shell.openExternal(authUrl);
+    });
+
+    server.on("error", (err) => {
+      clearTimeout(authTimeout);
+      reject(new Error(`Could not start auth server: ${err.message}`));
+    });
+  });
+});
+
+/** Check whether stored tokens are still valid */
+ipcMain.handle("google-drive-status", async () => {
+  const tokens = tokenStore.get("tokens");
+  if (!tokens) return { connected: false };
+  try {
+    oauth2Client.setCredentials(tokens as any);
+    // Use drive.about.get — works with drive.file scope (unlike oauth2 userinfo)
+    const drive = google.drive({ version: "v3", auth: oauth2Client });
+    const { data } = await drive.about.get({
+      fields: "user(emailAddress,displayName)",
+    });
+    // Persist any refreshed tokens
+    tokenStore.set("tokens", oauth2Client.credentials);
+    return {
+      connected: true,
+      email: data.user?.emailAddress ?? data.user?.displayName ?? "Connected",
+    };
+  } catch {
+    return { connected: false };
+  }
+});
+
+/** Revoke and delete stored credentials */
+ipcMain.handle("google-drive-disconnect", async () => {
+  try {
+    await oauth2Client.revokeCredentials();
+  } catch {
+    /* ignore revoke errors */
+  }
+  tokenStore.delete("tokens");
+  return { success: true };
+});
+
+/** Upload every .evsong file to a timestamped folder in Google Drive */
+ipcMain.handle(
+  "google-drive-backup",
+  async (_event, songsDirectory?: string) => {
+    const tokens = tokenStore.get("tokens");
+    if (!tokens)
+      throw new Error("Not connected to Google Drive. Please sign in first.");
+
+    oauth2Client.setCredentials(tokens as any);
+    const drive = google.drive({ version: "v3", auth: oauth2Client });
+    const dir = songsDirectory || path.join(app.getPath("userData"), "Songs");
+
+    // ── Step 1: ZIP all .evsong files into a temp file ──────────────────
+    mainWin?.webContents.send("backup-progress", { stage: "zipping" });
+
+    const files = await fs.promises.readdir(dir);
+    const songFiles = files.filter((f) => f.endsWith(".evsong"));
+    if (songFiles.length === 0)
+      throw new Error("No song files found to back up.");
+
+    const ts = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .replace("T", "_")
+      .split("Z")[0];
+    const zipName = `EastVoice_Backup_${ts}.zip`;
+    const tempZipPath = path.join(os.tmpdir(), zipName);
+
+    await new Promise<void>((resolve, reject) => {
+      const output = fs.createWriteStream(tempZipPath);
+      const archive = archiver("zip", { zlib: { level: 6 } });
+      output.on("close", resolve);
+      archive.on("error", reject);
+      archive.pipe(output);
+      for (const file of songFiles) {
+        archive.file(path.join(dir, file), { name: file });
+      }
+      archive.finalize();
+    });
+
+    // ── Step 2: Upload the single ZIP to Google Drive ────────────────────
+    mainWin?.webContents.send("backup-progress", { stage: "uploading" });
+
+    const zipContent = await fs.promises.readFile(tempZipPath);
+    const bodyStream = Readable.from(zipContent);
+
+    await drive.files.create({
+      requestBody: { name: zipName },
+      media: { mimeType: "application/zip", body: bodyStream },
+    });
+
+    // ── Step 3: Clean up temp file ───────────────────────────────────────
+    await fs.promises.unlink(tempZipPath).catch(() => {
+      /* ignore */
+    });
+
+    const backupTime = new Date().toISOString();
+    tokenStore.set("lastBackupTime", backupTime);
+    tokenStore.set("tokens", oauth2Client.credentials);
+    return { success: true, uploaded: songFiles.length, timestamp: backupTime };
+  },
+);
+
+/** ZIP all .evsong files and save to a user-chosen location */
+ipcMain.handle(
+  "backup-songs-local",
+  async (_event, songsDirectory?: string) => {
+    const dir = songsDirectory || path.join(app.getPath("userData"), "Songs");
+
+    const files = await fs.promises.readdir(dir);
+    const songFiles = files.filter((f) => f.endsWith(".evsong"));
+    if (songFiles.length === 0)
+      return {
+        success: false,
+        cancelled: true,
+        reason: "No song files found.",
+      };
+
+    const ts = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .replace("T", "_")
+      .split("Z")[0];
+    const zipName = `EastVoice_Backup_${ts}.zip`;
+
+    const { filePath, canceled } = await dialog.showSaveDialog(mainWin!, {
+      title: "Save backup ZIP",
+      defaultPath: zipName,
+      filters: [{ name: "ZIP Archive", extensions: ["zip"] }],
+    });
+
+    if (canceled || !filePath) return { success: false, cancelled: true };
+
+    await new Promise<void>((resolve, reject) => {
+      const output = fs.createWriteStream(filePath);
+      const archive = archiver("zip", { zlib: { level: 6 } });
+      output.on("close", resolve);
+      archive.on("error", reject);
+      archive.pipe(output);
+      for (const file of songFiles) {
+        archive.file(path.join(dir, file), { name: file });
+      }
+      archive.finalize();
+    });
+
+    const backupTime = new Date().toISOString();
+    tokenStore.set("lastBackupTime", backupTime);
+    return {
+      success: true,
+      count: songFiles.length,
+      destPath: filePath,
+      timestamp: backupTime,
+    };
+  },
+);
+
+/** Return the ISO timestamp of the last successful backup */
+ipcMain.handle("get-last-backup-time", async () => {
+  return tokenStore.get("lastBackupTime") ?? null;
+});
+
+// ================================================================
 
 async function loadImagesFromDirectory(dirPath: string) {
   const allowedExtensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];

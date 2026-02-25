@@ -12,6 +12,7 @@ interface UIState {
   showTitleDialog: boolean;
   showPrelistTitleDialog: boolean;
   showSongEditor: boolean;
+  showNewSongModal: boolean;
 }
 
 const initialState: UIState = {
@@ -25,6 +26,7 @@ const initialState: UIState = {
   showTitleDialog: false,
   showPrelistTitleDialog: false,
   showSongEditor: false,
+  showNewSongModal: false,
 };
 
 const uiSlice = createSlice({
@@ -33,7 +35,7 @@ const uiSlice = createSlice({
   reducers: {
     openDeleteConfirmModal: (
       state,
-      action: PayloadAction<{ song: Song; type: "prelist" | "permanent" }>
+      action: PayloadAction<{ song: Song; type: "prelist" | "permanent" }>,
     ) => {
       state.showDeleteConfirmModal = true;
       state.songToDelete = action.payload.song;
@@ -65,6 +67,9 @@ const uiSlice = createSlice({
     toggleSongEditor: (state) => {
       state.showSongEditor = !state.showSongEditor;
     },
+    toggleNewSongModal: (state) => {
+      state.showNewSongModal = !state.showNewSongModal;
+    },
   },
 });
 
@@ -78,6 +83,7 @@ export const {
   setShowTitleDialog,
   setShowPrelistTitleDialog,
   toggleSongEditor,
+  toggleNewSongModal,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

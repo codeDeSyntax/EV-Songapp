@@ -38,7 +38,7 @@ interface ElectronAPI {
   saveSong: (
     directory: string,
     title: string,
-    content: string
+    content: string,
   ) => Promise<{
     success: boolean;
     filePath: string;
@@ -50,18 +50,18 @@ interface ElectronAPI {
   isProjectionActive: () => Promise<boolean>;
   closeProjectionWindow: () => Promise<boolean>;
   onProjectionStateChanged: (
-    callback: (isActive: boolean) => void
+    callback: (isActive: boolean) => void,
   ) => () => void;
   onDisplaySong: (callback: (songData: any) => void) => () => void;
   onDisplayInfo: (callback: (info: DisplayInfo) => void) => () => void;
   getImages: (dirPath: string) => Promise<string[]>;
   focusMainWindow: () => Promise<{ success: boolean; error?: string }>;
   openFileInDefaultApp: (
-    filePath: string
+    filePath: string,
   ) => Promise<{ success: boolean; error?: string }>;
   constructFilePath: (
     basePath: string,
-    fileName: string
+    fileName: string,
   ) => Promise<{ success: boolean; path?: string; error?: string }>;
   getDisplayInfo: () => Promise<{
     success: boolean;
@@ -115,7 +115,7 @@ interface ElectronAPI {
   }) => Promise<{ success: boolean; error?: string }>;
   getProjectionSettings: () => Promise<any>;
   updateProjectionSettings: (
-    settings: any
+    settings: any,
   ) => Promise<{ success: boolean; error?: string }>;
   previewSongOnDisplay: (data: {
     song: any;
@@ -123,7 +123,7 @@ interface ElectronAPI {
   }) => Promise<{ success: boolean; error?: string }>;
   testDisplayProjection: (
     displayId: number,
-    testMessage: string
+    testMessage: string,
   ) => Promise<{ success: boolean; error?: string }>;
   getProjectionStatus: () => Promise<{
     success: boolean;
@@ -131,7 +131,7 @@ interface ElectronAPI {
     error?: string;
   }>;
   setProjectionTheme: (
-    theme: string
+    theme: string,
   ) => Promise<{ success: boolean; error?: string }>;
   detectDisplayChanges: () => Promise<{
     success: boolean;
@@ -152,6 +152,28 @@ interface ElectronAPI {
 
   // System Fonts
   getSystemFonts: () => Promise<string[]>;
+
+  // Backup & Google Drive
+  googleAuthStart: () => Promise<{ success: boolean }>;
+  googleDriveStatus: () => Promise<{ connected: boolean; email?: string }>;
+  googleDriveDisconnect: () => Promise<{ success: boolean }>;
+  googleDriveBackup: (songsDir?: string) => Promise<{
+    success: boolean;
+    uploaded: number;
+    timestamp: string;
+    folderId: string;
+  }>;
+  backupSongsLocal: (songsDir?: string) => Promise<{
+    success: boolean;
+    cancelled?: boolean;
+    count?: number;
+    destDir?: string;
+    timestamp?: string;
+  }>;
+  getLastBackupTime: () => Promise<string | null>;
+  onBackupProgress: (
+    callback: (progress: { current: number; total: number }) => void,
+  ) => () => void;
 
   // Add other API methods as needed
 }

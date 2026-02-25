@@ -17,6 +17,8 @@ interface SongState {
   error: string | null;
   isDeleting: boolean;
   showDeleteDialog: boolean;
+  newSongs: Song[];
+  lastBackupTime: string | null;
 }
 
 const initialState: SongState = {
@@ -32,6 +34,8 @@ const initialState: SongState = {
   error: null,
   isDeleting: false,
   showDeleteDialog: false,
+  newSongs: [],
+  lastBackupTime: localStorage.getItem("ev-last-backup-time") || null,
 };
 
 const songSlice = createSlice({
@@ -45,6 +49,32 @@ const songSlice = createSlice({
       state.filteredSongs = songs;
       state.isLoading = false;
       state.error = null;
+
+      // Detect newly added songs by diffing against persisted known IDs
+      const raw = localStorage.getItem("ev-known-song-ids");
+      if (raw === null) {
+        // First ever load — seed known list, no badge
+        localStorage.setItem(
+          "ev-known-song-ids",
+          JSON.stringify(songs.map((s) => s.id)),
+        );
+        state.newSongs = [];
+      } else {
+        const knownIds: string[] = JSON.parse(raw);
+        state.newSongs = songs.filter((s) => !knownIds.includes(s.id));
+      }
+    },
+    markSongsSeen: (state) => {
+      // Save all current IDs as known — clears the badge
+      localStorage.setItem(
+        "ev-known-song-ids",
+        JSON.stringify(state.songs.map((s) => s.id)),
+      );
+      state.newSongs = [];
+    },
+    setLastBackupTime: (state, action: PayloadAction<string>) => {
+      state.lastBackupTime = action.payload;
+      localStorage.setItem("ev-last-backup-time", action.payload);
     },
     setSelectedSong: (state, action: PayloadAction<Song | null>) => {
       state.selectedSong = action.payload;
@@ -81,7 +111,7 @@ const songSlice = createSlice({
     toggleFavorite: (state, action: PayloadAction<Song>) => {
       const song = action.payload;
       const existingIndex = state.favorites.findIndex(
-        (fav) => fav.id === song.id
+        (fav) => fav.id === song.id,
       );
 
       if (existingIndex >= 0) {
@@ -109,7 +139,7 @@ const songSlice = createSlice({
       const songId = action.payload;
       state.songs = state.songs.filter((song) => song.id !== songId);
       state.filteredSongs = state.filteredSongs.filter(
-        (song) => song.id !== songId
+        (song) => song.id !== songId,
       );
       state.favorites = state.favorites.filter((song) => song.id !== songId);
 
@@ -130,7 +160,7 @@ const songSlice = createSlice({
 
       // Update the song in the main songs array
       const songIndex = state.songs.findIndex(
-        (song) => song.id === updatedSong.id
+        (song) => song.id === updatedSong.id,
       );
       if (songIndex !== -1) {
         state.songs[songIndex] = Object.freeze(updatedSong);
@@ -138,7 +168,7 @@ const songSlice = createSlice({
 
       // Update the song in the filtered songs array
       const filteredIndex = state.filteredSongs.findIndex(
-        (song) => song.id === updatedSong.id
+        (song) => song.id === updatedSong.id,
       );
       if (filteredIndex !== -1) {
         state.filteredSongs[filteredIndex] = Object.freeze(updatedSong);
@@ -152,7 +182,7 @@ const songSlice = createSlice({
 
       // Update in favorites if it exists there
       const favoriteIndex = state.favorites.findIndex(
-        (song) => song.id === updatedSong.id
+        (song) => song.id === updatedSong.id,
       );
       if (favoriteIndex !== -1) {
         state.favorites[favoriteIndex] = Object.freeze(updatedSong);
@@ -172,7 +202,7 @@ const songSlice = createSlice({
 
         // Update in filtered songs
         const filteredIndex = state.filteredSongs.findIndex(
-          (s) => s.id === song.id
+          (s) => s.id === song.id,
         );
         if (filteredIndex !== -1) {
           state.filteredSongs[filteredIndex] = Object.freeze(updatedSong);
@@ -204,6 +234,8 @@ export const {
   clearSearch,
   updateSong,
   togglePrelist,
+  markSongsSeen,
+  setLastBackupTime,
 } = songSlice.actions;
 
 export default songSlice.reducer;

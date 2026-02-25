@@ -21,6 +21,7 @@ import {
   Music,
   BarChart3,
   NotebookPen,
+  FilePlus2,
 } from "lucide-react";
 import { Tooltip } from "antd";
 import { GamyCard } from "../shared/GamyCard";
@@ -37,12 +38,14 @@ import {
   setShowTitleDialog,
   setShowPrelistTitleDialog,
   toggleSongEditor,
+  toggleNewSongModal,
 } from "@/store/slices/uiSlice";
 import { useToast } from "./hooks/useToast";
 import { Toaster } from "../shared/Notification";
 import { setSongRepo } from "@/store/slices/songSlice";
 import { setFontFamily } from "@/store/slices/projectionSlice";
 import { addProjectionEntry } from "@/store/slices/projectionHistorySlice";
+import BackupNotification from "./components/BackupNotification";
 
 interface ActionBarProps {
   isDarkMode: boolean;
@@ -157,8 +160,13 @@ export const ActionBar: React.FC<ActionBarProps> = ({
   const { slides, isSaving, currentSlideId, currentSongId, songTitle } =
     useAppSelector((state) => state.songSlides);
   const songRepo = useAppSelector((state) => state.songs.songRepo);
-  const { showSettings, showStatistics, isEditingSlide, showSongEditor } =
-    useAppSelector((state) => state.ui);
+  const {
+    showSettings,
+    showStatistics,
+    isEditingSlide,
+    showSongEditor,
+    showNewSongModal,
+  } = useAppSelector((state) => state.ui);
 
   // Get the currently loaded song from the songs list (using songs prop)
   const currentSong = songs.find((song) => song.id === currentSongId);
@@ -376,6 +384,19 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               }`}
             >
               <NotebookPen className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
+
+          <Tooltip title="New Song" placement="bottom">
+            <button
+              onClick={() => dispatch(toggleNewSongModal())}
+              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all border ${
+                showNewSongModal
+                  ? "bg-green-500 text-white border-green-500"
+                  : "bg-app-bg text-app-text border-app-border hover:bg-app-surface-hover"
+              }`}
+            >
+              <FilePlus2 className="w-3.5 h-3.5" />
             </button>
           </Tooltip>
 
@@ -601,77 +622,87 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                     )
                   }
                 >
-                  {filteredFonts.length > 0 ? (() => {
-                    const startIndex = Math.max(
-                      0,
-                      Math.floor(fontListScrollTop / FONT_ITEM_HEIGHT) - OVERSCAN,
-                    );
-                    const visibleCount =
-                      Math.ceil(FONT_LIST_HEIGHT / FONT_ITEM_HEIGHT) +
-                      OVERSCAN * 2;
-                    const endIndex = Math.min(
-                      filteredFonts.length,
-                      startIndex + visibleCount,
-                    );
-                    const paddingTop = startIndex * FONT_ITEM_HEIGHT;
-                    const paddingBottom =
-                      (filteredFonts.length - endIndex) * FONT_ITEM_HEIGHT;
+                  {filteredFonts.length > 0 ? (
+                    (() => {
+                      const startIndex = Math.max(
+                        0,
+                        Math.floor(fontListScrollTop / FONT_ITEM_HEIGHT) -
+                          OVERSCAN,
+                      );
+                      const visibleCount =
+                        Math.ceil(FONT_LIST_HEIGHT / FONT_ITEM_HEIGHT) +
+                        OVERSCAN * 2;
+                      const endIndex = Math.min(
+                        filteredFonts.length,
+                        startIndex + visibleCount,
+                      );
+                      const paddingTop = startIndex * FONT_ITEM_HEIGHT;
+                      const paddingBottom =
+                        (filteredFonts.length - endIndex) * FONT_ITEM_HEIGHT;
 
-                    return (
-                      <>
-                        <div style={{ height: paddingTop }} />
-                        {filteredFonts.slice(startIndex, endIndex).map((font) => (
-                          <GamyCard
-                            isDarkMode={isDarkMode}
-                            key={font}
-                            className="px-2 py-0.5 mt-1"
-                            transparent={true}
-                            style={{ borderRadius: "7px", border: "none" }}
-                          >
-                            <button
-                              onClick={async () => {
-                                setSelectedFont(font);
-                                setShowFontDropdown(false);
-                                setFontSearchQuery("");
-                                dispatch(setFontFamily(font));
-                                localStorage.setItem("bmusicfontFamily", font);
-
-                                if (isProjectionActive) {
-                                  try {
-                                    await window.api.sendToSongProjection({
-                                      type: "FONT_FAMILY_UPDATE",
-                                      fontFamily: font,
-                                    });
-                                  } catch (error) {
-                                    console.error(
-                                      "Error sending font update to projection:",
-                                      error,
+                      return (
+                        <>
+                          <div style={{ height: paddingTop }} />
+                          {filteredFonts
+                            .slice(startIndex, endIndex)
+                            .map((font) => (
+                              <GamyCard
+                                isDarkMode={isDarkMode}
+                                key={font}
+                                className="px-2 py-0.5 mt-1"
+                                transparent={true}
+                                style={{ borderRadius: "7px", border: "none" }}
+                              >
+                                <button
+                                  onClick={async () => {
+                                    setSelectedFont(font);
+                                    setShowFontDropdown(false);
+                                    setFontSearchQuery("");
+                                    dispatch(setFontFamily(font));
+                                    localStorage.setItem(
+                                      "bmusicfontFamily",
+                                      font,
                                     );
-                                  }
-                                }
 
-                                window.dispatchEvent(
-                                  new StorageEvent("storage", {
-                                    key: "bmusicfontFamily",
-                                    oldValue: null,
-                                    newValue: font,
-                                    storageArea: localStorage,
-                                  }),
-                                );
-                              }}
-                              className={`w-full bg-transparent text-left px-3 text-ew-sm text-app-text-muted hover:bg-app-surface-hover transition-colors ${
-                                selectedFont === font ? "bg-app-surface" : ""
-                              }`}
-                              style={{ fontFamily: font }}
-                            >
-                              {font}
-                            </button>
-                          </GamyCard>
-                        ))}
-                        <div style={{ height: paddingBottom }} />
-                      </>
-                    );
-                  })() : (
+                                    if (isProjectionActive) {
+                                      try {
+                                        await window.api.sendToSongProjection({
+                                          type: "FONT_FAMILY_UPDATE",
+                                          fontFamily: font,
+                                        });
+                                      } catch (error) {
+                                        console.error(
+                                          "Error sending font update to projection:",
+                                          error,
+                                        );
+                                      }
+                                    }
+
+                                    window.dispatchEvent(
+                                      new StorageEvent("storage", {
+                                        key: "bmusicfontFamily",
+                                        oldValue: null,
+                                        newValue: font,
+                                        storageArea: localStorage,
+                                      }),
+                                    );
+                                  }}
+                                  className={`w-full bg-transparent text-left px-3 text-ew-sm text-app-text-muted hover:bg-app-surface-hover transition-colors ${
+                                    selectedFont === font
+                                      ? "bg-app-surface"
+                                      : ""
+                                  }`}
+                                  style={{ fontFamily: font }}
+                                >
+                                  {font}
+                                </button>
+                              </GamyCard>
+                            ))}
+                          <div style={{ height: paddingBottom }} />
+                        </>
+                      );
+                    })()
+                  ) : (
                     <div className="px-3 py-4 text-center text-app-text-muted text-ew-xs">
                       No fonts found
                     </div>
@@ -738,6 +769,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
 
         {/* Right: Status & Go Live */}
         <div className="flex items-center gap-2">
+          <BackupNotification />
           {isProjectionActive && (
             <Tooltip title="Present Song Live" placement="bottom">
               <button
