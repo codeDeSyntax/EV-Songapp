@@ -29,7 +29,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const { slides, currentSlideId, songTitle, currentSongId } = useAppSelector(
-    (state) => state.songSlides
+    (state) => state.songSlides,
   );
   const displaySlides = useAppSelector(selectDisplaySlides);
   const songs = useAppSelector((state) => state.songs.songs);
@@ -72,35 +72,26 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
     return backgroundType === "video";
   }, [backgroundType]);
 
-  // Load saved background on mount and poll for changes
+  // BUG 17 fix: split into two effects.
+  // Effect 1 — read localStorage once on mount (no deps = no cycle).
+  // The old single effect had [selectedBgSrc] as a dependency, meaning it
+  // re-ran every time selectedBgSrc changed, which could trigger more state
+  // updates and create a re-render loop.
   useEffect(() => {
-    const updateBackground = () => {
-      const savedBg = localStorage.getItem("bmusicpresentationbg");
-      if (savedBg && savedBg !== selectedBgSrc) {
-        setSelectedBgSrc(savedBg);
-      }
-    };
+    const savedBg = localStorage.getItem("bmusicpresentationbg");
+    if (savedBg) setSelectedBgSrc(savedBg);
+  }, []); // mount only
 
-    // Initial load
-    updateBackground();
-
-    // Poll for changes every 100ms to catch immediate updates
-    const interval = setInterval(updateBackground, 100);
-
-    // Also listen for storage events
+  // Effect 2 — event listener, registered once.
+  useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "bmusicpresentationbg" && e.newValue) {
         setSelectedBgSrc(e.newValue);
       }
     };
-
     window.addEventListener("storage", handleStorageChange);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, [selectedBgSrc]);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []); // mount only
 
   // Keyboard navigation for slides when projection is active
   // NOTE: This is disabled because PreviewPanel handles arrow key navigation with display array
@@ -148,7 +139,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
 
     if (slides.length === 1) {
       onSaveError(
-        "Cannot delete the last slide. A song must have at least one slide."
+        "Cannot delete the last slide. A song must have at least one slide.",
       );
       return;
     }
@@ -162,15 +153,11 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
         // Filter out the deleted slide
         const updatedSlides = slides.filter((s) => s.id !== currentSlideId);
 
-        // Renumber slides by type
+        // BUG 16 fix: O(n) counter map instead of O(n²) indexOf-inside-map
+        const typeCounters: Record<string, number> = {};
         const renumberedSlides = updatedSlides.map((slide) => {
-          // Count how many slides of the same type come before this one
-          const sameTypeBefore = updatedSlides
-            .slice(0, updatedSlides.indexOf(slide))
-            .filter((s) => s.type === slide.type).length;
-
-          const newNumber = sameTypeBefore + 1;
-
+          typeCounters[slide.type] = (typeCounters[slide.type] || 0) + 1;
+          const newNumber = typeCounters[slide.type];
           return {
             ...slide,
             number: newNumber,
@@ -192,7 +179,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
         const encodedContent = encodeSongData(
           songTitle,
           renumberedSlides,
-          isPrelisted
+          isPrelisted,
         );
         await window.api.saveSong("", songTitle, encodedContent);
         onSaveSuccess(`Slide deleted and saved to "${songTitle}".evsong`);
@@ -222,6 +209,8 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
       const currentSlide = slides[currentIndex];
 
       if (currentSlide) {
+        // BUG 12 fix: omit the full slides array — the projection window
+        // already has it. Only the index needs to change for navigation.
         const slideData = {
           type: "SLIDE_UPDATE",
           slide: {
@@ -232,12 +221,6 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
           songTitle: songTitle || "Untitled Song",
           currentIndex,
           totalSlides: slides.length,
-          backgroundColor: "#000000",
-          slides: slides.map((slide) => ({
-            content: slide.content,
-            type: slide.type,
-            number: slide.number,
-          })),
         };
 
         await window.api.sendToSongProjection(slideData);
@@ -248,7 +231,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
   // Drag and drop handlers
   const handleDragStart = (
     e: React.DragEvent<HTMLDivElement>,
-    index: number
+    index: number,
   ) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = "move";
@@ -265,7 +248,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
 
   const handleDragOver = (
     e: React.DragEvent<HTMLDivElement>,
-    index: number
+    index: number,
   ) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
@@ -283,7 +266,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
 
   const handleDrop = async (
     e: React.DragEvent<HTMLDivElement>,
-    dropIndex: number
+    dropIndex: number,
   ) => {
     e.preventDefault();
     e.stopPropagation();
@@ -305,20 +288,19 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
         const [movedSlide] = updatedSlides.splice(draggedIndex, 1);
         updatedSlides.splice(dropIndex, 0, movedSlide);
 
-        // Renumber slides by type (same logic as in Redux)
-        const renumberedSlides = updatedSlides.map((slide, index) => {
-          const sameTypeBefore = updatedSlides
-            .slice(0, index)
-            .filter((s) => s.type === slide.type).length;
-
-          const newNumber = sameTypeBefore + 1;
+        // BUG 16 fix: O(n) counter map. Pre-count choruses to decide label.
+        const chorusTotal = updatedSlides.filter(
+          (s) => s.type === "chorus",
+        ).length;
+        const dropTypeCounters: Record<string, number> = {};
+        const renumberedSlides = updatedSlides.map((slide) => {
+          dropTypeCounters[slide.type] =
+            (dropTypeCounters[slide.type] || 0) + 1;
+          const newNumber = dropTypeCounters[slide.type];
 
           let newLabel: string;
           if (slide.type === "chorus") {
-            const totalSameType = updatedSlides.filter(
-              (s) => s.type === slide.type
-            ).length;
-            newLabel = totalSameType === 1 ? "Chorus" : `Chorus ${newNumber}`;
+            newLabel = chorusTotal === 1 ? "Chorus" : `Chorus ${newNumber}`;
           } else {
             newLabel = `${
               slide.type.charAt(0).toUpperCase() + slide.type.slice(1)
@@ -341,7 +323,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
         const encodedContent = encodeSongData(
           songTitle,
           renumberedSlides,
-          isPrelisted
+          isPrelisted,
         );
         await window.api.saveSong("", songTitle, encodedContent);
         onSaveSuccess(`Slides reordered and saved to "${songTitle}".evsong`);
@@ -357,49 +339,43 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
   };
 
   return (
-    <div
-      className="h-full flex flex-col rounded-md bg-white/50 dark:bg-app-surface  px-0 py-0 relative overflow-hidden"
-      style={{
-        border: "none",
-        boxShadow: "none",
-      }}
-    >
+    <div className="h-full flex flex-col rounded-md bg-white/50 dark:bg-app-surface relative overflow-hidden">
       {/* Neural Network Canvas Background */}
       <NeuralNetworkBackground isDarkMode={isDarkMode} opacity={0.25} />
 
       {/* Header */}
-      <div className="p-3  border-b border-app-border flex items-center justify-between flex-shrink-0 relative z-10">
-        <span className="text-ew-sm font-medium text-app-text">
+      <div className="px-3 py-2.5 border-b border-app-border flex items-center justify-between flex-shrink-0 relative z-10">
+        <span className="text-ew-sm font-semibold text-app-text tracking-wide">
           Song Slides
         </span>
         <div className="flex items-center gap-2">
-          <p className="text-ew-xs text-app-text-muted">
+          <span className="text-ew-xs text-app-text-muted tabular-nums">
             {slides.length} {slides.length === 1 ? "slide" : "slides"}
-          </p>
+          </span>
           <button
             onClick={handleDeleteSlide}
             disabled={!currentSlideId || slides.length === 1}
-            className="h-8 w-8  hover:bg-red-500/20 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="h-7 w-7 flex items-center justify-center hover:bg-red-500/20 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             title="Delete current slide"
           >
-            <Trash2 className="w-4 h-4 text-red-500" />
+            <Trash2 className="w-3.5 h-3.5 text-red-500" />
           </button>
         </div>
       </div>
 
       {/* Slides List */}
-      <div className="flex-1 p-2  overflow-y-auto no-scrollbar pb-20 space-y-2 relative z-10">
+      <div className="flex-1 px-2 py-2 overflow-y-auto no-scrollbar space-y-1.5 relative z-10">
         {slides.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gp text-center px-4">
+          <div className="flex flex-col items-center justify-center h-full text-center px-4">
             <img
               src="./no_slides.svg"
               alt="No slides"
-              className="w-24 h-24 mb-4 opacity-50"
+              className="w-20 h-20 mb-3 opacity-40"
             />
             <p className="text-ew-sm font-medium text-app-text-muted">
               No slides yet
             </p>
-            <p className="text-ew-xs text-app-text-muted mt-2">
+            <p className="text-ew-xs text-app-text-muted mt-1">
               Paste lyrics in the preview panel to create slides
             </p>
           </div>
@@ -414,89 +390,90 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, index)}
               onClick={() => handleSlideSelect(slide.id)}
-              className={`cursor-move transition-all ${
+              className={`cursor-grab active:cursor-grabbing rounded-xl overflow-hidden transition-all duration-150 ${
                 dragOverIndex === index && draggedIndex !== index
-                  ? "border-2 border-app-accent border-dashed"
-                  : ""
+                  ? "ring-2 ring-blue-400 ring-dashed"
+                  : currentSlideId === slide.id
+                    ? "ring-2 ring-white/70 shadow-lg"
+                    : "ring-1 ring-white/10 opacity-75 hover:opacity-100 hover:ring-white/30"
               }`}
               style={{
-                opacity: draggedIndex === index ? 0.5 : 1,
+                opacity: draggedIndex === index ? 0.35 : undefined,
+                transform:
+                  currentSlideId === slide.id ? "scale(1.015)" : undefined,
               }}
             >
-              <div
-                className={`overflow-hidden w-[90%] rounded-2xl  m-auto transition-all hover:scale-[1.02] h-24 px-0 py-0 ${
-                  currentSlideId === slide.id ? "ring- ring-app-text-muted" : ""
-                }`}
-                style={{
-                  borderRadius: "20px",
-                }}
-              >
-                <div className="h-full relative px-2">
-                  {/* Background - Solid, Gradient, Video or Image */}
-                  {selectedBgSrc &&
-                    (backgroundType === "video" ? (
-                      <video
-                        className="absolute inset-0 w-full h-full object-cover"
-                        src={backgroundValue}
-                        muted
-                        playsInline
-                      />
-                    ) : backgroundType === "solid" ? (
-                      <div
-                        className="absolute inset-0"
-                        style={{ backgroundColor: backgroundValue }}
-                      />
-                    ) : backgroundType === "gradient" ? (
-                      <div
-                        className="absolute inset-0"
-                        style={{ background: backgroundValue }}
-                      />
-                    ) : (
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          backgroundImage: `url(${backgroundValue})`,
-                          backgroundSize: "cover",
-                          backgroundPosition: "center",
-                          backgroundRepeat: "no-repeat",
-                        }}
-                      />
-                    ))}
+              {/* Card — fixed height mini-preview */}
+              <div className="h-[88px] relative">
+                {/* Background — Solid, Gradient, Video, or Image */}
+                {selectedBgSrc &&
+                  (backgroundType === "video" ? (
+                    <video
+                      className="absolute inset-0 w-full h-full object-cover"
+                      src={backgroundValue}
+                      muted
+                      playsInline
+                    />
+                  ) : backgroundType === "solid" ? (
+                    <div
+                      className="absolute inset-0"
+                      style={{ backgroundColor: backgroundValue }}
+                    />
+                  ) : backgroundType === "gradient" ? (
+                    <div
+                      className="absolute inset-0"
+                      style={{ background: backgroundValue }}
+                    />
+                  ) : (
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        backgroundImage: `url(${backgroundValue})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        backgroundRepeat: "no-repeat",
+                      }}
+                    />
+                  ))}
 
-                  {/* Semi-transparent overlay for readability */}
-                  <div className="absolute inset-0 bg-black/30 " />
+                {/* Overlay — slightly lighter when selected */}
+                <div
+                  className={`absolute inset-0 transition-colors ${
+                    currentSlideId === slide.id ? "bg-black/25" : "bg-black/45"
+                  }`}
+                />
 
-                  {/* Content */}
-                  <div className="relative h-[90%] p-2 flex  items-start justify-between overflow-hidden mb-4">
-                    {/* Slide Header */}
-                    <div className=" p-2 gap-2 top-0 left-0 flex flex-col items-center justify-between mb-1 flex-shrink-0">
-                      <span className="text-[10px] font-bold text-white drop-shadow-md">
-                        {slide.label}
-                      </span>
-                      <span
-                        className={`text-[10px] px-1.5 font-bold py-0.5 rounded ${
-                          slide.type === "chorus"
-                            ? "bg-app-blue/80 text-white"
-                            : slide.type === "bridge"
-                            ? "bg-app-accent/80 text-white"
-                            : "bg-black text-white"
-                        }`}
-                      >
-                        {slide.type}
-                      </span>
-                    </div>
+                {/* Content row */}
+                <div className="relative h-full flex items-stretch px-3 py-2 gap-2.5">
+                  {/* Left column: label + type badge */}
+                  <div className="flex flex-col justify-between items-start flex-shrink-0 w-[58px]">
+                    <span className="text-[10px] font-bold text-white leading-tight drop-shadow">
+                      {slide.label}
+                    </span>
+                    <span
+                      className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide text-white ${
+                        slide.type === "chorus"
+                          ? "bg-blue-500/75"
+                          : slide.type === "bridge"
+                            ? "bg-purple-500/75"
+                            : "bg-black/60"
+                      }`}
+                    >
+                      {slide.type}
+                    </span>
+                  </div>
 
-                    {/* Slide Content Preview - Vertical Text */}
-                    <div className="flex-1 overflow-hidden flex items-start justify-start ">
-                      <span
-                        className="text-[12px] text-white/70 dark:text-white leading-tight whitespace-pre-wrap line-clamp-5 font-sans text-left truncate"
-                        style={{
-                          textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
-                        }}
-                      >
-                        {slide.content}
-                      </span>
-                    </div>
+                  {/* Divider */}
+                  <div className="w-px bg-white/20 self-stretch flex-shrink-0" />
+
+                  {/* Right column: content preview */}
+                  <div className="flex-1 flex items-center overflow-hidden">
+                    <p
+                      className="text-[11px] text-white/85 leading-relaxed line-clamp-4 whitespace-pre-wrap w-full"
+                      style={{ textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}
+                    >
+                      {slide.content}
+                    </p>
                   </div>
                 </div>
               </div>

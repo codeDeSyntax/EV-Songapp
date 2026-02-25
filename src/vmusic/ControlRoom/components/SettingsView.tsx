@@ -23,10 +23,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const overlayOpacity = useAppSelector(
-    (state) => state.projection.backgroundOverlayOpacity
+    (state) => state.projection.backgroundOverlayOpacity,
   );
   const repeatChorus = useAppSelector(
-    (state) => state.songSlides.repeatChorusAfterVerse
+    (state) => state.songSlides.repeatChorusAfterVerse,
   );
   const [localOpacity, setLocalOpacity] = useState(overlayOpacity * 100);
   const [selectedBgSrc, setSelectedBgSrc] = useState<string>("");
@@ -52,7 +52,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     }
   }, [dispatch]);
 
-  // Listen for background changes
+  // Listen for background changes from other components
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "bmusicpresentationbg" && e.newValue) {
@@ -63,21 +63,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       }
     };
 
-    // Poll for changes to catch updates
-    const interval = setInterval(() => {
-      const savedBg = localStorage.getItem("bmusicpresentationbg");
-      if (savedBg && savedBg !== selectedBgSrc) {
-        setSelectedBgSrc(savedBg);
-      }
-    }, 100);
-
     window.addEventListener("storage", handleStorageChange);
 
     return () => {
-      clearInterval(interval);
       window.removeEventListener("storage", handleStorageChange);
     };
-  }, [selectedBgSrc]);
+  }, []);
 
   const handleOpacityChange = (value: number) => {
     setLocalOpacity(value);
@@ -92,7 +83,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         oldValue: null,
         newValue: opacity.toString(),
         storageArea: localStorage,
-      })
+      }),
     );
   };
 
@@ -115,7 +106,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         oldValue: null,
         newValue: backgroundValue,
         storageArea: localStorage,
-      })
+      }),
     );
   };
 
@@ -137,7 +128,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           oldValue: null,
           newValue: backgroundValue,
           storageArea: localStorage,
-        })
+        }),
       );
     } else {
       // It's a solid color

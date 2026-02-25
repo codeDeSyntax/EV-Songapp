@@ -48,17 +48,17 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ isDarkMode }) => {
   return (
     <div className="w-full h-full flex flex-col">
       {/* Header */}
-      <div className="p-2 border-b border-app-border flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-app-text-muted" />
-          <span className="text-app-text font-semibold text-sm">
-            Song History
+      <div className="px-3 py-2.5 border-b border-app-border flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5 text-app-text-muted" />
+          <span className="text-app-text font-semibold text-ew-sm tracking-wide">
+            History
           </span>
         </div>
         {history.length > 0 && (
           <button
             onClick={handleClearHistory}
-            className="text-xs text-app-text-muted hover:text-red-500 transition-colors flex items-center gap-1"
+            className="flex items-center gap-1 text-[10px] text-app-text-muted hover:text-red-500 transition-colors"
             title="Clear all history"
           >
             <Trash2 className="w-3 h-3" />
@@ -67,55 +67,45 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ isDarkMode }) => {
         )}
       </div>
 
-      {/* History List */}
-      <div className="fle h-[11.5rem] overflow-y-auto p-2 no-scrollbar">
+      {/* List */}
+      <div className="flex-1 overflow-y-auto no-scrollbar">
         {history.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center gap-2">
+          <div className="flex flex-col items-center justify-center h-full text-center gap-2 px-3">
             <img
               src="./no_files.svg"
-              alt="No songs"
-              className="w-16 h-16 opacity-50"
+              alt=""
+              className="w-10 h-10 opacity-35"
             />
-            <div>
-              <p className="text-app-text-muted text-xs">
-                No projection history
-              </p>
-              <p className="text-app-text-muted text-[10px] mt-1">
-                Songs you project will appear here
-              </p>
-            </div>
+            <p className="text-app-text-muted text-[10px]">No history yet</p>
+            <p className="text-app-text-muted text-[10px] opacity-60">
+              Projected songs appear here
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="divide-y divide-app-border/50">
             {history.map((entry) => (
               <div
                 key={entry.id}
-                className="bg-app-surface dark:bg-app-surface border border-app-border rounded-full px-2 py-1.5 hover:bg-app-hover transition-colors relative overflow-visible "
+                className="flex items-center justify-between gap-2 px-3 py-2 hover:bg-app-hover/40 transition-colors"
               >
-                {/* Time badge absolutely positioned */}
-                <span
-                  className="absolute -top-2 right-7 translate-x-1/2 bg-white/50 dark:bg-black font-bold border border-app-border text-[10px] text-app-text-muted px-2 py-0.5 rounded-full shadow z-10"
-                  style={{ minWidth: "60px", textAlign: "center" }}
-                >
+                <span className="text-ew-xs font-medium text-app-text truncate flex-1 leading-tight">
+                  {entry.songTitle}
+                </span>
+                <span className="text-[10px] text-app-text-muted flex-shrink-0 tabular-nums">
                   {formatRelativeTime(entry.projectedAt)}
                 </span>
-                <div className="flex items-start justify-between gap-2">
-                  <span className="text-xs font-medium text-app-text truncate flex-1">
-                    {entry.songTitle}
-                  </span>
-                </div>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Footer info */}
-      <div className="  border-t border-app-border flex-shrink-0 bg-blue-950 dark:bg-blue-950 px-2 absolute bottom-4  rounded-full">
-        <span className="text-[12px] text-white underline dark:text-blue-400 text-center">
-          {history.length} {history.length === 1 ? "song" : "songs"} •
-          Auto-deletes after{" "}
-          <span className="font-bold text-white dark:text-white">2 weeks</span>
+      {/* Footer */}
+      <div className="px-3 py-1.5 border-t border-app-border flex-shrink-0">
+        <span className="text-[10px] text-app-text-muted">
+          {history.length} {history.length === 1 ? "entry" : "entries"} ·
+          Auto-clears after{" "}
+          <span className="font-semibold text-app-text">2 weeks</span>
         </span>
       </div>
     </div>

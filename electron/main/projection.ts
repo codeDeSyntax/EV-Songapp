@@ -53,7 +53,7 @@ async function loadDisplayPreferences() {
   try {
     const prefsPath = path.join(
       os.homedir(),
-      ".ev-songapp-display-config.json"
+      ".ev-songapp-display-config.json",
     );
 
     if (fs.existsSync(prefsPath)) {
@@ -111,16 +111,20 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
   let isExternalDisplay = false;
   let projectionMode = "extend"; // Default mode
 
-  // Check for user display preferences first
+  // BUG 1 fix: read the prefs file exactly once. The previous code read it
+  // synchronously twice — once in the try block and again in the auto-detect
+  // condition — blocking the main-process event loop each time.
+  const savedPrefsPath = path.join(
+    os.homedir(),
+    ".ev-songapp-display-config.json",
+  );
+  let preferenceApplied = false;
+
   try {
-    const savedPrefsPath = path.join(
-      os.homedir(),
-      ".ev-songapp-display-config.json"
-    );
     if (fs.existsSync(savedPrefsPath)) {
       const savedPrefs = JSON.parse(fs.readFileSync(savedPrefsPath, "utf8"));
       const preferredDisplay = displays.find(
-        (d) => d.id === savedPrefs.displayId
+        (d) => d.id === savedPrefs.displayId,
       );
 
       if (preferredDisplay) {
@@ -128,72 +132,32 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
         isExternalDisplay =
           preferredDisplay.id !== screen.getPrimaryDisplay().id;
         projectionMode = savedPrefs.mode || "extend";
-
-        console.log("✨ Using saved display preference:", {
-          id: preferredDisplay.id,
-          bounds: preferredDisplay.bounds,
-          internal: preferredDisplay.internal,
-          mode: savedPrefs.mode,
-        });
+        preferenceApplied = true;
 
         logSongProjection("Using saved display preference", {
           displayId: preferredDisplay.id,
           mode: savedPrefs.mode,
           isExternal: isExternalDisplay,
         });
-      } else {
-        console.log(
-          "⚠️ Preferred display not found, falling back to auto-detection"
-        );
       }
     }
-  } catch (error) {
-    console.log("ℹ️ No display preferences found, using auto-detection");
+  } catch {
+    // No prefs file or corrupt JSON — fall through to auto-detection
   }
 
-  // Auto-detection: Find external (non-internal) display for projection
-  if (
-    !fs.existsSync(
-      path.join(os.homedir(), ".ev-songapp-display-config.json")
-    ) ||
-    !displays.find(
-      (d) =>
-        d.id ===
-        JSON.parse(
-          fs.readFileSync(
-            path.join(os.homedir(), ".ev-songapp-display-config.json"),
-            "utf8"
-          )
-        ).displayId
-    )
-  ) {
-    if (displays.length > 1) {
-      // Strategy: Find non-internal (external) display - works regardless of Windows primary display setting
-      const externalDisplay = displays.find((display) => !display.internal);
+  // Auto-detection: only runs when no valid saved preference was applied
+  if (!preferenceApplied && displays.length > 1) {
+    const externalDisplay = displays.find((display) => !display.internal);
 
-      if (externalDisplay) {
-        presentationDisplay = externalDisplay;
-        isExternalDisplay = true;
-        console.log(
-          "🎯 Projection: Using external display (works regardless of Windows primary setting):",
-          {
-            id: externalDisplay.id,
-            bounds: externalDisplay.bounds,
-            internal: externalDisplay.internal,
-            isPrimary: externalDisplay.id === screen.getPrimaryDisplay().id,
-          }
-        );
+    if (externalDisplay) {
+      presentationDisplay = externalDisplay;
+      isExternalDisplay = true;
 
-        logSongProjection("External display detected for projection", {
-          displayId: externalDisplay.id,
-          isExternal: true,
-          isPrimary: externalDisplay.id === screen.getPrimaryDisplay().id,
-        });
-      } else {
-        console.log("⚠️ No external display found, using primary display");
-      }
-    } else {
-      console.log("⚠️ Only one display detected, using primary display");
+      logSongProjection("External display detected for projection", {
+        displayId: externalDisplay.id,
+        isExternal: true,
+        isPrimary: externalDisplay.id === screen.getPrimaryDisplay().id,
+      });
     }
   }
 
@@ -250,7 +214,7 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
   // Load the React-based song presentation display page
   if (VITE_DEV_SERVER_URL) {
     songPresentationWin.loadURL(
-      `${VITE_DEV_SERVER_URL}/#/song-presentation-display`
+      `${VITE_DEV_SERVER_URL}/#/song-presentation-display`,
     );
     // Open DevTools in development mode
     // songPresentationWin.webContents.openDevTools({ mode: "detach" });
@@ -266,7 +230,7 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
 
   // Explicitly set fullscreen to ensure it takes effect and hides taskbar
   songPresentationWin.setFullScreen(true);
-  
+
   // Use kiosk mode to ensure taskbar is completely hidden
   songPresentationWin.setKiosk(true);
   console.log("✅ Projection window shown in kiosk mode (taskbar hidden)");
@@ -325,7 +289,7 @@ export function getGlobalProjectionSettings() {
 }
 
 export function updateGlobalProjectionSettings(
-  newSettings: Partial<typeof globalProjectionSettings>
+  newSettings: Partial<typeof globalProjectionSettings>,
 ) {
   globalProjectionSettings = { ...globalProjectionSettings, ...newSettings };
 }
@@ -337,11 +301,6 @@ export function registerProjectionHandlers() {
     "project-song-with-settings",
     async (event, { song, settings = {} }) => {
       try {
-        console.log("🎵 Enhanced projection request:", {
-          song: song?.title,
-          settings,
-        });
-
         // Merge provided settings with global settings
         const projectionSettings = { ...globalProjectionSettings, ...settings };
 
@@ -382,7 +341,7 @@ export function registerProjectionHandlers() {
 
         return { success: false, error: errorObj.message };
       }
-    }
+    },
   );
 
   // Get current projection settings
@@ -403,8 +362,6 @@ export function registerProjectionHandlers() {
     "preview-song-on-display",
     async (event, { song, displayId }) => {
       try {
-        console.log("👁️ Preview request for display:", displayId);
-
         const previewData = {
           ...song,
           isPreview: true,
@@ -439,7 +396,7 @@ export function registerProjectionHandlers() {
           error: error instanceof Error ? error.message : "Unknown error",
         };
       }
-    }
+    },
   );
 
   // Test display with a test message
@@ -447,7 +404,7 @@ export function registerProjectionHandlers() {
     "test-display-projection",
     async (
       event,
-      { displayId, testMessage = "🎵 Display Test - East Voice Songs" }
+      { displayId, testMessage = "🎵 Display Test - East Voice Songs" },
     ) => {
       try {
         console.log("🧪 Testing display:", displayId);
@@ -492,7 +449,7 @@ export function registerProjectionHandlers() {
           error: error instanceof Error ? error.message : "Unknown error",
         };
       }
-    }
+    },
   );
 
   // Get comprehensive projection status
@@ -508,7 +465,7 @@ export function registerProjectionHandlers() {
         currentDisplay = displays.find(
           (display) =>
             winBounds.x >= display.bounds.x &&
-            winBounds.x < display.bounds.x + display.bounds.width
+            winBounds.x < display.bounds.x + display.bounds.width,
         );
       }
 
@@ -570,7 +527,7 @@ export function registerProjectionHandlers() {
         if (songPresentationWin && !songPresentationWin.isDestroyed()) {
           songPresentationWin.webContents.send(
             "update-settings",
-            globalProjectionSettings
+            globalProjectionSettings,
           );
         }
 
@@ -664,7 +621,7 @@ export function registerProjectionHandlers() {
       // Check if preferred display still exists
       if (preferences.displayId) {
         const preferredExists = displays.find(
-          (d) => d.id === preferences.displayId
+          (d) => d.id === preferences.displayId,
         );
         if (!preferredExists) {
           issues.push({
@@ -744,7 +701,7 @@ export function registerProjectionHandlers() {
 
         const prefsPath = path.join(
           os.homedir(),
-          ".ev-songapp-display-config.json"
+          ".ev-songapp-display-config.json",
         );
         const preferences = {
           displayId,
@@ -772,7 +729,7 @@ export function registerProjectionHandlers() {
               : "Failed to save preferences",
         };
       }
-    }
+    },
   );
 
   // Load display preferences

@@ -4,6 +4,7 @@ import { PreviewPanel } from "./PreviewPanel";
 import { BackgroundSelectorPanel } from "./BackgroundSelectorPanel";
 import { PrelistPanel } from "./PrelistPanel";
 import { BottomRightPanel } from "./BottomRightPanel";
+import { FloatingSongEditor } from "./FloatingSongEditor";
 import { useAppSelector } from "@/store";
 
 interface BentoGridProps {
@@ -33,6 +34,7 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
   addToast,
 }) => {
   const songRepo = useAppSelector((state) => state.songs.songRepo);
+  const showSongEditor = useAppSelector((state) => state.ui.showSongEditor);
 
   return (
     <div className="w-full h-full p-2 overflow-hidden ">
@@ -75,6 +77,11 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Floating Song Editor */}
+      {showSongEditor && (
+        <FloatingSongEditor addToast={addToast} loadSongs={loadSongs} />
+      )}
     </div>
   );
 };

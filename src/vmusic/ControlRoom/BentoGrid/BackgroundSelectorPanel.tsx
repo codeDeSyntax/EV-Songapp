@@ -1,13 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  FolderUp,
-  RefreshCw,
-  Menu,
-  Image,
-  Video,
-  Check,
-  X,
-} from "lucide-react";
+import { FolderUp, Menu, Image, Video, Check, X } from "lucide-react";
 
 interface Background {
   name: string;
@@ -109,7 +101,7 @@ export const BackgroundSelectorPanel: React.FC<
       if (
         showMenu &&
         !target.closest(".menu-container") &&
-        !target.closest('button[title="Menu"]')
+        !target.closest('div[title="Menu"]')
       ) {
         setShowMenu(false);
       }
@@ -275,132 +267,117 @@ export const BackgroundSelectorPanel: React.FC<
   };
 
   return (
-    <div
-      style={{
-        border: "none",
-        borderRadius: "8px",
-      }}
-      className="h-full flex flex-col  overflow-hidden py-0 bg-white/50 dark:bg-black"
-    >
-      {/* Header - Fixed */}
-      <div className="sticky top-0 z-10  px-3 pt-2 pb-2 border-b border-app-border flex items-center justify-between flex-shrink-0">
-        <h3 className="text-ew-sm font-medium text-app-text">Backgrounds</h3>
-        <div className="flex items-center gap-2 relative">
-          <div
-            className="px-0 py-0 overflow-hidden cursor-pointer hover:scale-105 transition-transform"
-            style={{ border: "none" }}
-          >
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              title="Menu"
-              className="p-1.5 bg-transparent text-app-text transition-colors"
+    <div className="h-full flex flex-col overflow-hidden rounded-lg bg-app-surface">
+      {/* Header */}
+      <div className="px-3 pt-2.5 pb-2 border-b border-app-border flex items-center justify-between flex-shrink-0 gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className="text-ew-sm font-semibold text-app-text whitespace-nowrap">
+            Backgrounds
+          </h3>
+          {backgrounds.length > 0 && (
+            <span className="text-[10px] text-app-text-muted tabular-nums bg-app-bg border border-app-border px-1.5 py-0.5 rounded-full leading-none">
+              {backgrounds.length}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {/* Images / Videos icon toggle */}
+          <div className="flex gap-0.5 p-0.5 rounded-md bg-black/[0.04] dark:bg-white/5">
+            <div
+              onClick={() => setMediaType("images")}
+              title="Images"
+              className={`cursor-pointer flex items-center justify-center w-6 h-5 rounded transition-all ${
+                mediaType === "images"
+                  ? "text-app-text bg-app-accent shadow-sm"
+                  : "text-app-text-muted hover:text-app-text"
+              }`}
             >
-              <Menu className="w-5 h-5" />
-            </button>
+              <Image className="w-3 h-3" />
+            </div>
+            <div
+              onClick={() => setMediaType("videos")}
+              title="Videos"
+              className={`cursor-pointer flex items-center justify-center w-6 h-5 rounded transition-all ${
+                mediaType === "videos"
+                  ? "text-app-text bg-app-accent shadow-sm"
+                  : "text-app-text-muted hover:text-app-text"
+              }`}
+            >
+              <Video className="w-3 h-3" />
+            </div>
           </div>
 
-          {/* Dropdown Menu - Fixed */}
-          {showMenu && (
+          {/* Actions menu */}
+          <div className="relative">
             <div
-              className="menu-container fixed top-28 right-auto z-[9999] min-w-[160px] mt-2"
-              style={{ transform: "translateX(-100%)" }}
+              onClick={() => setShowMenu(!showMenu)}
+              title="Menu"
+              className="cursor-pointer p-1.5 rounded-md text-app-text-muted hover:text-app-text hover:bg-app-surface-hover transition-colors"
             >
-              <div className="py-1 rounded-lg shadow-xl border-solid p-2 border bg-app-bg border-app-border">
-                <button
-                  onClick={() => {
-                    setMediaType("images");
-                    setShowMenu(false);
-                  }}
-                  className={`w-full bg-transparent flex items-center gap-3 px-4 py-1.5 text-ew-sm transition-colors text-app-text ${
-                    mediaType === "images"
-                      ? "bg-app-accent"
-                      : "hover:bg-app-surface-hover"
-                  }`}
-                >
-                  <Image className="w-4 h-4" />
-                  <span>Images</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setMediaType("videos");
-                    setShowMenu(false);
-                  }}
-                  className={`w-full bg-transparent flex items-center gap-3 px-4 py-1.5 text-ew-sm transition-colors text-app-text ${
-                    mediaType === "videos"
-                      ? "bg-app-accent"
-                      : "hover:bg-app-surface-hover"
-                  }`}
-                >
-                  <Video className="w-4 h-4" />
-                  <span>Videos</span>
-                </button>
-                <div className="h-px my-1 bg-app-border" />
-                <button
-                  onClick={() => {
-                    handleUploadDirectory();
-                    setShowMenu(false);
-                  }}
-                  className="w-full bg-transparent flex items-center gap-3 px-4 py-1.5 text-ew-sm transition-colors text-app-text hover:bg-app-surface-hover"
-                >
-                  <FolderUp className="w-4 h-4" />
-                  <span>Choose </span>
-                </button>
-                <div className="h-px my-1 bg-app-border" />
-                <button
-                  onClick={handleRemoveBackground}
-                  className="w-full bg-transparent flex items-center gap-3 px-4 py-1.5 text-ew-sm transition-colors text-orange-500 hover:bg-orange-500/10"
-                >
-                  <X className="w-4 h-4" />
-                  <span>Remove BG</span>
-                </button>
-                <button
-                  onClick={handleClearAll}
-                  className="w-full bg-transparent flex items-center gap-3 px-4 py-1.5 text-ew-sm transition-colors text-red-500 hover:bg-red-500/10"
-                >
-                  <X className="w-4 h-4" />
-                  <span>Clear All</span>
-                </button>
-                <div className="h-px my-1 bg-app-border" />
-                <button
-                  onClick={() => setShowMenu(false)}
-                  className="w-full bg-transparent flex items-center gap-3 px-4 py-1.5 text-ew-sm transition-colors text-app-text hover:bg-app-surface-hover"
-                >
-                  <X className="w-4 h-4" />
-                  <span>Close Menu</span>
-                </button>
-              </div>
+              <Menu className="w-4 h-4" />
             </div>
-          )}
+
+            {showMenu && (
+              <div className="menu-container absolute top-full right-0 mt-1.5 z-[9999] min-w-[172px]">
+                <div className="p-1.5 rounded-xl shadow-xl border bg-app-bg border-app-border">
+                  <div
+                    onClick={() => {
+                      handleUploadDirectory();
+                      setShowMenu(false);
+                    }}
+                    className="cursor-pointer flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[11px] text-app-text hover:bg-app-surface-hover transition-colors"
+                  >
+                    <FolderUp className="w-3.5 h-3.5 flex-shrink-0" />
+                    Choose Directory
+                  </div>
+                  <div className="h-px my-1 bg-app-border/60" />
+                  <div
+                    onClick={handleRemoveBackground}
+                    className="cursor-pointer flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[11px] text-orange-500 hover:bg-orange-500/10 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5 flex-shrink-0" />
+                    Remove Background
+                  </div>
+                  <div
+                    onClick={handleClearAll}
+                    className="cursor-pointer flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[11px] text-red-500 hover:bg-red-500/10 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5 flex-shrink-0" />
+                    Clear All
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Background Grid - Scrollable */}
+      {/* Background Grid */}
       <div className="flex-1 overflow-y-auto no-scrollbar p-2">
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-3">
-            {[...Array(9)].map((_, i) => (
+          <div className="grid grid-cols-2 gap-2">
+            {[...Array(6)].map((_, i) => (
               <div
                 key={i}
-                className="aspect-video rounded bg-app-surface-hover animate-pulse"
+                className="aspect-video rounded-lg bg-app-surface-hover animate-pulse"
               />
             ))}
           </div>
         ) : backgrounds.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
+          <div className="flex flex-col items-center justify-center h-full gap-1 select-none">
             <img
               src="./no_files.svg"
               alt="No files"
-              className="w-20 h-20 mb-4 opacity-50"
+              className="w-16 h-16 mb-2 opacity-40"
             />
-            <p className="text-ew-sm text-app-text-muted">
-              {customImagesPath
-                ? `No ${mediaType} found`
-                : "No directory selected"}
+            <p className="text-[11px] font-medium text-app-text-muted">
+              {customImagesPath ? `No ${mediaType} found` : "No directory selected"}
             </p>
-            <p className="text-ew-xs text-app-text-muted mt-1">
+            <p className="text-[10px] text-app-text-muted/70">
               {customImagesPath
                 ? `Add ${mediaType} to the selected folder`
-                : "Click menu icon to choose directory"}
+                : "Use the menu to choose a directory"}
             </p>
           </div>
         ) : (
@@ -413,12 +390,12 @@ export const BackgroundSelectorPanel: React.FC<
                 <div
                   key={`${background.src}-${index}`}
                   onClick={(e) => handleSelectBackground(background, e)}
-                  className={`relative cursor-pointer aspect-video rounded-lg overflow-hidden transition-all duration-200 hover:scale-105 ${
+                  className={`relative cursor-pointer aspect-video rounded-lg overflow-hidden transition-all duration-200 group ${
                     isPending
-                      ? "ring-2 ring-yellow-500"
+                      ? "ring-2 ring-amber-400 shadow-md"
                       : isSelected
-                      ? "ring-2 ring-app-blue"
-                      : "ring-1 ring-app-border hover:ring-app-surface-hover"
+                      ? "ring-2 ring-app-accent shadow-md"
+                      : "ring-1 ring-app-border/60 hover:ring-app-border hover:shadow-sm"
                   }`}
                 >
                   {mediaType === "videos" ? (
@@ -433,22 +410,29 @@ export const BackgroundSelectorPanel: React.FC<
                     <img
                       src={background.src}
                       alt={background.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                       loading="lazy"
                     />
                   )}
+
+                  {/* Name label — slides up on hover */}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5 translate-y-full group-hover:translate-y-0 transition-transform duration-200 pointer-events-none">
+                    <p className="text-white text-[10px] font-medium truncate leading-tight">
+                      {background.name}
+                    </p>
+                  </div>
+
+                  {/* Pending badge */}
                   {isPending && (
-                    <div className="absolute inset-0 bg-yellow-500/20 flex items-center justify-center">
-                      <div className="w-8 h-8 rounded-full bg-yellow-500 text-white flex items-center justify-center text-sm font-bold shadow-lg">
-                        ?
-                      </div>
+                    <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center shadow-md">
+                      <span className="text-[9px] font-bold leading-none">?</span>
                     </div>
                   )}
+
+                  {/* Selected badge */}
                   {isSelected && !isPending && (
-                    <div className="absolute inset-0 bg-app-blue/20 flex items-center justify-center">
-                      <div className="w-8 h-8 rounded-full bg-app-blue text-white flex items-center justify-center shadow-lg">
-                        <Check className="w-5 h-5" />
-                      </div>
+                    <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-app-accent text-white flex items-center justify-center shadow-md">
+                      <Check className="w-3 h-3" />
                     </div>
                   )}
                 </div>
@@ -458,34 +442,33 @@ export const BackgroundSelectorPanel: React.FC<
         )}
       </div>
 
-      {/* Confirmation Menu */}
+      {/* Confirmation Popup */}
       {showConfirmation && pendingBackground && (
         <div
-          className="confirmation-menu fixed  py-1 rounded-lg shadow-xl border-solid p-2 border bg-app-bg border-app-border min-w-[180px] z-[9999]"
+          className="confirmation-menu fixed z-[9999] w-44 rounded-xl shadow-xl border bg-app-bg border-app-border overflow-hidden"
           style={{
             left: `${confirmationPosition.x}px`,
             top: `${confirmationPosition.y}px`,
-            transform: "translate(-70%, -50%)",
+            transform: "translate(-50%, -50%)",
           }}
         >
-          <div>
-            <p className="text-ew-sm text-center font-medium text-app-text px-4 py-2 border-b border-app-border mb-1">
-              Apply Background?
-            </p>
-            <button
+          <p className="text-[11px] font-semibold text-app-text text-center px-4 pt-3 pb-2">
+            Apply this background?
+          </p>
+          <div className="px-2 pb-2 flex flex-col gap-1">
+            <div
               onClick={handleApplyBackground}
-              className="w-full bg-transparent flex items-center gap-3 px-4 py-2 text-ew-sm transition-colors text-green-950 dark:text-green-500 hover:bg-green-500/10"
+              className="cursor-pointer w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-medium text-white bg-app-accent hover:opacity-90 active:scale-[0.98] transition-all"
             >
-              <Check className="w-4 h-4" />
-              <span>Apply</span>
-            </button>
-            <button
+              <Check className="w-3.5 h-3.5" />
+              Apply
+            </div>
+            <div
               onClick={handleCancelBackground}
-              className="w-full bg-transparent flex items-center gap-3 px-4 py-2 text-ew-sm transition-colors text-red-500 hover:bg-red-500/10"
+              className="cursor-pointer w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-[11px] text-app-text-muted hover:bg-app-surface-hover transition-colors"
             >
-              <X className="w-4 h-4" />
-              <span>Cancel</span>
-            </button>
+              Cancel
+            </div>
           </div>
         </div>
       )}

@@ -72,13 +72,13 @@ export const useProjectionData = () => {
 
   // Get display slides with chorus repetition
   const displaySlides = useSelector((state: RootState) =>
-    selectProjectionDisplaySlides(state)
+    selectProjectionDisplaySlides(state),
   );
 
   // Helper functions for localStorage
   const getLocalStorageItem = (
     key: string,
-    defaultValue: string | null = null
+    defaultValue: string | null = null,
   ) => {
     try {
       const item = localStorage.getItem(key);
@@ -103,17 +103,12 @@ export const useProjectionData = () => {
     const multiplierValue = parseFloat(savedMultiplier!) || 1.0;
     const clampedMultiplier = Math.max(0.5, Math.min(3.0, multiplierValue));
 
-    console.log(
-      `🔢 Font multiplier loaded: ${multiplierValue} → clamped to: ${clampedMultiplier}`
-    );
-
     // Load last projected song
     const savedLastSong = getLocalStorageItem("bmusicLastProjectedSong", null);
     if (savedLastSong) {
       try {
         const lastSong = JSON.parse(savedLastSong);
         dispatch(setLastProjectedSong(lastSong));
-        console.log("📜 Last projected song loaded:", lastSong.songTitle);
       } catch (error) {
         console.error("Error loading last projected song:", error);
       }
@@ -129,7 +124,6 @@ export const useProjectionData = () => {
     dispatch(setFontFamily(savedFont!));
 
     const savedBg = getLocalStorageItem("bmusicpresentationbg");
-    console.log("🖼️ Background loaded from localStorage:", savedBg);
     dispatch(setBackgroundImage(savedBg || "./wood7.png"));
 
     const savedOpacity = getLocalStorageItem("bmusicOverlayOpacity", "0.3");
@@ -159,7 +153,7 @@ export const useProjectionData = () => {
     if (lastProjectedSong) {
       setLocalStorageItem(
         "bmusicLastProjectedSong",
-        JSON.stringify(lastProjectedSong)
+        JSON.stringify(lastProjectedSong),
       );
     }
   }, [lastProjectedSong]);
@@ -256,7 +250,7 @@ export const useProjectionData = () => {
           s.type.toLowerCase() === "chorus" ||
           s.type.toLowerCase().includes("chorus") ||
           s.type.toLowerCase().includes("refrain") ||
-          s.type.toLowerCase().includes("hook")
+          s.type.toLowerCase().includes("hook"),
       );
 
       if (!firstChorus) {
@@ -284,7 +278,7 @@ export const useProjectionData = () => {
 
       return sequence;
     },
-    []
+    [],
   );
 
   // Handle song data updates
@@ -314,7 +308,7 @@ export const useProjectionData = () => {
         console.error("Error handling song data:", error);
       }
     },
-    [dispatch, parseSongContent, createDisplaySequence]
+    [dispatch, parseSongContent, createDisplaySequence],
   );
 
   // Listen for display-song events from projectSong IPC handler
@@ -337,45 +331,45 @@ export const useProjectionData = () => {
     }
   }, [dispatch, handleSongData]);
 
+  // BUG 18 fix: keep a live ref to displaySlides so the IPC handler never
+  // captures a stale closure. The ref is updated on every render without
+  // needing to re-register the listener.
+  const displaySlidesRef = useRef(displaySlides);
+  useEffect(() => {
+    displaySlidesRef.current = displaySlides;
+  });
+
   // IPC listener for slide updates and navigation commands
   useEffect(() => {
     if (!window.api?.onSongProjectionCommand) return;
 
     // Prevent registering listener multiple times
     if (listenerRegisteredRef.current) {
-      console.log("⚠️ Listener already registered, skipping");
       return;
     }
 
     const handleSlideUpdate = (data: any) => {
       // Prevent duplicate command processing
       if (commandProcessingRef.current) {
-        console.log("⚠️ Command already being processed, ignoring duplicate");
         return;
       }
 
       commandProcessingRef.current = true;
 
-      // Handle slide data updates (full slide array from PreviewPanel/SongLibraryPanel)
+      // Handle full slide array updates (initial load or song change)
       if (data.slides && Array.isArray(data.slides)) {
         dispatch(setSongTitle(data.songTitle || "Untitled Song"));
         dispatch(setSlides(data.slides));
         dispatch(setCurrentIndex(data.currentIndex || 0));
         commandProcessingRef.current = false;
-        return; // Exit early after handling slide data
+        return;
       }
 
-      // Handle individual slide updates from PreviewPanel (when clicking slides in library)
-      // These updates should CHANGE the index to match what was clicked
+      // Handle index-only navigation from PreviewPanel / SongLibraryPanel
       if (
         data.type === "SLIDE_UPDATE" &&
-        data.slide &&
         data.currentIndex !== undefined
       ) {
-        console.log(
-          "🎯 Slide clicked in library, jumping to index:",
-          data.currentIndex
-        );
         dispatch(setCurrentIndex(data.currentIndex));
         commandProcessingRef.current = false;
         return;
@@ -383,25 +377,16 @@ export const useProjectionData = () => {
 
       // Handle font family updates
       if (data.type === "FONT_FAMILY_UPDATE" && data.fontFamily) {
-        console.log("🔤 Font family update received via IPC:", data.fontFamily);
-        console.log("  - Current fontFamily in state:", fontFamily);
-
-        // Update localStorage first
         localStorage.setItem("bmusicfontFamily", data.fontFamily);
-
-        // Dispatch Redux action
         dispatch(setFontFamily(data.fontFamily));
-
-        // Trigger storage event manually to ensure the update propagates
         window.dispatchEvent(
           new StorageEvent("storage", {
             key: "bmusicfontFamily",
             oldValue: fontFamily,
             newValue: data.fontFamily,
             storageArea: localStorage,
-          })
+          }),
         );
-
         commandProcessingRef.current = false;
         return;
       }
@@ -412,9 +397,9 @@ export const useProjectionData = () => {
       } else if (data.command === "previous") {
         dispatch(goToPreviousSlide());
       } else if (data.command === "goto-section" && data.data) {
-        // Handle section navigation
         const { sectionType, sectionNumber } = data.data;
-        const targetIndex = slides.findIndex((slide) => {
+        // BUG 18 fix: use ref instead of stale closure
+        const targetIndex = displaySlidesRef.current.findIndex((slide) => {
           const typeMatch =
             slide.type.toLowerCase() === sectionType.toLowerCase();
           const numberMatch = sectionNumber
@@ -424,14 +409,10 @@ export const useProjectionData = () => {
         });
 
         if (targetIndex !== -1) {
-          console.log("✅ Found section at index:", targetIndex);
           dispatch(setCurrentIndex(targetIndex));
-        } else {
-          console.log("❌ Section not found:", { sectionType, sectionNumber });
         }
       }
 
-      // Reset processing flag after a short delay
       setTimeout(() => {
         commandProcessingRef.current = false;
       }, 100);
@@ -440,13 +421,11 @@ export const useProjectionData = () => {
     window.api.onSongProjectionCommand(handleSlideUpdate);
     listenerRegisteredRef.current = true;
 
-    console.log("✅ IPC listener registered for projection commands");
-
     return () => {
       listenerRegisteredRef.current = false;
       commandProcessingRef.current = false;
     };
-  }, [dispatch]); // Only depend on dispatch - slides and currentIndex are accessed via closure
+  }, [dispatch]); // dispatch is stable; live state accessed via refs
 
   // Font size control with localStorage sync
   const handleIncreaseFontSize = useCallback(() => {
@@ -470,42 +449,18 @@ export const useProjectionData = () => {
     dispatch(goToPreviousSlide());
   }, [dispatch]);
 
-  // Send projection state updates to main window
-  useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      window.api?.sendToMainWindow &&
-      slides.length > 0
-    ) {
-      console.log(
-        `📤 Sending state update: Page ${currentIndex + 1}/${slides.length}`
-      );
-      window.api
-        .sendToMainWindow({
-          type: "SONG_PROJECTION_UPDATE",
-          data: {
-            type: "PAGE_CHANGE",
-            currentPage: currentIndex,
-            totalPages: slides.length,
-            currentSection: slides[currentIndex]?.type || "Unknown",
-            sectionNumber: slides[currentIndex]?.number || null,
-          },
-        })
-        .catch((error) => {
-          console.error(
-            "Failed to send projection update to main window:",
-            error
-          );
-        });
-    }
-  }, [currentIndex, slides]);
+  // BUG 13 fix: removed the useEffect that sent an IPC message to the main
+  // window on every single slide change. Each IPC call crosses a process
+  // boundary (serialize → send → deserialize) adding latency to every
+  // navigation keypress. The main window doesn't consume this data in any
+  // meaningful way, so the overhead was pure waste.
 
   // Expose setCurrentIndex for direct navigation
   const setCurrentIndexDirect = useCallback(
     (idx: number) => {
       dispatch(setCurrentIndex(idx));
     },
-    [dispatch]
+    [dispatch],
   );
 
   return {

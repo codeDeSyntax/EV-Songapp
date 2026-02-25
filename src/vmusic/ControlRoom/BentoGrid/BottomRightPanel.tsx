@@ -179,10 +179,8 @@ export const BottomRightPanel: React.FC<BottomRightPanelProps> = ({
   return (
     <GamyCard
       isDarkMode={isDarkMode}
-      className="h-full flex flex-col p-3 bg-white/30 dark:bg-app-surface"
-      style={{
-        border: "none",
-      }}
+      className="h-full flex flex-col p-3 bg-app-surface"
+      style={{ border: "none" }}
     >
       <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-2.5">
         {/* Background Card - Spans 2 columns (full width) */}

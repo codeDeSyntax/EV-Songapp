@@ -69,7 +69,7 @@ export const TitleInputDialog: React.FC<TitleInputDialogProps> = (props) => {
             }}
             onKeyDown={handleKeyDown}
             placeholder="Song title..."
-            className="flex-1 h-8 px-3 text-sm font-serif bg-transparent border-none border-app-border/30 rounded text-white dark:white placeholder-app-text-muted placeholder:font-oswald focus:outline-none focus:border-app-surface-hover transition-colors"
+            className="flex-1 h-8 px-3 text-sm font-sans bg-transparent border-none border-app-border/30 rounded text-white dark:white placeholder-app-text-muted focus:outline-none focus:border-app-surface-hover transition-colors"
             // maxLength={100}
             spellCheck={false}
           />
@@ -77,7 +77,7 @@ export const TitleInputDialog: React.FC<TitleInputDialogProps> = (props) => {
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="h-8 px-2 text-xs ronded border border-app-border/30 bg-transparent rounded-full text-app-text focus:outline-none font-teko text-white"
+            className="h-8 px-2 text-xs ronded border border-app-border/30 bg-transparent rounded-full text-app-text focus:outline-none font-sans text-white"
             style={{ minWidth: 80 }}
           >
             <option className="bg-app-bg " value="English">

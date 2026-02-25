@@ -56,15 +56,14 @@ const songSlice = createSlice({
     },
     setSearchQuery: (state, action: PayloadAction<string>) => {
       state.searchQuery = action.payload;
-      // Filter songs based on search query
+      // Filter songs by title only — song.content is base64-encoded JSON and
+      // is neither human-readable nor meaningful to search.
       if (action.payload.trim() === "") {
         state.filteredSongs = state.songs;
       } else {
         const query = action.payload.toLowerCase();
-        state.filteredSongs = state.songs.filter(
-          (song) =>
-            song.title.toLowerCase().includes(query) ||
-            song.content.toLowerCase().includes(query)
+        state.filteredSongs = state.songs.filter((song) =>
+          song.title.toLowerCase().includes(query),
         );
       }
     },

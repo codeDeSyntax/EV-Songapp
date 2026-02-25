@@ -38,8 +38,12 @@ export const NeuralNetworkBackground: React.FC<
       pulsePhase: number;
       hue: number; // For subtle color variation
     }[] = [];
-    const particleCount = 50; // More particles for fuller effect
-    const maxDistance = 200; // Longer connections for flowing ribbons
+    // BUG (NeuralNetwork fix): reduced from 50 → 25 particles.
+    // Connections are O(n²): 50 particles = 1,225 distance checks/frame at 60fps
+    // = ~73,500 checks/sec + drawLine calls. 25 particles = 300 checks/frame,
+    // a 75% reduction while the visual difference is imperceptible at 0.25 opacity.
+    const particleCount = 25;
+    const maxDistance = 160; // slightly reduced to further cut connection draw calls
 
     // App theme colors - pure gray-scale matching your design system
     const lightModeColors = {
@@ -71,7 +75,17 @@ export const NeuralNetworkBackground: React.FC<
     }
 
     let animationFrame: number;
-    const animate = () => {
+    let lastFrameTime = 0;
+    const TARGET_FPS = 30; // background effect doesn't need 60fps
+    const FRAME_INTERVAL = 1000 / TARGET_FPS;
+
+    const animate = (timestamp: number = 0) => {
+      animationFrame = requestAnimationFrame(animate);
+
+      // Skip frame if not enough time has elapsed (throttle to ~30fps)
+      if (timestamp - lastFrameTime < FRAME_INTERVAL) return;
+      lastFrameTime = timestamp;
+
       // Gentle fade for ethereal trail effect matching app background
       ctx.fillStyle = isDarkMode
         ? "rgba(28, 28, 28, 0.08)" // --app-bg dark #1c1c1c
@@ -133,19 +147,19 @@ export const NeuralNetworkBackground: React.FC<
           0,
           particle.x,
           particle.y,
-          particle.radius * 4
+          particle.radius * 4,
         );
         gradient.addColorStop(
           0,
-          `rgba(${particleColor}, ${particle.opacity * pulse * 0.9})` // Increased visibility
+          `rgba(${particleColor}, ${particle.opacity * pulse * 0.9})`, // Increased visibility
         );
         gradient.addColorStop(
           0.3,
-          `rgba(${particleColor}, ${particle.opacity * pulse * 0.7})` // Increased from 0.6
+          `rgba(${particleColor}, ${particle.opacity * pulse * 0.7})`, // Increased from 0.6
         );
         gradient.addColorStop(
           0.7,
-          `rgba(${particleColor}, ${particle.opacity * pulse * 0.3})` // Increased from 0.2
+          `rgba(${particleColor}, ${particle.opacity * pulse * 0.3})`, // Increased from 0.2
         );
         gradient.addColorStop(1, `rgba(${particleColor}, 0)`);
 

@@ -20,6 +20,7 @@ import {
   Sheet,
   Music,
   BarChart3,
+  NotebookPen,
 } from "lucide-react";
 import { Tooltip } from "antd";
 import { GamyCard } from "../shared/GamyCard";
@@ -35,6 +36,7 @@ import {
   setShowAddSlideDialog,
   setShowTitleDialog,
   setShowPrelistTitleDialog,
+  toggleSongEditor,
 } from "@/store/slices/uiSlice";
 import { useToast } from "./hooks/useToast";
 import { Toaster } from "../shared/Notification";
@@ -55,7 +57,7 @@ interface ActionBarProps {
   presentSong: (song: any) => void;
   addToast: (
     message: string,
-    type: "success" | "error" | "warning" | "info"
+    type: "success" | "error" | "warning" | "info",
   ) => void;
   onRequestDelete: () => void;
   onSelectSongFromSearch: (song: Song) => void;
@@ -82,10 +84,18 @@ export const ActionBar: React.FC<ActionBarProps> = ({
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
   const [showSongsListDropdown, setShowSongsListDropdown] = useState(false);
   const [fontSearchQuery, setFontSearchQuery] = useState("");
+  // BUG 15 fix: track scroll position so we can render only visible font rows
+  const [fontListScrollTop, setFontListScrollTop] = useState(0);
+  const fontListRef = useRef<HTMLDivElement>(null);
 
   const fontDropdownRef = useRef<HTMLDivElement>(null);
   const folderDropdownRef = useRef<HTMLDivElement>(null);
   const fontSearchInputRef = useRef<HTMLInputElement>(null);
+
+  // Virtual-scroll constants
+  const FONT_ITEM_HEIGHT = 32; // px per item (matches GamyCard py-0.5 + button height)
+  const FONT_LIST_HEIGHT = 500; // max height of the scroll container
+  const OVERSCAN = 3; // extra items above/below viewport for smooth scrolling
 
   // Load system fonts on mount
   useEffect(() => {
@@ -95,7 +105,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
         setSystemFonts(fonts);
 
         // Load saved font from localStorage
-        const savedFont = localStorage.getItem("bmusicfontFamily"); 
+        const savedFont = localStorage.getItem("bmusicfontFamily");
         if (savedFont) {
           setSelectedFont(savedFont);
         } else if (fonts.length > 0 && !selectedFont) {
@@ -122,27 +132,33 @@ export const ActionBar: React.FC<ActionBarProps> = ({
     loadFonts();
   }, []);
 
-  // Focus search input when dropdown opens
+  // Focus search input when dropdown opens; reset on close
   useEffect(() => {
     if (showFontDropdown && fontSearchInputRef.current) {
       setTimeout(() => fontSearchInputRef.current?.focus(), 100);
     } else if (!showFontDropdown) {
       setFontSearchQuery("");
+      setFontListScrollTop(0); // reset virtual scroll position on close
     }
   }, [showFontDropdown]);
 
+  // Reset virtual scroll position when search narrows the list
+  useEffect(() => {
+    setFontListScrollTop(0);
+    if (fontListRef.current) fontListRef.current.scrollTop = 0;
+  }, [fontSearchQuery]);
+
   // Filter fonts based on search query
   const filteredFonts = systemFonts.filter((font) =>
-    font.toLowerCase().includes(fontSearchQuery.toLowerCase())
+    font.toLowerCase().includes(fontSearchQuery.toLowerCase()),
   );
 
   const dispatch = useAppDispatch();
   const { slides, isSaving, currentSlideId, currentSongId, songTitle } =
     useAppSelector((state) => state.songSlides);
   const songRepo = useAppSelector((state) => state.songs.songRepo);
-  const { showSettings, showStatistics, isEditingSlide } = useAppSelector(
-    (state) => state.ui
-  );
+  const { showSettings, showStatistics, isEditingSlide, showSongEditor } =
+    useAppSelector((state) => state.ui);
 
   // Get the currently loaded song from the songs list (using songs prop)
   const currentSong = songs.find((song) => song.id === currentSongId);
@@ -163,7 +179,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
         error instanceof Error
           ? error.message
           : "Failed to generate prelist PDF",
-        "error"
+        "error",
       );
     }
   };
@@ -179,7 +195,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
         error instanceof Error
           ? error.message
           : "Failed to generate songs database PDF",
-        "error"
+        "error",
       );
     }
   };
@@ -218,15 +234,9 @@ export const ActionBar: React.FC<ActionBarProps> = ({
 
   const handleProjectionToggle = async () => {
     try {
-      console.log(
-        "🎬 Projection toggle clicked, current state:",
-        isProjectionActive
-      );
       if (isProjectionActive) {
         // Close projection
-        console.log("🔴 Closing projection...");
-        const result = await window.api.closeProjectionWindow();
-        console.log("🔴 Close projection result:", result);
+        await window.api.closeProjectionWindow();
         addToast("Projection closed", "info");
       } else {
         // Start projection with current song
@@ -253,26 +263,16 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           addProjectionEntry({
             songId: currentSong?.id || `temp-${Date.now()}`,
             songTitle: songTitle || currentSong?.title || "Untitled Song",
-          })
+          }),
         );
 
         // Wait a moment for window to be ready, then send the first slide
         setTimeout(async () => {
-          console.log("⏱️ Timeout callback executing...");
-          console.log("  - slides.length:", slides.length);
-          console.log("  - currentSlideId:", currentSlideId);
-          console.log(
-            "  - Condition check:",
-            slides.length > 0 && currentSlideId
-          );
-
           if (slides.length > 0 && currentSlideId) {
             const currentIndex = slides.findIndex(
-              (s) => s.id === currentSlideId
+              (s) => s.id === currentSlideId,
             );
-            console.log("  - Found currentIndex:", currentIndex);
             const currentSlide = slides[currentIndex] || slides[0];
-            console.log("  - currentSlide:", currentSlide);
 
             const slideData = {
               type: "SLIDE_UPDATE",
@@ -292,13 +292,6 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               })),
             };
 
-            console.log("📤 Sending projection data:");
-            console.log("  - Song title:", slideData.songTitle);
-            console.log("  - Current index:", slideData.currentIndex);
-            console.log("  - Total slides:", slideData.totalSlides);
-            console.log("  - Slides array:", slideData.slides);
-            console.log("  - Current slide:", slideData.slide);
-
             await window.api.sendToSongProjection(slideData);
           }
         }, 500);
@@ -309,7 +302,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
       console.error("Projection error:", error);
       addToast(
         `Failed to ${isProjectionActive ? "close" : "start"} projection`,
-        "error"
+        "error",
       );
     }
   };
@@ -341,7 +334,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                 if (slides.length === 0) {
                   addToast(
                     "No slides to add to prelist. Paste lyrics first.",
-                    "warning"
+                    "warning",
                   );
                   return;
                 }
@@ -370,6 +363,22 @@ export const ActionBar: React.FC<ActionBarProps> = ({
             </button>
           </Tooltip>
 
+          <Tooltip title="Edit Full Song" placement="bottom">
+            <button
+              onClick={() => dispatch(toggleSongEditor())}
+              disabled={slides.length === 0}
+              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all border border-app-border ${
+                showSongEditor
+                  ? "bg-app-accent text-white"
+                  : slides.length > 0
+                    ? "bg-app-bg text-app-text hover:bg-app-surface-hover"
+                    : "bg-app-bg text-app-text opacity-50 cursor-not-allowed"
+              }`}
+            >
+              <NotebookPen className="w-3.5 h-3.5" />
+            </button>
+          </Tooltip>
+
           <Tooltip title="Add New Slide" placement="bottom">
             <button
               onClick={() => dispatch(setShowAddSlideDialog(true))}
@@ -394,7 +403,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                     openDeleteConfirmModal({
                       song: currentSong,
                       type: "permanent",
-                    })
+                    }),
                   );
                 }
               }}
@@ -460,8 +469,8 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                 isProjectionActive
                   ? "bg-green-600 text-white hover:bg-green-700"
                   : slides.length === 0
-                  ? "bg-app-bg text-app-text opacity-50 cursor-not-allowed"
-                  : "bg-app-bg text-app-text hover:bg-app-surface-hover"
+                    ? "bg-app-bg text-app-text opacity-50 cursor-not-allowed"
+                    : "bg-app-bg text-app-text hover:bg-app-surface-hover"
               }`}
             >
               {isProjectionActive ? (
@@ -579,65 +588,90 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                   />
                 </div>
 
-                {/* Font List - Tall scrollable area */}
+                {/* BUG 15 fix: virtual-scroll font list.
+                    Only DOM nodes for the ~20 visible items are created at any
+                    time instead of 200-500 for the full system font list. */}
                 <div
+                  ref={fontListRef}
                   className="overflow-y-auto no-scrollbar p-3 mb-4"
-                  style={{ maxHeight: "500px" }}
+                  style={{ maxHeight: `${FONT_LIST_HEIGHT}px` }}
+                  onScroll={(e) =>
+                    setFontListScrollTop(
+                      (e.currentTarget as HTMLDivElement).scrollTop,
+                    )
+                  }
                 >
-                  {filteredFonts.length > 0 ? (
-                    filteredFonts.map((font) => (
-                      <GamyCard
-                        isDarkMode={isDarkMode}
-                        key={font}
-                        className="px-2 py-0.5 mt-1"
-                        transparent={true}
-                        style={{ borderRadius: "7px", border: "none" }}
-                      >
-                        <button
-                          key={font}
-                          onClick={async () => {
-                            setSelectedFont(font);
-                            setShowFontDropdown(false);
-                            setFontSearchQuery("");
-                            // Update Redux store and localStorage
-                            dispatch(setFontFamily(font));
-                            localStorage.setItem("bmusicfontFamily", font);
+                  {filteredFonts.length > 0 ? (() => {
+                    const startIndex = Math.max(
+                      0,
+                      Math.floor(fontListScrollTop / FONT_ITEM_HEIGHT) - OVERSCAN,
+                    );
+                    const visibleCount =
+                      Math.ceil(FONT_LIST_HEIGHT / FONT_ITEM_HEIGHT) +
+                      OVERSCAN * 2;
+                    const endIndex = Math.min(
+                      filteredFonts.length,
+                      startIndex + visibleCount,
+                    );
+                    const paddingTop = startIndex * FONT_ITEM_HEIGHT;
+                    const paddingBottom =
+                      (filteredFonts.length - endIndex) * FONT_ITEM_HEIGHT;
 
-                            // Send IPC message to update projection window immediately
-                            if (isProjectionActive) {
-                              try {
-                                await window.api.sendToSongProjection({
-                                  type: "FONT_FAMILY_UPDATE",
-                                  fontFamily: font,
-                                });
-                              } catch (error) {
-                                console.error(
-                                  "Error sending font update to projection:",
-                                  error
+                    return (
+                      <>
+                        <div style={{ height: paddingTop }} />
+                        {filteredFonts.slice(startIndex, endIndex).map((font) => (
+                          <GamyCard
+                            isDarkMode={isDarkMode}
+                            key={font}
+                            className="px-2 py-0.5 mt-1"
+                            transparent={true}
+                            style={{ borderRadius: "7px", border: "none" }}
+                          >
+                            <button
+                              onClick={async () => {
+                                setSelectedFont(font);
+                                setShowFontDropdown(false);
+                                setFontSearchQuery("");
+                                dispatch(setFontFamily(font));
+                                localStorage.setItem("bmusicfontFamily", font);
+
+                                if (isProjectionActive) {
+                                  try {
+                                    await window.api.sendToSongProjection({
+                                      type: "FONT_FAMILY_UPDATE",
+                                      fontFamily: font,
+                                    });
+                                  } catch (error) {
+                                    console.error(
+                                      "Error sending font update to projection:",
+                                      error,
+                                    );
+                                  }
+                                }
+
+                                window.dispatchEvent(
+                                  new StorageEvent("storage", {
+                                    key: "bmusicfontFamily",
+                                    oldValue: null,
+                                    newValue: font,
+                                    storageArea: localStorage,
+                                  }),
                                 );
-                              }
-                            }
-
-                            // Dispatch storage event for cross-component updates
-                            window.dispatchEvent(
-                              new StorageEvent("storage", {
-                                key: "bmusicfontFamily",
-                                oldValue: null,
-                                newValue: font,
-                                storageArea: localStorage,
-                              })
-                            );
-                          }}
-                          className={`w-full bg-transparent text-left px-3  text-ew-sm text-app-text-muted hover:bg-app-surface-hover transition-colors ${
-                            selectedFont === font ? "bg-app-surface" : ""
-                          }`}
-                          style={{ fontFamily: font }}
-                        >
-                          {font}
-                        </button>
-                      </GamyCard>
-                    ))
-                  ) : (
+                              }}
+                              className={`w-full bg-transparent text-left px-3 text-ew-sm text-app-text-muted hover:bg-app-surface-hover transition-colors ${
+                                selectedFont === font ? "bg-app-surface" : ""
+                              }`}
+                              style={{ fontFamily: font }}
+                            >
+                              {font}
+                            </button>
+                          </GamyCard>
+                        ))}
+                        <div style={{ height: paddingBottom }} />
+                      </>
+                    );
+                  })() : (
                     <div className="px-3 py-4 text-center text-app-text-muted text-ew-xs">
                       No fonts found
                     </div>

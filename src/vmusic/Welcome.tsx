@@ -99,9 +99,6 @@ const WorkspaceSelector = () => {
   const dispatch = useAppDispatch();
   const songs = useAppSelector((state) => state.songs.songs);
 
-  // Debug: Log songs whenever component renders
-  console.log("Component render - Songs:", songs, "Length:", songs?.length);
-
   // Preload images on component mount
   useEffect(() => {
     preloadImages();
@@ -132,22 +129,17 @@ const WorkspaceSelector = () => {
 
   // Select a random song and verse when songs change
   useEffect(() => {
-    console.log("Songs state:", songs);
     if (songs && songs.length > 0) {
-      console.log("Initial random selection - Songs available:", songs.length);
       const newSong = songs[Math.floor(Math.random() * songs.length)];
-      console.log("Selected song:", newSong?.title);
 
       let extractedVerse = getRandomVerseFromSong(newSong);
       if (!extractedVerse) {
         extractedVerse = verses[Math.floor(Math.random() * verses.length)];
       }
 
-      console.log("Selected verse:", extractedVerse);
       setRandomSong(newSong);
       setRandomVerse(extractedVerse.trim());
     } else {
-      console.log("No songs available");
       // Set initial verse even if no songs
       setRandomVerse(verses[Math.floor(Math.random() * verses.length)].trim());
     }
@@ -156,33 +148,23 @@ const WorkspaceSelector = () => {
   // Change random song and verse every 5 seconds
   useEffect(() => {
     if (songs && songs.length > 0) {
-      console.log("Setting up interval for random changes");
       const interval = setInterval(() => {
-        console.log("Changing random song and verse");
         const newSong = songs[Math.floor(Math.random() * songs.length)];
-        console.log("New song:", newSong?.title);
 
         let extractedVerse = getRandomVerseFromSong(newSong);
         if (!extractedVerse) {
           extractedVerse = verses[Math.floor(Math.random() * verses.length)];
         }
 
-        console.log("New verse:", extractedVerse);
         setRandomSong(newSong);
         setRandomVerse(extractedVerse.trim());
       }, 60000); // Changed to 1 minute (60,000 milliseconds)
 
-      return () => {
-        console.log("Clearing interval");
-        clearInterval(interval);
-      };
+      return () => clearInterval(interval);
     } else {
       // Even if no songs, still change verses
-      console.log("Setting up verse-only interval");
       const interval = setInterval(() => {
-        console.log("Changing random verse only");
         const newVerse = verses[Math.floor(Math.random() * verses.length)];
-        console.log("New verse:", newVerse);
         setRandomVerse(newVerse.trim());
       }, 60000); // Changed to 1 minute
 
@@ -292,7 +274,7 @@ const WorkspaceSelector = () => {
                   Welcome to{" "}
                   <span className="font-bold text-[#c77c5d]">Zion Music</span>
                 </p>
-                <p className="text-sm lg:text-base text-[#8c6e63]  font-ThePriest">
+                <p className="text-sm lg:text-base text-[#8c6e63] font-sans italic">
                   Let me listen to what kind of music you're playing on your
                   radio. Let me see what kind of pictures you got in your house.
                   I'll tell you what you're made out of.

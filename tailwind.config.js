@@ -44,12 +44,8 @@ export default {
         "ew-3xl": ["1.5rem", { lineHeight: "2.25rem" }], // 24px
       },
       fontFamily: {
-        oswald: ['"Oswald ExtraLight"', "sans-serif"],
-        teko: ['"Teko Light"', "sans-serif"],
-        alumini: ['"Alumini Sans Black"', "sans-serif"],
-        LTFuzz: ['"LTFuzz"', "sans-serif"],
-        ThePriest: ['"thepriest"', "sans-serif"],
-        
+        sans: ["Raleway", "system-ui", "sans-serif"],
+        raleway: ["Raleway", "system-ui", "sans-serif"],
       },
     },
   },

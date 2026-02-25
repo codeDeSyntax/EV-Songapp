@@ -74,17 +74,44 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 let mainWin: BrowserWindow | null = null;
+let splashWin: BrowserWindow | null = null;
 let projectionWin: BrowserWindow | null = null;
 let isProjectionMinimized = false;
 const preload = path.join(__dirname, "../preload/index.mjs");
 const indexHtml = path.join(RENDERER_DIST, "index.html");
 const projectionHtml = path.join(RENDERER_DIST, "projection.html");
 
+function createSplashWindow() {
+  splashWin = new BrowserWindow({
+    width: 380,
+    height: 280,
+    frame: false,
+    transparent: false,
+    backgroundColor: "#faeed1",
+    resizable: false,
+    center: true,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    icon: path.join(process.env.VITE_PUBLIC, "evsongsicon.png"),
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  splashWin.loadFile(path.join(process.env.VITE_PUBLIC, "splash.html"));
+  splashWin.on("closed", () => {
+    splashWin = null;
+  });
+}
+
 async function createMainWindow() {
   // Create window with default positioning first
   let windowOptions = {
     title: "Main window",
     frame: false,
+    show: false, // hidden until splash closes
+    backgroundColor: "#0f0f13", // prevent white flash while React loads
     minWidth: 1000,
     minHeight: 800,
     icon: path.join(process.env.VITE_PUBLIC, "evsongsicon.png"),
@@ -116,7 +143,7 @@ async function createMainWindow() {
             bounds: internalDisplay.bounds,
             internal: internalDisplay.internal,
             isPrimary: internalDisplay.id === screen.getPrimaryDisplay().id,
-          }
+          },
         );
       } else {
         // Fallback: Use non-external display if no internal display detected
@@ -146,16 +173,28 @@ async function createMainWindow() {
 
   if (VITE_DEV_SERVER_URL) {
     mainWin.loadURL(VITE_DEV_SERVER_URL);
-    mainWin.maximize();
     mainWin.setMenuBarVisibility(false);
-    mainWin.webContents.openDevTools();
     mainWin.webContents.setZoomFactor(1.0);
   } else {
-    mainWin.maximize();
     mainWin.setMenuBarVisibility(false);
     // mainWin.webContents.openDevTools();
     mainWin.loadFile(indexHtml);
   }
+
+  // Close splash and show main window once renderer is ready
+  mainWin.webContents.once("did-finish-load", () => {
+    setTimeout(() => {
+      if (splashWin && !splashWin.isDestroyed()) {
+        splashWin.close();
+      }
+      // maximize first so it appears full size immediately, then show
+      mainWin?.maximize();
+      mainWin?.show();
+      if (VITE_DEV_SERVER_URL) {
+        mainWin?.webContents.openDevTools();
+      }
+    }, 600); // brief pause so the progress bar animation completes
+  });
 
   mainWin.webContents.on("before-input-event", (event, input) => {
     // F12 toggles dev tools
@@ -235,6 +274,8 @@ ipcMain.on("minimizeProjection", () => {
 });
 
 app.whenReady().then(() => {
+  // Show splash screen immediately, before the main window loads
+  createSplashWindow();
   createMainWindow();
 
   // Register projection handlers
@@ -289,7 +330,7 @@ app.whenReady().then(() => {
           newPrimaryId: primaryDisplay.id,
           totalDisplays: displays.length,
           mainWindowStaysOnLaptop: true,
-        }
+        },
       );
 
       // Keep main window on laptop display regardless of Windows main display setting
@@ -298,7 +339,7 @@ app.whenReady().then(() => {
         if (internalDisplay && internalDisplay.id !== display.id) {
           // Main window should stay on laptop display
           console.log(
-            "✅ Main window remains on laptop display (overriding Windows main display)"
+            "✅ Main window remains on laptop display (overriding Windows main display)",
           );
         }
       }
@@ -356,8 +397,6 @@ app.on("will-quit", () => {
 });
 
 ipcMain.handle("project-song", async (event, songData) => {
-  console.log("Using React-based song projection:", songData);
-
   // Log projection attempt
   logSongProjection("Song projection initiated", {
     title: songData.title || "Unknown",
@@ -386,7 +425,6 @@ ipcMain.handle("project-song", async (event, songData) => {
       songPresentationWin?.moveTop();
     }, 300); // Short delay to ensure window is restored before sending data
     // Notify main window about projection state change
-    console.log("Sending projection state change: true (restored)");
     mainWin?.webContents.send("projection-state-changed", true);
     return;
   }
@@ -402,7 +440,6 @@ ipcMain.handle("project-song", async (event, songData) => {
       newWindow?.focus();
       newWindow?.moveTop();
       // Notify main window about projection state change
-      console.log("Sending projection state change: true (new window)");
       mainWin?.webContents.send("projection-state-changed", true);
     });
   } else {
@@ -412,34 +449,20 @@ ipcMain.handle("project-song", async (event, songData) => {
     songPresentationWin.focus();
     songPresentationWin.moveTop();
     // Notify main window about projection state change
-    console.log("Sending projection state change: true (existing window)");
     mainWin?.webContents.send("projection-state-changed", true);
   }
 });
 
 // Add handler to check if projection window is open
+// BUG 5 fix: removed console.log + logSystemInfo — this is polled frequently
+// and writing to disk on every poll created constant I/O noise.
 ipcMain.handle("is-projection-active", async () => {
   const { songPresentationWin, isProjectionActive } = getProjectionState();
-  const isSongActive =
+  return (
     isProjectionActive &&
-    songPresentationWin &&
-    !songPresentationWin.isDestroyed();
-
-  console.log("Checking projection state:", {
-    isActive: isSongActive,
-    isSongActive,
-  });
-
-  // Log projection state check
-  logSystemInfo("Projection state checked", {
-    isActive: isSongActive,
-    isSongActive,
-    songWindowExists: !!(
-      songPresentationWin && !songPresentationWin.isDestroyed()
-    ),
-  });
-
-  return isSongActive;
+    songPresentationWin != null &&
+    !songPresentationWin.isDestroyed()
+  );
 });
 
 // Add handler to close projection window
@@ -455,7 +478,7 @@ ipcMain.handle("close-projection-window", async () => {
 
     // Notify main window that projection is no longer active
     console.log(
-      "Sending projection state change: false (close-projection-window)"
+      "Sending projection state change: false (close-projection-window)",
     );
     mainWin?.webContents.send("projection-state-changed", false);
   }
@@ -494,9 +517,7 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
 
   try {
     // Ensure songs directory exists
-    if (!fs.existsSync(songsDirectory)) {
-      fs.mkdirSync(songsDirectory, { recursive: true });
-    }
+    await fs.promises.mkdir(songsDirectory, { recursive: true });
 
     // Validate inputs
     if (!title || content === undefined) {
@@ -533,7 +554,7 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
 
     // Check directory permissions
     try {
-      fs.accessSync(songsDirectory, fs.constants.W_OK);
+      await fs.promises.access(songsDirectory, fs.constants.W_OK);
     } catch (permissionError) {
       const errorMsg =
         "Permission denied. You don't have write access to the songs directory.";
@@ -557,11 +578,18 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
       throw new Error(errorMsg);
     }
 
-    const fileExists = fs.existsSync(filePath);
+    // Check if file already exists (non-blocking)
+    let fileExists = false;
+    try {
+      await fs.promises.access(filePath);
+      fileExists = true;
+    } catch {
+      fileExists = false;
+    }
 
     // Write the file (create new or overwrite existing)
     // Content is expected to be base64-encoded JSON from the frontend
-    fs.writeFileSync(filePath, content, "utf8");
+    await fs.promises.writeFile(filePath, content, "utf8");
 
     const result = {
       success: true,
@@ -584,7 +612,7 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
         filePath,
         contentLength: content.length,
         directory: songsDirectory,
-      }
+      },
     );
 
     return result;
@@ -606,17 +634,17 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
       const code = (error as any).code;
       if (code === "ENOENT") {
         throw new Error(
-          "The file path is invalid or the directory no longer exists. Please ensure the directory exists and the song title doesn't contain invalid characters."
+          "The file path is invalid or the directory no longer exists. Please ensure the directory exists and the song title doesn't contain invalid characters.",
         );
       } else if (code === "EACCES" || code === "EPERM") {
         throw new Error(
-          "Permission denied. Cannot write to the selected location."
+          "Permission denied. Cannot write to the selected location.",
         );
       } else if (code === "ENOSPC") {
         throw new Error("Not enough disk space to save the file.");
       } else if (code === "EMFILE" || code === "ENFILE") {
         throw new Error(
-          "Too many files are open. Please close some applications and try again."
+          "Too many files are open. Please close some applications and try again.",
         );
       }
     }
@@ -625,6 +653,10 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
   }
 });
 
+// BUG 4 fix: cache which directories already exist so mkdir isn't called on
+// every refresh for a directory that hasn't changed.
+const existingDirsCache = new Set<string>();
+
 // Handle fetching songs from a directory
 ipcMain.handle("fetch-songs", async (event, directory) => {
   try {
@@ -632,27 +664,30 @@ ipcMain.handle("fetch-songs", async (event, directory) => {
     const songsDirectory =
       directory || path.join(app.getPath("userData"), "Songs");
 
-    // Ensure songs directory exists
-    if (!fs.existsSync(songsDirectory)) {
-      fs.mkdirSync(songsDirectory, { recursive: true });
-      return []; // Return empty array for new directory
+    // BUG 4 fix: only call mkdir when we haven't confirmed the dir exists yet
+    if (!existingDirsCache.has(songsDirectory)) {
+      await fs.promises.mkdir(songsDirectory, { recursive: true });
+      existingDirsCache.add(songsDirectory);
     }
 
-    const files = fs.readdirSync(songsDirectory);
+    const files = await fs.promises.readdir(songsDirectory);
     const songs = await Promise.all(
       files
         .filter((file) => file.endsWith(".evsong"))
-        .map(async (file, index) => {
+        .map(async (file) => {
           const filePath = path.join(songsDirectory, file);
-          const fileStats = fs.statSync(filePath);
-          const encodedContent = fs.readFileSync(filePath, "utf8");
+
+          // BUG 3 fix: read content first; only call stat() when the JSON
+          // doesn't include a modified timestamp (avoids an extra I/O round-trip
+          // for every file on every library refresh).
+          const encodedContent = await fs.promises.readFile(filePath, "utf8");
 
           // Decode the base64-encoded JSON
           let songData;
           let isPrelisted = false;
           try {
             const jsonString = Buffer.from(encodedContent, "base64").toString(
-              "utf8"
+              "utf8",
             );
             songData = JSON.parse(jsonString);
             isPrelisted = songData.metadata?.isPrelisted || false;
@@ -662,19 +697,27 @@ ipcMain.handle("fetch-songs", async (event, directory) => {
             return null;
           }
 
+          // Only stat the file when the JSON has no modified timestamp
+          const dateModified =
+            songData.metadata?.modified ||
+            (await fs.promises.stat(filePath)).mtime.toISOString();
+
+          // BUG 7 fix: use the filename (without extension) as a stable, unique ID.
+          // The previous index-based ID broke every time songs were added/removed.
+          const stableId = path.basename(file, ".evsong");
+
           return {
-            id: `bmusic${index + 1}`,
-            title: songData.title || path.basename(file, ".evsong"),
+            id: stableId,
+            title: songData.title || stableId,
             path: filePath,
-            content: encodedContent, // Return the encoded content
-            dateModified:
-              songData.metadata?.modified || fileStats.mtime.toISOString(),
+            content: encodedContent,
+            dateModified,
             isPrelisted,
-            slides: songData.slides || [], // Include slides data
-            metadata: songData.metadata, // Include full metadata
-            language: songData.metadata?.language || "English", // Ensure top-level language
+            slides: songData.slides || [],
+            metadata: songData.metadata,
+            language: songData.metadata?.language || "English",
           };
-        })
+        }),
     );
 
     // Filter out null entries (failed decodes)
@@ -703,18 +746,15 @@ ipcMain.handle(
   "edit-song",
   async (event, { directory, newTitle, content, originalPath }) => {
     try {
-      const fileExists = fs.existsSync(originalPath);
-
-      if (fileExists) {
-        fs.writeFileSync(originalPath, content, "utf8");
-      } else {
-        fs.writeFileSync(originalPath, content, "utf8");
-      }
+      await fs.promises.writeFile(originalPath, content, "utf8");
 
       const newFilePath = path.join(directory, `${newTitle}.txt`);
       if (newTitle && newFilePath !== originalPath) {
-        if (fileExists && fs.existsSync(originalPath)) {
-          fs.renameSync(originalPath, newFilePath);
+        try {
+          await fs.promises.access(originalPath);
+          await fs.promises.rename(originalPath, newFilePath);
+        } catch {
+          /* file doesn't exist, skip rename */
         }
       }
 
@@ -723,27 +763,31 @@ ipcMain.handle(
       console.error("Error editing song:", error);
       throw error;
     }
-  }
+  },
 );
 
 // Handle deleting a song
 ipcMain.handle("delete-song", async (event, filePath) => {
   try {
-    if (fs.existsSync(filePath)) {
-      const fileName = path.basename(filePath);
-      fs.unlinkSync(filePath);
+    const fileName = path.basename(filePath);
+    await fs.promises.unlink(filePath);
 
-      logSongFileOp("Song deleted successfully", {
-        fileName,
-        filePath,
-      });
+    logSongFileOp("Song deleted successfully", {
+      fileName,
+      filePath,
+    });
 
-      return true;
-    } else {
+    return true;
+  } catch (error) {
+    const isNotFound =
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as any).code === "ENOENT";
+    if (isNotFound) {
       logSongError("Attempted to delete non-existent song", { filePath });
       throw new Error("File not found");
     }
-  } catch (error) {
     console.error("Error deleting song:", error);
     logSongError("Failed to delete song", {
       filePath,
@@ -766,7 +810,7 @@ async function loadImagesFromDirectory(dirPath: string) {
 
     const imageFiles = files
       .filter((file) =>
-        allowedExtensions.includes(path.extname(file).toLowerCase())
+        allowedExtensions.includes(path.extname(file).toLowerCase()),
       )
       .slice(0, 10); // Increase limit to 7 images for better selection
 
@@ -781,7 +825,7 @@ async function loadImagesFromDirectory(dirPath: string) {
     console.log(
       "📁 loadImagesFromDirectory: Returning custom protocol URLs:",
       imagePaths.slice(0, 3),
-      "..."
+      "...",
     );
 
     // Log detailed image loading info
@@ -885,21 +929,21 @@ ipcMain.handle("test-visual-songbook-override", async () => {
     console.log("📊 Display Analysis:");
     console.log(`Total Displays: ${displays.length}`);
     console.log(
-      `Windows Main Display: ${primaryDisplay.id} at (${primaryDisplay.bounds.x}, ${primaryDisplay.bounds.y})`
+      `Windows Main Display: ${primaryDisplay.id} at (${primaryDisplay.bounds.x}, ${primaryDisplay.bounds.y})`,
     );
     console.log(
       `Internal (Laptop) Display: ${
         internalDisplay
           ? `${internalDisplay.id} at (${internalDisplay.bounds.x}, ${internalDisplay.bounds.y})`
           : "Not detected"
-      }`
+      }`,
     );
     console.log(
       `External Display: ${
         externalDisplay
           ? `${externalDisplay.id} at (${externalDisplay.bounds.x}, ${externalDisplay.bounds.y})`
           : "Not detected"
-      }`
+      }`,
     );
 
     // Test 2: Visual Song Book Logic
@@ -926,14 +970,14 @@ ipcMain.handle("test-visual-songbook-override", async () => {
         controlTarget.internal ? "Laptop" : "External"
       }) - Overriding Windows main display: ${
         controlTarget.id !== primaryDisplay.id
-      }`
+      }`,
     );
     console.log(
       `Projection Target: Display ${projectionTarget.id} (${
         projectionTarget.internal ? "Laptop" : "External"
       }) - Overriding Windows main display: ${
         projectionTarget.id !== primaryDisplay.id
-      }`
+      }`,
     );
 
     // Test 3: Scenario Validation
@@ -941,22 +985,22 @@ ipcMain.handle("test-visual-songbook-override", async () => {
 
     if (displays.length === 1) {
       scenarios.push(
-        "✅ Single Display: Both control and projection on same display"
+        "✅ Single Display: Both control and projection on same display",
       );
     } else {
       scenarios.push(
         `✅ Multi-Display: Control on ${
           controlTarget.internal ? "laptop" : "external"
-        }, Projection on ${projectionTarget.internal ? "laptop" : "external"}`
+        }, Projection on ${projectionTarget.internal ? "laptop" : "external"}`,
       );
 
       if (primaryDisplay.internal && externalDisplay) {
         scenarios.push(
-          "✅ Scenario 1: Laptop is Windows main → Projection goes to external (correct)"
+          "✅ Scenario 1: Laptop is Windows main → Projection goes to external (correct)",
         );
       } else if (!primaryDisplay.internal && internalDisplay) {
         scenarios.push(
-          "✅ Scenario 2: External is Windows main → Control stays on laptop, Projection on external (Visual Song Book mode!)"
+          "✅ Scenario 2: External is Windows main → Control stays on laptop, Projection on external (Visual Song Book mode!)",
         );
       }
     }
@@ -1007,7 +1051,7 @@ ipcMain.handle("save-display-preferences", async (_, preferences) => {
   try {
     const prefsPath = path.join(
       os.homedir(),
-      ".ev-songapp-display-config.json"
+      ".ev-songapp-display-config.json",
     );
     const prefsData = {
       displayId: preferences.displayId,
@@ -1015,10 +1059,10 @@ ipcMain.handle("save-display-preferences", async (_, preferences) => {
       timestamp: Date.now(),
     };
 
-    fs.writeFileSync(prefsPath, JSON.stringify(prefsData, null, 2));
+    // BUG 2 fix: use async write — sync write blocked the IPC event loop
+    await fs.promises.writeFile(prefsPath, JSON.stringify(prefsData, null, 2));
 
     logSystemInfo("Display preferences saved", prefsData);
-    console.log("💾 Display preferences saved:", prefsData);
 
     return { success: true, data: prefsData };
   } catch (error) {
@@ -1047,7 +1091,7 @@ ipcMain.handle(
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }
-  }
+  },
 );
 
 ipcMain.handle("get-secret-logs", async () => {
@@ -1138,7 +1182,11 @@ ipcMain.handle("export-secret-logs", async () => {
         logs: logs,
       };
 
-      fs.writeFileSync(result.filePath, JSON.stringify(exportData, null, 2));
+      // BUG 2 fix: async write — sync write blocked the IPC event loop
+      await fs.promises.writeFile(
+        result.filePath,
+        JSON.stringify(exportData, null, 2),
+      );
       logSystemInfo("Secret logs exported by admin", {
         filePath: result.filePath,
         logCount: logs.length,
@@ -1174,7 +1222,7 @@ ipcMain.handle(
           error instanceof Error ? error.message : "Failed to construct path",
       };
     }
-  }
+  },
 );
 
 // Handler to open file in default app (e.g., notepad for .txt files)
@@ -1245,53 +1293,45 @@ ipcMain.handle("send-to-main-window", async (event, { type, data }) => {
 
 // ============== End Enhanced APIs ==============
 
+// BUG 6 fix: cache validated image paths so the sync existsSync/statSync calls
+// are only paid once per unique path, not on every browser request.
+const allowedImageExtensions = new Set([
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".bmp",
+  ".webp",
+]);
+const validatedImagePaths = new Set<string>();
+
 // Register custom protocol for local images
 app.whenReady().then(() => {
-  // Register custom protocol to serve local images
   protocol.registerFileProtocol("local-image", (request, callback) => {
     try {
-      // Extract the file path from the URL
       const url = request.url.substring("local-image://".length);
       const filePath = decodeURIComponent(url);
 
-      console.log("🖼️ Custom protocol serving image:", filePath);
-
-      // Security check - ensure the file exists and is an image
-      if (fs.existsSync(filePath)) {
-        const ext = path.extname(filePath).toLowerCase();
-        const allowedExtensions = [
-          ".png",
-          ".jpg",
-          ".jpeg",
-          ".gif",
-          ".bmp",
-          ".webp",
-        ];
-
-        if (allowedExtensions.includes(ext)) {
-          // Log successful image serving
-          logSystemInfo("Background image served via custom protocol", {
-            filePath,
-            extension: ext,
-            fileSize: fs.statSync(filePath).size,
-          });
-          callback({ path: filePath });
-        } else {
-          console.error("❌ File is not an allowed image type:", ext);
-          logSystemError("Invalid image type requested", {
-            filePath,
-            extension: ext,
-            allowedExtensions,
-          });
-          callback({ error: -6 }); // INVALID_URL
-        }
-      } else {
-        console.error("❌ Image file not found:", filePath);
-        callback({ error: -6 }); // INVALID_URL
+      // Fast path: already validated in this session
+      if (validatedImagePaths.has(filePath)) {
+        callback({ path: filePath });
+        return;
       }
-    } catch (error) {
-      console.error("❌ Error in custom protocol handler:", error);
-      callback({ error: -6 }); // INVALID_URL
+
+      const ext = path.extname(filePath).toLowerCase();
+      if (!allowedImageExtensions.has(ext)) {
+        callback({ error: -6 });
+        return;
+      }
+
+      if (fs.existsSync(filePath)) {
+        validatedImagePaths.add(filePath);
+        callback({ path: filePath });
+      } else {
+        callback({ error: -6 });
+      }
+    } catch {
+      callback({ error: -6 });
     }
   });
 });

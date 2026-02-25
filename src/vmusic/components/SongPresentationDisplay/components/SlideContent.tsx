@@ -279,7 +279,7 @@ export const SlideContent: React.FC<SlideContentProps> = ({
           {/* Section number at bottom right, with total verses if verse */}
           {sectionType && sectionNumber !== undefined && (
             <mark
-              className="absolute bottom-1 right-4 text-4xl font-teko font-bold px-4 select-none pointer-events-none z-20"
+              className="absolute bottom-1 right-4 text-4xl font-sans font-bold px-4 select-none pointer-events-none z-20"
               style={{
                 backgroundColor:
                   sectionType.toLowerCase() === "verse" &&
@@ -307,7 +307,6 @@ export const SlideContent: React.FC<SlideContentProps> = ({
               )}
             </mark>
           )}
-        
         </div>
       )}
     </div>

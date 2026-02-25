@@ -11,6 +11,7 @@ interface UIState {
   showAddSlideDialog: boolean;
   showTitleDialog: boolean;
   showPrelistTitleDialog: boolean;
+  showSongEditor: boolean;
 }
 
 const initialState: UIState = {
@@ -23,6 +24,7 @@ const initialState: UIState = {
   showAddSlideDialog: false,
   showTitleDialog: false,
   showPrelistTitleDialog: false,
+  showSongEditor: false,
 };
 
 const uiSlice = createSlice({
@@ -60,6 +62,9 @@ const uiSlice = createSlice({
     setShowPrelistTitleDialog: (state, action: PayloadAction<boolean>) => {
       state.showPrelistTitleDialog = action.payload;
     },
+    toggleSongEditor: (state) => {
+      state.showSongEditor = !state.showSongEditor;
+    },
   },
 });
 
@@ -72,6 +77,7 @@ export const {
   setShowAddSlideDialog,
   setShowTitleDialog,
   setShowPrelistTitleDialog,
+  toggleSongEditor,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

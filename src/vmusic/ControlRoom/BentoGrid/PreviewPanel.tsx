@@ -142,16 +142,6 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   const currentSlide = slides.find((s) => s.id === currentSlideId) || null;
   const currentIndex = slides.findIndex((s) => s.id === currentSlideId);
 
-  // Log displaySlides for debugging
-  React.useEffect(() => {
-    console.log(
-      "DisplaySlides array:",
-      displaySlides.map(
-        (s, i) => `${i}: ${s.type} ${s.number || ""} - ${s.label}`,
-      ),
-    );
-  }, [displaySlides]);
-
   // Get current display slide (for showing label and content)
   // currentDisplayIndex comes from Redux state
   const currentDisplaySlide =
@@ -159,39 +149,23 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       ? displaySlides[currentDisplayIndex]
       : null;
 
-  // Load saved background and font on mount and poll for changes
+  // BUG 14 fix: split into two effects.
+  // Effect 1 — initialization from localStorage, runs exactly once on mount.
   useEffect(() => {
-    const updateSettings = () => {
-      const savedBg = localStorage.getItem("bmusicpresentationbg");
-      if (savedBg && savedBg !== selectedBgSrc) {
-        setSelectedBgSrc(savedBg);
-        // Only update preview if no preview is active
-        if (!previewBgSrc || previewBgSrc === selectedBgSrc) {
-          setPreviewBgSrc(savedBg);
-        }
-      }
+    const savedBg = localStorage.getItem("bmusicpresentationbg");
+    if (savedBg) {
+      setSelectedBgSrc(savedBg);
+      setPreviewBgSrc(savedBg);
+    }
+    const savedFont = localStorage.getItem("bmusicfontFamily");
+    if (savedFont) setFontFamily(savedFont);
+    const savedOpacity = localStorage.getItem("bmusicOverlayOpacity");
+    if (savedOpacity) setOverlayOpacity(parseFloat(savedOpacity));
+  }, []); // mount only
 
-      const savedFont = localStorage.getItem("bmusicfontFamily");
-      if (savedFont && savedFont !== fontFamily) {
-        setFontFamily(savedFont);
-      }
-
-      const savedOpacity = localStorage.getItem("bmusicOverlayOpacity");
-      if (savedOpacity) {
-        const opacity = parseFloat(savedOpacity);
-        if (opacity !== overlayOpacity) {
-          setOverlayOpacity(opacity);
-        }
-      }
-    };
-
-    // Initial load
-    updateSettings();
-
-    // Poll for changes every 100ms to catch immediate updates
-    const interval = setInterval(updateSettings, 100);
-
-    // Listen for preview background changes (before confirmation)
+  // Effect 2 — event listeners, also registered once for the lifetime of the component.
+  // Previously these were re-attached on every bg/font/opacity state change.
+  useEffect(() => {
     const handlePreviewBackgroundChange = (e: Event) => {
       const customEvent = e as CustomEvent<{
         src: string;
@@ -200,16 +174,13 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       }>;
       if (customEvent.detail) {
         if (customEvent.detail.isCancel) {
-          // On cancel, revert to the selected background
           setPreviewBgSrc("");
         } else {
-          // Set preview background (doesn't affect localStorage)
           setPreviewBgSrc(customEvent.detail.src);
         }
       }
     };
 
-    // Also listen for storage events (after confirmation/apply)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "bmusicpresentationbg" && e.newValue) {
         setSelectedBgSrc(e.newValue);
@@ -230,16 +201,13 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     window.addEventListener("storage", handleStorageChange);
 
     return () => {
-      clearInterval(interval);
       window.removeEventListener(
         "preview-background-change",
         handlePreviewBackgroundChange,
       );
       window.removeEventListener("storage", handleStorageChange);
     };
-  }, [selectedBgSrc, previewBgSrc, fontFamily, overlayOpacity]); // NOTE: Slide sync removed - navigation is handled by SongProjectionControls commands
-  // The PreviewPanel used to sync on every slide change, causing duplicate navigation
-  // Now only SongLibraryPanel sends slide updates when clicking slides directly
+  }, []); // mount only — no deps means no unnecessary re-attachment
 
   // Track song title changes to prevent auto-projection when loading a new song
   useEffect(() => {
@@ -338,6 +306,10 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     }
 
     const sendProjectionUpdate = async () => {
+      // BUG 12 fix: send only the index for navigation — the projection window
+      // already holds the full slides array from the initial display-song event.
+      // Sending the whole array on every keypress was serializing hundreds of
+      // characters through IPC on every arrow-key press.
       const slideData = {
         type: "SLIDE_UPDATE",
         slide: {
@@ -348,12 +320,6 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         songTitle: songTitle || "Untitled Song",
         currentIndex: currentDisplayIndex,
         totalSlides: displaySlides.length,
-        backgroundColor: "#000000",
-        slides: displaySlides.map((slide) => ({
-          content: slide.content,
-          type: slide.type,
-          number: slide.number,
-        })),
       };
 
       await window.api.sendToSongProjection(slideData);
@@ -456,15 +422,12 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       return;
     }
 
-    // Renumber slides by type (important for both saved and unsaved songs)
+    // BUG 16 fix: use the map index directly — previous code called
+    // updatedSlides.indexOf(slide) inside the map, making this O(n²).
+    const typeCounters: Record<string, number> = {};
     const renumberedSlides = updatedSlides.map((slide) => {
-      // Count how many slides of the same type come before this one
-      const sameTypeBefore = updatedSlides
-        .slice(0, updatedSlides.indexOf(slide))
-        .filter((s) => s.type === slide.type).length;
-
-      const newNumber = sameTypeBefore + 1;
-
+      typeCounters[slide.type] = (typeCounters[slide.type] || 0) + 1;
+      const newNumber = typeCounters[slide.type];
       return {
         ...slide,
         number: newNumber,
@@ -726,6 +689,23 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     }
   };
 
+  // Slide type → badge style map
+  const slideTypeBadgeClass = (type: string) => {
+    switch (type) {
+      case "chorus":
+        return "bg-blue-500/40 text-blue-100 border-blue-400/30";
+      case "bridge":
+        return "bg-purple-500/40 text-purple-100 border-purple-400/30";
+      case "prechorus":
+        return "bg-amber-500/40 text-amber-100 border-amber-400/30";
+      default:
+        return "bg-white/15 text-white/90 border-white/20";
+    }
+  };
+
+  const showHUD =
+    !isEditingSlide && !showAddSlideDialog && !showSettings && !showStatistics;
+
   return (
     <div onClick={handleClick} className="h-full relative z-10">
       <TitleInputDialog
@@ -748,12 +728,12 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
       <DeleteConfirmModal addToast={addToast} loadSongs={loadSongs} />
 
-      <div className="h-full w-full relative rounded-xl overflow-y-auto">
-        {/* Background - Solid, Gradient, Video or Image */}
-        {selectedBgSrc &&
-          (backgroundType === "video" ? (
+      <div className="h-full w-full relative rounded-xl overflow-hidden">
+        {/* ── Background layer ── */}
+        {selectedBgSrc ? (
+          backgroundType === "video" ? (
             <video
-              className="absolute inset-0 w-full h-full object-cover rounded-xl"
+              className="absolute inset-0 w-full h-full object-cover"
               src={backgroundValue}
               autoPlay
               loop
@@ -762,17 +742,17 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
             />
           ) : backgroundType === "solid" ? (
             <div
-              className="absolute inset-0 rounded-xl"
+              className="absolute inset-0"
               style={{ backgroundColor: backgroundValue }}
             />
           ) : backgroundType === "gradient" ? (
             <div
-              className="absolute inset-0 rounded-xl"
+              className="absolute inset-0"
               style={{ background: backgroundValue }}
             />
           ) : (
             <div
-              className="absolute inset-0 rounded-xl"
+              className="absolute inset-0"
               style={{
                 backgroundImage: `url(${backgroundValue})`,
                 backgroundSize: "cover",
@@ -780,23 +760,21 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
                 backgroundRepeat: "no-repeat",
               }}
             />
-          ))}
-        {!selectedBgSrc && (
-          <div className="absolute inset-0 bg-black rounded-xl" />
+          )
+        ) : (
+          <div className="absolute inset-0 bg-neutral-950" />
         )}
 
-        {/* Dark overlay for text visibility */}
+        {/* ── Darken overlay ── */}
         {selectedBgSrc && (
           <div
-            className="absolute inset-0 bg-black rounded-xl transition-opacity duration-200"
+            className="absolute inset-0 bg-black transition-opacity duration-200"
             style={{ opacity: overlayOpacity }}
           />
         )}
 
-        {/* Statistics View Overlay */}
+        {/* ── Overlay panels (settings / statistics) ── */}
         {showStatistics && <StatisticsView isDarkMode={isDarkMode} />}
-
-        {/* Settings View Overlay */}
         {showSettings && (
           <SettingsView
             isDarkMode={isDarkMode}
@@ -804,14 +782,36 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           />
         )}
 
-        {/* Preview Area with Selected Background */}
+        {/* ── Top HUD: section badge + song title ── */}
+        {showHUD && currentDisplaySlide && (
+          <div className="absolute top-3 inset-x-3 flex items-start justify-between z-20 pointer-events-none gap-2">
+            {/* Section badge */}
+            <div
+              className={`px-2.5 py-1 rounded-lg border text-[10px] font-bold uppercase tracking-[0.15em] backdrop-blur-sm transition-colors ${slideTypeBadgeClass(
+                currentDisplaySlide.type,
+              )}`}
+            >
+              {currentDisplaySlide.label === "Chorus Repeat"
+                ? "↻ Chorus"
+                : currentDisplaySlide.label}
+            </div>
+
+            {/* Song title chip */}
+            {songTitle && (
+              <div className="px-2.5 py-1 rounded-lg bg-black/35 backdrop-blur-sm border border-white/10 text-[10px] text-white/55 font-medium truncate max-w-[50%]">
+                {songTitle}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Main content area ── */}
         <div
           ref={contentRef}
           tabIndex={0}
           onPaste={handlePaste}
-          className="relative w-full h-full focus:outline-none flex items-center justify-center overflow-y-auto no-scrollbar cursor-text z-10"
+          className="relative w-full h-full focus:outline-none flex items-center justify-center z-10 cursor-text"
         >
-          {/* Content based on state */}
           {isEditingSlide && currentSlide ? (
             <SlideEditor
               slide={currentSlide}
@@ -826,27 +826,18 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
               onCancel={() => dispatch(setShowAddSlideDialog(false))}
             />
           ) : currentSlide ? (
-            <div className="text-white text-center max-w-6xl w-full overflow-y-scroll h-[95%] max-h-[54vh] px-4 no-scrollbar">
-              {/* Show label if it's a Chorus Repeat */}
-              {currentDisplaySlide?.label === "Chorus Repeat" && (
-                <div className=" text-lg font-bold opacity-80 font-mono bg-black/20 py-1 px-4 rounded-lg inline-block">
-                  [{currentDisplaySlide.label}]
-                </div>
-              )}
+            /* ── Lyrics display ── */
+            <div className="text-white text-center w-full px-8 max-h-[78%] overflow-y-auto no-scrollbar">
               <pre
-                className="font-sans text-2xl leading-relaxed whitespace-pre-wrap text-shadow-lg"
+                className="font-sans text-2xl leading-relaxed whitespace-pre-wrap"
                 style={{
                   textShadow: `
-                  0 0 8px rgba(0, 0, 0, 0.9),
-                  0 0 12px rgba(0, 0, 0, 0.8),
-                  0 0 16px rgba(0, 0, 0, 0.7),
-                  3px 3px 6px rgba(0, 0, 0, 0.8),
-                  -3px -3px 6px rgba(0, 0, 0, 0.8),
-                  3px -3px 6px rgba(0, 0, 0, 0.8),
-                  -3px 3px 6px rgba(0, 0, 0, 0.8),
-                  5px 5px 10px rgba(0, 0, 0, 0.6),
-                  -5px -5px 10px rgba(0, 0, 0, 0.6)
-                `,
+                    0 0 8px rgba(0,0,0,0.9),
+                    0 0 16px rgba(0,0,0,0.7),
+                    3px 3px 6px rgba(0,0,0,0.8),
+                    -3px -3px 6px rgba(0,0,0,0.8),
+                    5px 5px 12px rgba(0,0,0,0.6)
+                  `,
                   fontFamily: fontFamily,
                 }}
               >
@@ -854,10 +845,11 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
               </pre>
             </div>
           ) : (
-            <div className="text-center flex flex-col items-center justify-center">
-              <div className="relative mb-6">
+            /* ── Empty / paste state ── */
+            <div className="flex flex-col items-center justify-center text-center px-6 select-none">
+              <div className="relative mb-5">
                 <div
-                  className="w-20 h-20 opacity-40 text-app-text"
+                  className="w-16 h-16 opacity-35"
                   style={{
                     WebkitMaskImage: "url(./paste_icon.svg)",
                     WebkitMaskRepeat: "no-repeat",
@@ -867,26 +859,54 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
                     maskRepeat: "no-repeat",
                     maskSize: "contain",
                     maskPosition: "center",
-                    backgroundColor: isDarkMode ? "#e5e7eb" : "#ebeef2",
+                    backgroundColor: "#ffffff",
                   }}
                 />
-                <div className="absolute inset-0 bg-app-accent/20 rounded-full blur-xl animate-pulse" />
+                <div className="absolute inset-0 bg-white/10 rounded-full blur-2xl animate-pulse" />
               </div>
-              <p className="text-white font-mono font-semibold text-ew-base mb-2">
+              <p className="text-white/80 font-semibold text-ew-sm mb-2 tracking-wide">
                 Ready to paste lyrics
               </p>
-              <p className="text-white font-mono text-ew-sm mb-1">
-                Click here and press{" "}
-                <kbd className="px-2 py-1 bg-app-surface border border-app-border rounded text-sm font-mono">
+              <p className="text-white/50 text-ew-xs mb-1">
+                Click here then press{" "}
+                <kbd className="px-1.5 py-0.5 bg-white/10 border border-white/20 rounded text-[11px] font-mono text-white/70">
                   Ctrl+V
                 </kbd>
               </p>
-              <p className="text-white font-mono text-ew-xs mt-3">
-                Your song will be automatically organized into slides
+              <p className="text-white/35 text-ew-xs mt-2">
+                Lyrics are automatically split into slides
               </p>
             </div>
           )}
         </div>
+
+        {/* ── Bottom HUD: slide navigation dots / counter ── */}
+        {showHUD && displaySlides.length > 0 && (
+          <div className="absolute bottom-3 inset-x-0 flex items-center justify-center z-20 pointer-events-none">
+            {displaySlides.length <= 14 ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/35 backdrop-blur-sm border border-white/10">
+                {displaySlides.map((s, i) => (
+                  <div
+                    key={i}
+                    className={`rounded-full transition-all duration-200 ${
+                      i === currentDisplayIndex
+                        ? s.type === "chorus"
+                          ? "w-4 h-2 bg-blue-300"
+                          : s.type === "bridge"
+                            ? "w-4 h-2 bg-purple-300"
+                            : "w-4 h-2 bg-white"
+                        : "w-1.5 h-1.5 bg-white/30"
+                    }`}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="px-3 py-1.5 rounded-full bg-black/35 backdrop-blur-sm border border-white/10 text-white/60 text-[11px] font-mono tabular-nums">
+                {currentDisplayIndex + 1} / {displaySlides.length}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

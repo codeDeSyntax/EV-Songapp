@@ -71,7 +71,7 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
         y: Math.max(0, Math.min(newY, maxY)),
       });
     },
-    [isDragging, dragOffset, isMinimized]
+    [isDragging, dragOffset, isMinimized],
   );
 
   // Handle mouse up for dragging
@@ -175,7 +175,7 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
             <div className="w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
           </div>
 
-          <div className="text-lg font-teko font-medium text-white">
+          <div className="text-lg font-sans font-medium text-white">
             {sectionDisplay || "No Section"}
           </div>
 
@@ -184,7 +184,10 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
               // onClick={onClose}
               className="p-0.5 bg-transparent rounded transition-colors"
             >
-              <img src="./alert.png" className="w-6 h-6 animate-pulse hover:animate-spin transition-all" />
+              <img
+                src="./alert.png"
+                className="w-6 h-6 animate-pulse hover:animate-spin transition-all"
+              />
             </button>
           </div>
         </div>
