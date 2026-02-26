@@ -168,14 +168,10 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
     show: false,
     alwaysOnTop: false,
     skipTaskbar: false,
-    resizable: false,
-    minimizable: false,
-    maximizable: false,
     x: presentationDisplay.bounds.x,
     y: presentationDisplay.bounds.y,
     width: presentationDisplay.bounds.width,
     height: presentationDisplay.bounds.height,
-    fullscreen: true,
     icon: path.join(process.env.VITE_PUBLIC || "", "evsongsicon.png"),
     webPreferences: {
       preload,
@@ -224,16 +220,28 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
     });
   }
 
-  // Show window after loading content
-  console.log("🎭 Showing projection window");
-  songPresentationWin.show();
-
-  // Explicitly set fullscreen to ensure it takes effect and hides taskbar
-  songPresentationWin.setFullScreen(true);
-
-  // Use kiosk mode to ensure taskbar is completely hidden
-  songPresentationWin.setKiosk(true);
-  console.log("✅ Projection window shown in kiosk mode (taskbar hidden)");
+  // Set kiosk BEFORE showing so the window's first paint is already fullscreen.
+  // Showing first then setting kiosk causes Chromium to latch the wrong viewport
+  // size (especially with DPI scaling), producing side/bottom margins.
+  //
+  // Kiosk rules:
+  //   External display → kiosk + alwaysOnTop("screen-saver"): covers taskbar,
+  //     the projector screen is locked so nothing accidentally shows behind.
+  //   Primary / laptop display → fullscreen only, NO kiosk: the operator must
+  //     still be able to Alt-Tab and use other apps on their control screen.
+  songPresentationWin.once("ready-to-show", () => {
+    if (!songPresentationWin || songPresentationWin.isDestroyed()) return;
+    if (isExternalDisplay) {
+      songPresentationWin.setKiosk(true);
+      songPresentationWin.setAlwaysOnTop(true, "screen-saver");
+      console.log("✅ Projection on external display — kiosk + screen-saver z-order");
+    } else {
+      songPresentationWin.setFullScreen(true);
+      console.log("✅ Projection on primary display — fullscreen only (operator can Alt-Tab)");
+    }
+    songPresentationWin.show();
+    songPresentationWin.focus();
+  });
 
   // Setup event listeners for single window
   songPresentationWin.on("closed", () => {

@@ -324,68 +324,92 @@ app.whenReady().then(() => {
   // Register PDF print handlers
   registerPdfHandlers();
 
-  // Visual Song Book-style Display Change Handlers
-  // Monitor Windows display changes and maintain proper app positioning
-  screen.on("display-added", (event, newDisplay) => {
+  // Display Change Handlers — handle duplicate ↔ extend switches and hot-plug
+  // Repositions the projection window whenever display configuration changes.
+
+  /** Move the active projection window to the best available display. */
+  function repositionProjection() {
+    const presentationWin = getSongPresentationWindow();
+    if (!presentationWin || presentationWin.isDestroyed()) return;
+
+    const displays = screen.getAllDisplays();
+    if (displays.length === 0) return;
+
+    const primary = screen.getPrimaryDisplay();
+    // Prefer an external (non-internal) display; fall back to primary
+    const target =
+      displays.find((d) => !d.internal && d.id !== primary.id) ||
+      displays.find((d) => !d.internal) ||
+      primary;
+
+    console.log("📡 Repositioning projection to display:", {
+      id: target.id,
+      bounds: target.bounds,
+      displayCount: displays.length,
+    });
+
+    // Drop kiosk and alwaysOnTop before moving, then re-apply based on
+    // whether the target is an external display or the operator's screen.
+    //   External → kiosk + alwaysOnTop("screen-saver"): covers taskbar fully.
+    //   Primary / internal → fullscreen only: operator keeps Alt-Tab access.
+    const isExternal = !target.internal;
+    presentationWin.setKiosk(false);
+    presentationWin.setAlwaysOnTop(false);
+    presentationWin.setFullScreen(false);
+    presentationWin.setBounds({
+      x: target.bounds.x,
+      y: target.bounds.y,
+      width: target.bounds.width,
+      height: target.bounds.height,
+    });
+    if (isExternal) {
+      presentationWin.setKiosk(true);
+      presentationWin.setAlwaysOnTop(true, "screen-saver");
+    } else {
+      presentationWin.setFullScreen(true);
+    }
+
+    // Notify renderer so it can update its isExternalDisplay flag
+    mainWin?.webContents.send("display-config-changed", {
+      displayCount: displays.length,
+      projectionDisplayId: target.id,
+      isExternal: target.id !== primary.id,
+    });
+  }
+
+  screen.on("display-added", (_event, newDisplay) => {
     console.log("🔌 Display connected:", {
       id: newDisplay.id,
       bounds: newDisplay.bounds,
       internal: newDisplay.internal,
     });
-
-    // Auto-adjust projection window to new external display if projection is active
-    const presentationWin = getSongPresentationWindow();
-    if (
-      getIsProjectionActive() &&
-      presentationWin &&
-      !presentationWin.isDestroyed()
-    ) {
-      console.log("📡 Auto-updating projection to new display...");
-      // The projection.ts module will handle this via display detection
-    }
+    // When a second screen appears (e.g. user switched to Extend), move
+    // the projection window to that display.
+    repositionProjection();
   });
 
-  screen.on("display-removed", (event, oldDisplay) => {
+  screen.on("display-removed", (_event, oldDisplay) => {
     console.log("🔌 Display disconnected:", {
       id: oldDisplay.id,
       bounds: oldDisplay.bounds,
     });
+    // Display was removed (e.g. switched to Duplicate or unplugged).
+    // Reposition to whatever display is still available.
+    repositionProjection();
   });
 
-  screen.on("display-metrics-changed", (event, display, changedMetrics) => {
+  screen.on("display-metrics-changed", (_event, display, changedMetrics) => {
     console.log("🔧 Display metrics changed:", {
       id: display.id,
-      bounds: display.bounds,
       changedMetrics,
     });
 
-    // Handle Windows main display changes (Visual Song Book mode)
     if (
       changedMetrics.includes("bounds") ||
       changedMetrics.includes("workArea")
     ) {
-      const displays = screen.getAllDisplays();
-      const primaryDisplay = screen.getPrimaryDisplay();
-
-      console.log(
-        "🎯 Visual Song Book Mode - Windows main display changed, maintaining app positioning:",
-        {
-          newPrimaryId: primaryDisplay.id,
-          totalDisplays: displays.length,
-          mainWindowStaysOnLaptop: true,
-        },
-      );
-
-      // Keep main window on laptop display regardless of Windows main display setting
-      if (mainWin && !mainWin.isDestroyed() && displays.length > 1) {
-        const internalDisplay = displays.find((d) => d.internal);
-        if (internalDisplay && internalDisplay.id !== display.id) {
-          // Main window should stay on laptop display
-          console.log(
-            "✅ Main window remains on laptop display (overriding Windows main display)",
-          );
-        }
-      }
+      // Resolution or DPI changed — reposition so kiosk fills the new bounds
+      repositionProjection();
     }
   });
 

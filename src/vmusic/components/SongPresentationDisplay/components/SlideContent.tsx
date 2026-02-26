@@ -112,8 +112,8 @@ export const SlideContent: React.FC<SlideContentProps> = ({
     const contentElement = textContentRef.current;
     const containerElement = containerRef.current;
 
-    // Available space - account for p-12 padding (3rem = 48px on each side)
-    const paddingVertical = 10; // 32px top + 32px bottom
+    // Available space — container uses py-4 (16px top + 16px bottom = 32px total)
+    const paddingVertical = 32;
     const availableHeight = containerElement.clientHeight - paddingVertical;
 
     // Binary search for optimal font size
@@ -240,7 +240,7 @@ export const SlideContent: React.FC<SlideContentProps> = ({
         >
           <div
             ref={textContentRef}
-            className="text-center"
+            className="text-center w-full"
             style={{
               fontFamily: fontFamily,
               fontSize: `${calculatedFontSize}px`,
