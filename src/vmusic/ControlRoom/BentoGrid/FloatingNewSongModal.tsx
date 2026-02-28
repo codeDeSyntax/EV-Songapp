@@ -127,7 +127,7 @@ export const FloatingNewSongModal: React.FC<FloatingNewSongModalProps> = ({
 
   return (
     <div
-      className="fixed z-[9999] flex flex-col rounded-2xl overflow-hidden"
+      className="fixed z-[9999] bg-white dark:bg-app-surface flex flex-col  overflow-hidden border-solid border-8 border-app-surface dark:border-app-surface-hover p-2"
       style={{
         left: position.x,
         top: position.y,
@@ -135,19 +135,18 @@ export const FloatingNewSongModal: React.FC<FloatingNewSongModalProps> = ({
         height: 620,
         userSelect: isDragging ? "none" : "auto",
         boxShadow: "0 12px 48px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10)",
-        background: "var(--app-surface)",
-        border:
-          "1px solid color-mix(in srgb, var(--app-border) 60%, transparent)",
+        
+        
       }}
       onKeyDown={handleKeyDown}
     >
       {/* ── Drag handle header ────────────────────────────────────────────── */}
       <div
-        className={`flex items-center justify-between px-3 py-2 border-b flex-shrink-0 ${
+        className={`flex items-center justify-between bg-app-bg/40 px-3 py-2 border-b flex-shrink-0 ${
           isDragging ? "cursor-grabbing" : "cursor-grab"
         }`}
         style={{
-          background: "var(--app-bg)",
+          // background: "var(--app-bg)",
           borderColor: "color-mix(in srgb, var(--app-border) 50%, transparent)",
         }}
         onMouseDown={handleDragStart}
@@ -185,7 +184,7 @@ export const FloatingNewSongModal: React.FC<FloatingNewSongModalProps> = ({
 
       {/* ── Title input ──────────────────────────────────────────────────── */}
       <div
-        className="px-3 py-1.5 flex-shrink-0"
+        className="px-3 py-1.5 flex-shrink-0 rounded-lg"
         style={{
           borderBottom:
             "1px solid color-mix(in srgb, var(--app-border) 40%, transparent)",
@@ -206,7 +205,7 @@ export const FloatingNewSongModal: React.FC<FloatingNewSongModalProps> = ({
 
       {/* ── Language selector ─────────────────────────────────────────────── */}
       <div
-        className="px-3 py-1 flex items-center gap-2 flex-shrink-0"
+        className="px-3 py-1 flex items-center gap-2 flex-shrink-0 rounded-lg"
         style={{
           borderBottom:
             "1px solid color-mix(in srgb, var(--app-border) 30%, transparent)",
@@ -220,10 +219,10 @@ export const FloatingNewSongModal: React.FC<FloatingNewSongModalProps> = ({
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
           onMouseDown={(e) => e.stopPropagation()}
-          className="text-[10.5px] text-app-text bg-transparent border-none focus:outline-none cursor-pointer"
+          className="text-[10.5px] text-app-text bg-app-surface border-none focus:outline-none cursor-pointer p-2"
         >
-          {["English", "Amharic", "Afaan Oromo", "Other"].map((l) => (
-            <option key={l} value={l}>
+          {["English", "Twi", "Ga","Ewe"].map((l) => (
+            <option key={l} value={l} className="bg-app-surface ">
               {l}
             </option>
           ))}
@@ -238,7 +237,7 @@ export const FloatingNewSongModal: React.FC<FloatingNewSongModalProps> = ({
           "Verse 1\nFirst line of lyrics\nSecond line\n\nChorus\nChorus lyrics here\n\nVerse 2\n...\n\nSeparate sections with a blank line.\nThe first line of each section is the label."
         }
         spellCheck={false}
-        className="flex-1 px-3 py-2.5 text-[11.5px] leading-[1.7] bg-transparent text-app-text resize-none focus:outline-none no-scrollbar"
+        className="flex-1 px-3 py-2.5 text-[11.5px] leading-[1.7] bg-transparent text-app-text resize-none focus:outline-none no-scrollbar placeholder:font-raleway"
         style={{ border: "none" }}
       />
 

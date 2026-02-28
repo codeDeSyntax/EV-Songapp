@@ -10,7 +10,7 @@ import { formatSlidesForSave } from "../utils/songFormatter";
 interface FloatingSongEditorProps {
   addToast: (
     message: string,
-    type: "success" | "error" | "warning" | "info"
+    type: "success" | "error" | "warning" | "info",
   ) => void;
   loadSongs: () => void;
 }
@@ -20,12 +20,14 @@ export const FloatingSongEditor: React.FC<FloatingSongEditorProps> = ({
   loadSongs,
 }) => {
   const dispatch = useAppDispatch();
-  const { slides, songTitle, currentSongId } = useAppSelector((state) => state.songSlides);
+  const { slides, songTitle, currentSongId } = useAppSelector(
+    (state) => state.songSlides,
+  );
   const allSongs = useAppSelector((state) => state.songs.songs);
 
   const [editedTitle, setEditedTitle] = useState(songTitle);
   const [editedText, setEditedText] = useState(() =>
-    formatSlidesForSave(slides)
+    formatSlidesForSave(slides),
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -46,9 +48,7 @@ export const FloatingSongEditor: React.FC<FloatingSongEditorProps> = ({
   }, []);
 
   // Count non-empty sections for footer stat
-  const sectionCount = editedText
-    .split("\n\n")
-    .filter((s) => s.trim()).length;
+  const sectionCount = editedText.split("\n\n").filter((s) => s.trim()).length;
 
   // --- Drag ---
   const handleDragStart = (e: React.MouseEvent) => {
@@ -105,7 +105,9 @@ export const FloatingSongEditor: React.FC<FloatingSongEditorProps> = ({
       }
 
       // Encode and save to file
-      const currentSong = currentSongId ? allSongs.find((s) => s.id === currentSongId) : null;
+      const currentSong = currentSongId
+        ? allSongs.find((s) => s.id === currentSongId)
+        : null;
       const isPrelisted = currentSong?.isPrelisted ?? false;
       const existingCreated = currentSong?.metadata?.created;
       const language =
@@ -117,7 +119,7 @@ export const FloatingSongEditor: React.FC<FloatingSongEditorProps> = ({
         parsed.slides,
         isPrelisted,
         existingCreated,
-        language
+        language,
       );
       await window.api.saveSong("", editedTitle.trim(), encoded);
 
@@ -128,7 +130,7 @@ export const FloatingSongEditor: React.FC<FloatingSongEditorProps> = ({
       console.error("Error saving song:", error);
       addToast(
         error instanceof Error ? error.message : "Failed to save song",
-        "error"
+        "error",
       );
     } finally {
       setIsSaving(false);
@@ -145,7 +147,7 @@ export const FloatingSongEditor: React.FC<FloatingSongEditorProps> = ({
 
   return (
     <div
-      className="fixed z-[9999] flex flex-col bg-app-surface rounded-2xl border border-app-border/60 l overflow-hidden"
+      className="fixed z-[9999] bg-white dark:bg-app-surface flex flex-col  overflow-hidden border-solid border-8 border-app-surface dark:border-app-surface-hover p-2"
       style={{
         left: position.x,
         top: position.y,
@@ -210,7 +212,7 @@ export const FloatingSongEditor: React.FC<FloatingSongEditorProps> = ({
           "Verse 1\nFirst line of lyrics\nSecond line\n\nChorus\nChorus lyrics here\n\nVerse 2\n..."
         }
         spellCheck={false}
-        className="flex-1 px-3 py-2.5 text-[11.5px] border-none  leading-[1.7] bg-transparent text-app-text resize-none focus:outline-none placeholder:text-app-text no-scrollbar"
+        className="flex-1 px-3 py-2.5 text-[11.5px] border-none  leading-[1.7] bg-transparent text-app-text resize-none focus:outline-none placeholder:text-app-text no-scrollbar font-raleway"
       />
 
       {/* Footer */}
