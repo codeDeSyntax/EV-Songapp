@@ -16,6 +16,7 @@ import {
   Settings,
   Monitor,
   MonitorStop,
+  MonitorCheck,
   BellPlus,
   Sheet,
   Music,
@@ -478,6 +479,26 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               <BarChart3 className="w-3.5 h-3.5" />
             </button>
           </Tooltip>
+
+          {isProjectionActive && (
+            <Tooltip
+              title="Focus Projection Window (Shift+F)"
+              placement="bottom"
+            >
+              <button
+                onClick={async () => {
+                  try {
+                    await window.api.focusProjectionWindow();
+                  } catch (e) {
+                    addToast("Could not focus projection window", "error");
+                  }
+                }}
+                className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg text-app-text hover:bg-blue-600 hover:text-white border border-app-border"
+              >
+                <MonitorCheck className="w-3.5 h-3.5" />
+              </button>
+            </Tooltip>
+          )}
 
           <Tooltip
             title={isProjectionActive ? "Stop Projection" : "Start Projection"}

@@ -1,5 +1,6 @@
 import React from "react";
 import { Repeat } from "lucide-react";
+import { Switch } from "antd";
 
 interface ChorusRepetitionCardProps {
   isDarkMode: boolean;
@@ -50,23 +51,11 @@ export const ChorusRepetitionCard: React.FC<ChorusRepetitionCardProps> = ({
         <span className="text-app-text-muted text-[11px]">
           {repeatChorus ? "Enabled" : "Disabled"}
         </span>
-        <button
-          onClick={() => onToggle(!repeatChorus)}
-          className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200"
-          style={{
-            backgroundColor: repeatChorus
-              ? "rgb(59, 130, 246)"
-              : isDarkMode
-              ? "rgba(255, 255, 255, 0.1)"
-              : "rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          <span
-            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
-              repeatChorus ? "translate-x-6" : "translate-x-1"
-            }`}
-          />
-        </button>
+        <Switch
+          checked={repeatChorus}
+          onChange={(v) => onToggle(v)}
+          size="small"
+        />
       </div>
       <div className="mt-4 pt-3 border-t border-app-border">
         <p className="text-app-text-muted text-[10px] leading-relaxed">

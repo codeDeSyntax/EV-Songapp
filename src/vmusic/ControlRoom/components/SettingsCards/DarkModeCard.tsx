@@ -1,5 +1,6 @@
 import React from "react";
 import { Moon, Sun } from "lucide-react";
+import { Switch } from "antd";
 
 interface DarkModeCardProps {
   isDarkMode: boolean;
@@ -51,21 +52,8 @@ export const DarkModeCard: React.FC<DarkModeCardProps> = ({
           {isDarkMode ? "Dark theme active" : "Light theme active"}
         </span>
 
-        {/* Custom Toggle Switch */}
-        <button
-          onClick={onToggleDarkMode}
-          className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-app-accent"
-          style={{
-            backgroundColor: isDarkMode ? "var(--app-accent)" : "#faeed1",
-          }}
-        >
-          <span
-            className="inline-block h-4 w-4 transform rounded-full bg-app-text-muted dark:bg-[#848484] transition-transform duration-200 shadow-sm"
-            style={{
-              transform: isDarkMode ? "translateX(18px)" : "translateX(2px)",
-            }}
-          />
-        </button>
+        {/* antd Switch */}
+        <Switch checked={isDarkMode} onChange={onToggleDarkMode} size="small" />
       </div>
     </div>
   );

@@ -234,10 +234,14 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
     if (isExternalDisplay) {
       songPresentationWin.setKiosk(true);
       songPresentationWin.setAlwaysOnTop(true, "screen-saver");
-      console.log("✅ Projection on external display — kiosk + screen-saver z-order");
+      console.log(
+        "✅ Projection on external display — kiosk + screen-saver z-order",
+      );
     } else {
       songPresentationWin.setFullScreen(true);
-      console.log("✅ Projection on primary display — fullscreen only (operator can Alt-Tab)");
+      console.log(
+        "✅ Projection on primary display — fullscreen only (operator can Alt-Tab)",
+      );
     }
     songPresentationWin.show();
     songPresentationWin.focus();
@@ -743,6 +747,24 @@ export function registerProjectionHandlers() {
   // Load display preferences
   ipcMain.handle("load-display-preferences", async () => {
     return loadDisplayPreferences();
+  });
+
+  // Focus / bring projection window to front
+  ipcMain.handle("focus-projection-window", async () => {
+    if (!songPresentationWin || songPresentationWin.isDestroyed()) {
+      return { success: false, reason: "no-window" };
+    }
+    if (songPresentationWin.isMinimized()) songPresentationWin.restore();
+    songPresentationWin.setAlwaysOnTop(true);
+    songPresentationWin.focus();
+    songPresentationWin.moveTop();
+    // Release always-on-top after bringing it forward so it doesn't stay locked
+    setTimeout(() => {
+      if (songPresentationWin && !songPresentationWin.isDestroyed()) {
+        songPresentationWin.setAlwaysOnTop(false);
+      }
+    }, 500);
+    return { success: true };
   });
 
   console.log("✅ Projection handlers registered successfully");

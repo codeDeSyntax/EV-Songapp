@@ -10,6 +10,7 @@ import {
   BackgroundOverlayCard,
   ColorGradientCard,
   ChorusRepetitionCard,
+  SystemCard,
 } from "./SettingsCards";
 
 interface SettingsViewProps {
@@ -181,6 +182,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             repeatChorus={repeatChorus}
             onToggle={handleChorusRepetitionToggle}
           />
+
+          <SystemCard isDarkMode={isDarkMode} />
         </div>
       </div>
     </div>

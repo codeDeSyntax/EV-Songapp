@@ -56,6 +56,7 @@ contextBridge.exposeInMainWorld("api", {
   projectSong: (song: Song) => ipcRenderer.invoke("project-song", song),
   isProjectionActive: () => ipcRenderer.invoke("is-projection-active"),
   closeProjectionWindow: () => ipcRenderer.invoke("close-projection-window"),
+  focusProjectionWindow: () => ipcRenderer.invoke("focus-projection-window"),
   onProjectionStateChanged: (callback: (isActive: boolean) => void) => {
     const listener = (event: Electron.IpcRendererEvent, isActive: boolean) => {
       callback(isActive);
@@ -272,6 +273,68 @@ contextBridge.exposeInMainWorld("api", {
   },
   generatePdf: (type: "prelist" | "database", songs: any[]) =>
     ipcRenderer.invoke("generate-pdf", type, songs),
+
+  // ── Clipboard ─────────────────────────────────────────────────────────────
+  clipboardWrite: (text: string) =>
+    ipcRenderer.invoke("clipboard-write-text", text),
+  clipboardRead: (): Promise<string> =>
+    ipcRenderer.invoke("clipboard-read-text"),
+
+  // ── App info ──────────────────────────────────────────────────────────────
+  getAppVersion: (): Promise<string> => ipcRenderer.invoke("get-app-version"),
+
+  // ── Launch on startup ──────────────────────────────────────────────────────
+  getLoginItemSettings: () => ipcRenderer.invoke("get-login-item-settings"),
+  setLoginItemSettings: (openAtLogin: boolean) =>
+    ipcRenderer.invoke("set-login-item-settings", openAtLogin),
+
+  // ── Cursor ─────────────────────────────────────────────────────────────────
+  getCursorScreenPoint: () => ipcRenderer.invoke("get-cursor-screen-point"),
+
+  // ── OS Notifications ───────────────────────────────────────────────────────
+  sendOsNotification: (payload: {
+    title: string;
+    body: string;
+    silent?: boolean;
+  }) => ipcRenderer.invoke("send-os-notification", payload),
+
+  // ── Native theme ───────────────────────────────────────────────────────────
+  getNativeTheme: () => ipcRenderer.invoke("get-native-theme"),
+  onNativeThemeChange: (
+    callback: (info: { shouldUseDarkColors: boolean }) => void,
+  ) => {
+    const listener = (
+      _e: Electron.IpcRendererEvent,
+      info: { shouldUseDarkColors: boolean },
+    ) => callback(info);
+    ipcRenderer.on("native-theme-updated", listener);
+    return () => ipcRenderer.removeListener("native-theme-updated", listener);
+  },
+
+  // ── Tray ───────────────────────────────────────────────────────────────────
+  refreshTrayMenu: () => ipcRenderer.invoke("refresh-tray-menu"),
+  onTrayAction: (callback: (action: string) => void) => {
+    const listener = (
+      _e: Electron.IpcRendererEvent,
+      payload: { action: string },
+    ) => callback(payload.action);
+    ipcRenderer.on("tray-action", listener);
+    return () => ipcRenderer.removeListener("tray-action", listener);
+  },
+
+  // ── Global shortcuts (system-wide) ────────────────────────────────────────
+  onGlobalShortcut: (callback: (action: string) => void) => {
+    const listener = (
+      _e: Electron.IpcRendererEvent,
+      payload: { action: string },
+    ) => callback(payload.action);
+    ipcRenderer.on("global-shortcut", listener);
+    return () => ipcRenderer.removeListener("global-shortcut", listener);
+  },
+
+  // ── Shell ─────────────────────────────────────────────────────────────────
+  shellOpenExternal: (url: string) =>
+    ipcRenderer.invoke("shell-open-external", url),
 });
 
 // --------- Preload scripts loading ---------

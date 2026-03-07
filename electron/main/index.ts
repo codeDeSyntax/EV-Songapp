@@ -7,6 +7,13 @@ import {
   nativeImage,
   screen,
   protocol,
+  Tray,
+  Menu,
+  Notification,
+  globalShortcut,
+  nativeTheme,
+  clipboard,
+  powerSaveBlocker,
 } from "electron";
 import fs from "node:fs";
 import { createRequire } from "node:module";
@@ -117,6 +124,84 @@ let mainWin: BrowserWindow | null = null;
 let splashWin: BrowserWindow | null = null;
 let projectionWin: BrowserWindow | null = null;
 let isProjectionMinimized = false;
+let tray: Tray | null = null;
+let powerSaveId: number | null = null;
+
+// ── Power-save blocker ──────────────────────────────────────────────────────
+function startPowerSave() {
+  if (powerSaveId === null) {
+    powerSaveId = powerSaveBlocker.start("prevent-display-sleep");
+    console.log("🔋 Power save blocker started — display will not sleep");
+  }
+}
+function stopPowerSave() {
+  if (powerSaveId !== null && powerSaveBlocker.isStarted(powerSaveId)) {
+    powerSaveBlocker.stop(powerSaveId);
+    console.log("🔋 Power save blocker released");
+  }
+  powerSaveId = null;
+}
+
+// ── System tray menu builder ────────────────────────────────────────────────
+// Called after every projection state change to keep the menu accurate.
+function rebuildTrayMenu() {
+  if (!tray || tray.isDestroyed()) return;
+  const isActive = getIsProjectionActive();
+  const menu = Menu.buildFromTemplate([
+    { label: `East Voice  v${app.getVersion()}`, enabled: false },
+    { type: "separator" },
+    {
+      label: "Show Control Room",
+      click: () => {
+        if (mainWin && !mainWin.isDestroyed()) {
+          mainWin.show();
+          mainWin.focus();
+        }
+      },
+    },
+    {
+      label: isActive ? "Stop Projection" : "Start Projection",
+      click: () => {
+        if (isActive) {
+          const { songPresentationWin } = getProjectionState();
+          if (songPresentationWin && !songPresentationWin.isDestroyed()) {
+            setProjectionActive(false);
+            songPresentationWin.close();
+            stopPowerSave();
+            mainWin?.webContents.send("projection-state-changed", false);
+            rebuildTrayMenu();
+          }
+        } else {
+          // Ask renderer to resume with the current song
+          mainWin?.webContents.send("tray-action", {
+            action: "RESUME_PROJECTION",
+          });
+        }
+      },
+    },
+    {
+      label: "Focus Projection Window",
+      enabled: isActive,
+      click: () => {
+        const { songPresentationWin } = getProjectionState();
+        if (songPresentationWin && !songPresentationWin.isDestroyed()) {
+          if (songPresentationWin.isMinimized()) songPresentationWin.restore();
+          songPresentationWin.setAlwaysOnTop(true);
+          songPresentationWin.focus();
+          songPresentationWin.moveTop();
+          setTimeout(() => {
+            if (songPresentationWin && !songPresentationWin.isDestroyed())
+              songPresentationWin.setAlwaysOnTop(false);
+          }, 500);
+        }
+      },
+    },
+    { type: "separator" },
+    { label: "Quit East Voice", click: () => app.quit() },
+  ]);
+  tray.setContextMenu(menu);
+}
+
 const preload = path.join(__dirname, "../preload/index.mjs");
 const indexHtml = path.join(RENDERER_DIST, "index.html");
 const projectionHtml = path.join(RENDERER_DIST, "projection.html");
@@ -417,6 +502,47 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
   });
 
+  // ── System tray ──────────────────────────────────────────────────────────
+  try {
+    const trayIconPath = path.join(process.env.VITE_PUBLIC, "evsongsicon.png");
+    tray = new Tray(nativeImage.createFromPath(trayIconPath));
+    tray.setToolTip("East Voice — Song Projector");
+    rebuildTrayMenu();
+    tray.on("double-click", () => {
+      if (mainWin && !mainWin.isDestroyed()) {
+        mainWin.show();
+        mainWin.focus();
+      }
+    });
+  } catch (e) {
+    console.warn("⚠️ Tray creation failed (icon missing?):", e);
+  }
+
+  // ── Global shortcuts (system-wide — work even when app is not focused) ────
+  // Modified keys prevent interference with normal OS/app typing.
+  try {
+    const sendShortcut = (action: string) => () => {
+      if (mainWin && !mainWin.isDestroyed())
+        mainWin.webContents.send("global-shortcut", { action });
+    };
+    globalShortcut.register("Ctrl+Shift+Right", sendShortcut("NEXT_SLIDE"));
+    globalShortcut.register("Ctrl+Shift+Left", sendShortcut("PREV_SLIDE"));
+    globalShortcut.register("Ctrl+Shift+Space", sendShortcut("PROJECT_CURRENT"));
+    globalShortcut.register("Shift+F", sendShortcut("FOCUS_PROJECTION"));
+    console.log("✅ Global shortcuts registered");
+  } catch (e) {
+    console.warn("⚠️ Global shortcut registration failed:", e);
+  }
+
+  // ── Native theme (OS dark/light mode) listener ────────────────────────────
+  nativeTheme.on("updated", () => {
+    if (mainWin && !mainWin.isDestroyed()) {
+      mainWin.webContents.send("native-theme-updated", {
+        shouldUseDarkColors: nativeTheme.shouldUseDarkColors,
+      });
+    }
+  });
+
   // Log system startup
   logSystemInfo("Application started successfully", {
     version: app.getVersion(),
@@ -450,6 +576,18 @@ app.on("window-all-closed", () => {
 app.on("will-quit", () => {
   console.log("App will quit - final cleanup...");
 
+  // Unregister all global shortcuts
+  globalShortcut.unregisterAll();
+
+  // Release power save blocker
+  stopPowerSave();
+
+  // Destroy tray
+  if (tray && !tray.isDestroyed()) {
+    tray.destroy();
+    tray = null;
+  }
+
   // Force close any remaining windows
   BrowserWindow.getAllWindows().forEach((win) => {
     if (!win.isDestroyed()) {
@@ -474,6 +612,8 @@ ipcMain.handle("project-song", async (event, songData) => {
 
   // Set projection as active
   setProjectionActive(true);
+  startPowerSave();
+  rebuildTrayMenu();
 
   const { songPresentationWin, isSongPresentationMinimized } =
     getProjectionState();
@@ -540,6 +680,8 @@ ipcMain.handle("close-projection-window", async () => {
   // Close song presentation window if it exists
   if (songPresentationWin && !songPresentationWin.isDestroyed()) {
     setProjectionActive(false); // Set projection as inactive before closing
+    stopPowerSave();
+    rebuildTrayMenu();
     songPresentationWin.close();
     closed = true;
 
@@ -551,6 +693,73 @@ ipcMain.handle("close-projection-window", async () => {
   }
 
   return closed;
+});
+
+// ── Clipboard ─────────────────────────────────────────────────────────────────
+ipcMain.handle("clipboard-write-text", (_event, text: string) => {
+  clipboard.writeText(text);
+  return { success: true };
+});
+
+ipcMain.handle("clipboard-read-text", () => clipboard.readText());
+
+// ── App version ────────────────────────────────────────────────────────────────
+ipcMain.handle("get-app-version", () => app.getVersion());
+
+// ── Launch on startup ──────────────────────────────────────────────────────────
+ipcMain.handle("get-login-item-settings", () => {
+  const s = app.getLoginItemSettings();
+  return { openAtLogin: s.openAtLogin };
+});
+
+ipcMain.handle("set-login-item-settings", (_event, openAtLogin: boolean) => {
+  app.setLoginItemSettings({ openAtLogin, openAsHidden: false });
+  return { openAtLogin: app.getLoginItemSettings().openAtLogin };
+});
+
+// ── Cursor screen point ────────────────────────────────────────────────────────
+ipcMain.handle("get-cursor-screen-point", () => screen.getCursorScreenPoint());
+
+// ── OS Notifications ──────────────────────────────────────────────────────────
+ipcMain.handle(
+  "send-os-notification",
+  (
+    _event,
+    payload: { title: string; body: string; silent?: boolean },
+  ) => {
+    try {
+      if (!Notification.isSupported())
+        return { success: false, reason: "not-supported" };
+      const n = new Notification({
+        title: payload.title,
+        body: payload.body,
+        silent: payload.silent ?? false,
+        icon: path.join(process.env.VITE_PUBLIC, "evsongsicon.png"),
+      });
+      n.show();
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, reason: e.message };
+    }
+  },
+);
+
+// ── Native theme ───────────────────────────────────────────────────────────────
+ipcMain.handle("get-native-theme", () => ({
+  shouldUseDarkColors: nativeTheme.shouldUseDarkColors,
+  themeSource: nativeTheme.themeSource,
+}));
+
+// ── Tray menu refresh (called from renderer when projection state changes) ─────
+ipcMain.handle("refresh-tray-menu", () => {
+  rebuildTrayMenu();
+  return { success: true };
+});
+
+// ── shell.openExternal ─────────────────────────────────────────────────────────
+ipcMain.handle("shell-open-external", (_event, url: string) => {
+  shell.openExternal(url);
+  return { success: true };
 });
 
 // Handle selecting a directory via the file dialog

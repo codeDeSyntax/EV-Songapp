@@ -38,6 +38,7 @@ interface Window {
     projectSong: (songs: any) => void;
     isProjectionActive: () => Promise<boolean>;
     closeProjectionWindow: () => Promise<boolean>;
+    focusProjectionWindow: () => Promise<{ success: boolean; reason?: string }>;
     onProjectionStateChanged: (
       callback: (isActive: boolean) => void,
     ) => () => void;
@@ -140,6 +141,11 @@ interface Window {
       fontSize?: number;
       fontFamily?: string;
       data?: any;
+      slide?: { content: string; type: string; number?: number };
+      songTitle?: string;
+      currentIndex?: number;
+      totalSlides?: number;
+      [key: string]: any;
     }) => Promise<{ success: boolean; error?: string }>;
     onSongProjectionUpdate: (callback: (data: any) => void) => () => void;
     sendToMainWindow: (data: {
@@ -200,5 +206,47 @@ interface Window {
       type: "prelist" | "database",
       songs: any[],
     ) => Promise<{ success: boolean; cancelled?: boolean; path?: string }>;
+
+    // Clipboard
+    clipboardWrite: (text: string) => Promise<{ success: boolean }>;
+    clipboardRead: () => Promise<string>;
+
+    // App info
+    getAppVersion: () => Promise<string>;
+
+    // Launch on startup
+    getLoginItemSettings: () => Promise<{ openAtLogin: boolean }>;
+    setLoginItemSettings: (
+      openAtLogin: boolean,
+    ) => Promise<{ openAtLogin: boolean }>;
+
+    // Cursor
+    getCursorScreenPoint: () => Promise<{ x: number; y: number }>;
+
+    // OS Notifications
+    sendOsNotification: (payload: {
+      title: string;
+      body: string;
+      silent?: boolean;
+    }) => Promise<{ success: boolean; reason?: string }>;
+
+    // Native theme
+    getNativeTheme: () => Promise<{
+      shouldUseDarkColors: boolean;
+      themeSource: string;
+    }>;
+    onNativeThemeChange: (
+      callback: (info: { shouldUseDarkColors: boolean }) => void,
+    ) => () => void;
+
+    // Tray
+    refreshTrayMenu: () => Promise<{ success: boolean }>;
+    onTrayAction: (callback: (action: string) => void) => () => void;
+
+    // Global shortcuts
+    onGlobalShortcut: (callback: (action: string) => void) => () => void;
+
+    // Shell
+    shellOpenExternal: (url: string) => Promise<{ success: boolean }>;
   };
 }

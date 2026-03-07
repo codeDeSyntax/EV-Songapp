@@ -175,6 +175,51 @@ interface ElectronAPI {
     callback: (progress: { current: number; total: number }) => void,
   ) => () => void;
 
+  // Clipboard
+  clipboardWrite: (text: string) => Promise<{ success: boolean }>;
+  clipboardRead: () => Promise<string>;
+
+  // App info
+  getAppVersion: () => Promise<string>;
+
+  // Launch on startup
+  getLoginItemSettings: () => Promise<{ openAtLogin: boolean }>;
+  setLoginItemSettings: (
+    openAtLogin: boolean,
+  ) => Promise<{ openAtLogin: boolean }>;
+
+  // Cursor
+  getCursorScreenPoint: () => Promise<{ x: number; y: number }>;
+
+  // OS Notifications
+  sendOsNotification: (payload: {
+    title: string;
+    body: string;
+    silent?: boolean;
+  }) => Promise<{ success: boolean; reason?: string }>;
+
+  // Native theme
+  getNativeTheme: () => Promise<{
+    shouldUseDarkColors: boolean;
+    themeSource: string;
+  }>;
+  onNativeThemeChange: (
+    callback: (info: { shouldUseDarkColors: boolean }) => void,
+  ) => () => void;
+
+  // Tray
+  refreshTrayMenu: () => Promise<{ success: boolean }>;
+  onTrayAction: (callback: (action: string) => void) => () => void;
+
+  // Global shortcuts
+  onGlobalShortcut: (callback: (action: string) => void) => () => void;
+
+  // Shell
+  shellOpenExternal: (url: string) => Promise<{ success: boolean }>;
+
+  // Focus projection (added earlier)
+  focusProjectionWindow: () => Promise<{ success: boolean; reason?: string }>;
+
   // Add other API methods as needed
 }
 

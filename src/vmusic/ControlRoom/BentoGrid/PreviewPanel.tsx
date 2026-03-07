@@ -245,6 +245,13 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         return;
       }
 
+      // Shift+F — focus / bring projection window to front
+      if (e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        window.api.focusProjectionWindow?.();
+        return;
+      }
+
       if (e.key === "ArrowRight") {
         e.preventDefault();
         const nextIndex = currentDisplayIndex + 1;
@@ -290,6 +297,40 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     songTitle,
     addToast,
   ]);
+
+  // ── System-wide global shortcuts (Ctrl+Shift+Right/Left/Space, Shift+F) ────
+  useEffect(() => {
+    if (!window.api?.onGlobalShortcut) return;
+    const unsub = window.api.onGlobalShortcut((action) => {
+      if (displaySlides.length === 0) return;
+      if (action === "NEXT_SLIDE") {
+        const next = currentDisplayIndex + 1;
+        if (next < displaySlides.length) dispatch(setCurrentDisplayIndex(next));
+      } else if (action === "PREV_SLIDE") {
+        const prev = currentDisplayIndex - 1;
+        if (prev >= 0) dispatch(setCurrentDisplayIndex(prev));
+      } else if (action === "PROJECT_CURRENT") {
+        handleProjectCurrentSong();
+      } else if (action === "FOCUS_PROJECTION") {
+        window.api.focusProjectionWindow?.();
+      }
+    });
+    return unsub;
+  }, [displaySlides, currentDisplayIndex, dispatch]);
+
+  // ── Tray actions (e.g. "Start Projection" tapped from system tray) ──────────
+  useEffect(() => {
+    if (!window.api?.onTrayAction) return;
+    const unsub = window.api.onTrayAction((action) => {
+      if (action === "RESUME_PROJECTION") handleProjectCurrentSong();
+    });
+    return unsub;
+  }, []);
+
+  // ── Keep tray menu in sync with projection state ─────────────────────────────
+  useEffect(() => {
+    window.api?.refreshTrayMenu?.();
+  }, [isProjectionActive]);
 
   // Send updates to projection window when display index changes
   // BUT ONLY if we're actively projecting (not just loading a song)
@@ -354,6 +395,22 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       };
 
       await window.api.projectSong(songData);
+
+      // Immediately jump to the currently selected slide (projectSong always
+      // lands on slide 0; this corrects it when the user was mid-song).
+      if (currentDisplaySlide && currentDisplayIndex > 0) {
+        await window.api.sendToSongProjection({
+          type: "SLIDE_UPDATE",
+          slide: {
+            content: currentDisplaySlide.content,
+            type: currentDisplaySlide.type,
+            number: currentDisplaySlide.number,
+          },
+          songTitle: songTitle || "Untitled Song",
+          currentIndex: currentDisplayIndex,
+          totalSlides: displaySlides.length,
+        });
+      }
 
       // Add to projection history
       dispatch(
