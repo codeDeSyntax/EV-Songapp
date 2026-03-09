@@ -84,6 +84,8 @@ import {
 import { registerPdfHandlers } from "./pdfPrinter";
 // Import font utilities
 import { getSystemFonts } from "./fontUtils";
+// Import auto-updater
+import { update } from "./update";
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -403,6 +405,9 @@ app.whenReady().then(() => {
   createSplashWindow();
   createMainWindow();
 
+  // Wire up auto-updater (checks on startup, listens for IPC calls from renderer)
+  if (mainWin) update(mainWin);
+
   // Register projection handlers
   registerProjectionHandlers();
 
@@ -527,7 +532,10 @@ app.whenReady().then(() => {
     };
     globalShortcut.register("Ctrl+Shift+Right", sendShortcut("NEXT_SLIDE"));
     globalShortcut.register("Ctrl+Shift+Left", sendShortcut("PREV_SLIDE"));
-    globalShortcut.register("Ctrl+Shift+Space", sendShortcut("PROJECT_CURRENT"));
+    globalShortcut.register(
+      "Ctrl+Shift+Space",
+      sendShortcut("PROJECT_CURRENT"),
+    );
     globalShortcut.register("Shift+F", sendShortcut("FOCUS_PROJECTION"));
     console.log("✅ Global shortcuts registered");
   } catch (e) {
@@ -723,10 +731,7 @@ ipcMain.handle("get-cursor-screen-point", () => screen.getCursorScreenPoint());
 // ── OS Notifications ──────────────────────────────────────────────────────────
 ipcMain.handle(
   "send-os-notification",
-  (
-    _event,
-    payload: { title: string; body: string; silent?: boolean },
-  ) => {
+  (_event, payload: { title: string; body: string; silent?: boolean }) => {
     try {
       if (!Notification.isSupported())
         return { success: false, reason: "not-supported" };

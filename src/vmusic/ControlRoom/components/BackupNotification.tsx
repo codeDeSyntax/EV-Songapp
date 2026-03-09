@@ -316,41 +316,7 @@ export default function BackupNotification() {
             )}
           </div>
 
-          {/* ── New songs notification ──────────────────────────────────── */}
-          {badgeCount > 0 && (
-            <div
-              className="px-4 py-3 border-b border-[#e0e0e0] dark:border-[#2a2a2a]
-              bg-[#fef7e0] dark:bg-[#2a2200]"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#fbbc04] flex-shrink-0" />
-                  <p className="text-[11px] font-semibold text-[#7a5c00] dark:text-[#fbbc04]">
-                    {badgeCount} new {badgeCount === 1 ? "song" : "songs"} not
-                    backed up
-                  </p>
-                </div>
-                <button
-                  onClick={() => dispatch(markSongsSeen())}
-                  className="text-[10px] text-[#5f6368] dark:text-[#9aa0a6]
-                    hover:text-[#202124] dark:hover:text-[#e8eaed] transition-colors"
-                >
-                  Dismiss
-                </button>
-              </div>
-              <ul className="space-y-1 max-h-20 overflow-y-auto no-scrollbar">
-                {newSongs.map((s) => (
-                  <li
-                    key={s.id}
-                    className="flex items-center gap-1.5 text-[10px] text-[#7a5c00] dark:text-[#c8a300]"
-                  >
-                    <Music2 className="w-3 h-3 flex-shrink-0" />
-                    <span className="truncate">{s.title}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+         
 
           {/* ── Backup actions ──────────────────────────────────────────── */}
           <div className="px-4 py-3 space-y-2.5">

@@ -3,9 +3,9 @@ import { ArrowLeftCircle } from "lucide-react";
 import ControlRoom from "./vmusic/ControlRoom";
 import WorkspaceSelector from "./vmusic/Welcome";
 import UserGuidePage from "./vmusic/Userguide";
-// import PresentationBackgroundSelector from "./vmusic/BackgroundChoose";
 import SongPresentationDisplay from "./vmusic/components/SongPresentationDisplay/SongPresentationDisplay";
 import FloatingProjectionPreview from "./components/FloatingProjectionPreview";
+import Update from "./vmusic/update";
 import { useAppSelector, useAppDispatch } from "./store";
 import { setCurrentScreen } from "./store/slices/appSlice";
 import { SecretLogsManager } from "./components/SecretLogsManager";
@@ -82,6 +82,9 @@ const App = () => {
         className={`flex flex-col h-screen w-screen thin-scrollbar no-scrollbar bg-white dark:bg-ltgray `}
         style={{ fontFamily: "Palatino" }}
       >
+        {/* Auto-updater — renders a modal when a new version is available */}
+        <Update />
+
         {/* Main App Content */}
         {currentScreen === "Home" ? (
           <WorkspaceSelector />

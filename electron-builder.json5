@@ -2,17 +2,15 @@
  * @see https://www.electron.build/configuration/configuration
  */
 {
-  appId: "com.bmusic.myapp",
+  appId: "com.codedesyntax.songcast",
+  productName: "songCast",
   asar: true,
   directories: {
     output: "release/${version}",
   },
   files: ["dist-electron", "dist"],
-  mac: {
-    artifactName: "${productName}_${version}.${ext}",
-    target: ["dmg", "zip"],
-  },
   win: {
+    icon: "public/evsongsicon.ico",
     target: [
       {
         target: "nsis",
@@ -26,10 +24,13 @@
     perMachine: false,
     allowToChangeInstallationDirectory: true,
     deleteAppDataOnUninstall: false,
+    installerIcon: "public/evsongsicon.ico",
+    uninstallerIcon: "public/evsongsicon.ico",
+    installerHeaderIcon: "public/evsongsicon.ico",
   },
   publish: {
-    provider: "generic",
-    channel: "latest",
-    url: "https://github.com/codeDeSyntax/BlessedMusic/releases/releases/download/v1.0.0",
+    provider: "github",
+    owner: "codeDeSyntax",
+    repo: "EV-Songapp",
   },
 }

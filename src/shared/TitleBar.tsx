@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Minus, Square, User2Icon, X, FileText } from "lucide-react";
+import { Minus, Square, User2Icon, X, FileText, RefreshCw } from "lucide-react";
 import { HomeFilled } from "@ant-design/icons";
 
 import { useAppSelector, useAppDispatch } from "@/store";
@@ -16,6 +16,8 @@ import { useTheme } from "@/Provider/Theme";
 const TitleBar = () => {
   const [isHovered, setIsHovered] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
+  const [updateReady, setUpdateReady] = useState(false);
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
 
   const dispatch = useAppDispatch();
   const currentScreen = useAppSelector((state) => state.app.currentScreen);
@@ -31,6 +33,30 @@ const TitleBar = () => {
   // Get the selected song from Redux for language display
   const selectedSong = useAppSelector((state) => state.songs.selectedSong);
   const { isDarkMode, toggleDarkMode } = useTheme();
+
+  // Listen for update-downloaded from the main process
+  useEffect(() => {
+    const onUpdateDownloaded = (
+      _e: Electron.IpcRendererEvent,
+      info?: { version?: string },
+    ) => {
+      setUpdateReady(true);
+      setUpdateVersion(info?.version ?? null);
+    };
+    // also catch the version from update-can-available so we have it ready
+    const onUpdateAvailable = (
+      _e: Electron.IpcRendererEvent,
+      arg: { newVersion?: string },
+    ) => {
+      if (arg?.newVersion) setUpdateVersion(arg.newVersion);
+    };
+    window.ipcRenderer.on("update-downloaded", onUpdateDownloaded);
+    window.ipcRenderer.on("update-can-available", onUpdateAvailable);
+    return () => {
+      window.ipcRenderer.off("update-downloaded", onUpdateDownloaded);
+      window.ipcRenderer.off("update-can-available", onUpdateAvailable);
+    };
+  }, []);
 
   // Get current slide info
   const currentSlide = slides.find((slide) => slide.id === currentSlideId);
@@ -241,11 +267,28 @@ const TitleBar = () => {
             </div>
           </div>
 
-          <img
-            src="./evsongsicon.png"
-            alt="Description"
-            className="w-4 h-4 animate-bounce"
-          />
+          <div className="flex items-center gap-2">
+            {/* Update ready badge */}
+            {updateReady && (
+              <button
+                onClick={() => window.ipcRenderer.invoke("quit-and-install")}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium
+                  bg-green-500/20 border border-green-500/40 text-green-400
+                  hover:bg-green-500/30 transition-colors cursor-pointer"
+                title={`Restart to install v${updateVersion ?? "new version"}`}
+                style={{ WebkitAppRegion: "no-drag" } as any}
+              >
+                <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                Restart to update
+              </button>
+            )}
+
+            <img
+              src="./evsongsicon.png"
+              alt="Description"
+              className="w-4 h-4 animate-bounce"
+            />
+          </div>
         </div>
       </div>
     </div>
