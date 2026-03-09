@@ -1,7 +1,7 @@
 {
   "name": "song-cast",
   "productName": "songCast",
-  "version": "1.0.7",
+  "version": "1.0.0",
   "main": "dist-electron/main/index.js",
   "description": "Song projection application",
   "author": "dlcentimemessage>",
