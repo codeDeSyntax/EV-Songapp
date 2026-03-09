@@ -9,14 +9,14 @@ import type {
 const { autoUpdater } = createRequire(import.meta.url)("electron-updater");
 
 export function update(win: Electron.BrowserWindow) {
-  // When set to false, the update download will be triggered through the API
-  autoUpdater.autoDownload = false;
+  // Silent auto-download: download starts as soon as an update is found
+  autoUpdater.autoDownload = true;
   autoUpdater.disableWebInstaller = false;
   autoUpdater.allowDowngrade = false;
 
   // start check
   autoUpdater.on("checking-for-update", function () {});
-  // update available
+  // update available — download starts automatically because autoDownload = true
   autoUpdater.on("update-available", (arg: UpdateInfo) => {
     win.webContents.send("update-can-available", {
       update: true,
@@ -32,6 +32,23 @@ export function update(win: Electron.BrowserWindow) {
       newVersion: arg?.version,
     });
   });
+  // download finished — tell the renderer to show the TitleBar badge
+  autoUpdater.on("update-downloaded", (info: UpdateDownloadedEvent) => {
+    win.webContents.send("update-downloaded", { version: info.version });
+  });
+  // forward download progress to renderer
+  autoUpdater.on("download-progress", (info: ProgressInfo) => {
+    win.webContents.send("download-progress", info);
+  });
+
+  // ── DEV SIMULATION ── fires the badge after 5s so you can test the UI
+  // Remove this block before shipping the next release.
+  if (!app.isPackaged) {
+    setTimeout(() => {
+      win.webContents.send("update-downloaded", { version: "99.9.9" });
+    }, 5000);
+    return;
+  }
 
   // Checking for updates
   ipcMain.handle("check-update", async () => {
@@ -69,12 +86,10 @@ export function update(win: Electron.BrowserWindow) {
 
 function startDownload(
   callback: (error: Error | null, info: ProgressInfo | null) => void,
-  complete: (event: UpdateDownloadedEvent) => void,
+  _complete: (event: UpdateDownloadedEvent) => void,
 ) {
-  autoUpdater.on("download-progress", (info: ProgressInfo) =>
-    callback(null, info),
-  );
+  // download-progress and update-downloaded are already forwarded to the
+  // renderer via top-level listeners in update(). Just kick off the download.
   autoUpdater.on("error", (error: Error) => callback(error, null));
-  autoUpdater.on("update-downloaded", complete);
   autoUpdater.downloadUpdate();
 }
