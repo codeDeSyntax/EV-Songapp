@@ -48,7 +48,7 @@ export default defineConfig(({ command, mode }) => {
               rollupOptions: {
                 // Only externalize electron and Node.js built-ins.
                 // Bundle all npm dependencies so nothing is missing at runtime.
-                external: ["electron", /^node:/],
+                external: ["electron", "electron-updater", /^node:/],
               },
             },
           },
