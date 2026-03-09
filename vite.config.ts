@@ -46,9 +46,9 @@ export default defineConfig(({ command, mode }) => {
               minify: isBuild,
               outDir: "dist-electron/main",
               rollupOptions: {
-                external: Object.keys(
-                  "dependencies" in pkg ? pkg.dependencies : {},
-                ),
+                // Only externalize electron and Node.js built-ins.
+                // Bundle all npm dependencies so nothing is missing at runtime.
+                external: ["electron", /^node:/],
               },
             },
           },
@@ -63,9 +63,7 @@ export default defineConfig(({ command, mode }) => {
               minify: isBuild,
               outDir: "dist-electron/preload",
               rollupOptions: {
-                external: Object.keys(
-                  "dependencies" in pkg ? pkg.dependencies : {},
-                ),
+                external: ["electron", /^node:/],
               },
             },
           },
