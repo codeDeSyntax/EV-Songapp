@@ -32,5 +32,6 @@
     provider: "github",
     owner: "codeDeSyntax",
     repo: "EV-Songapp",
+    releaseType: "release",
   },
 }
