@@ -286,7 +286,7 @@ const TitleBar = () => {
             <img
               src="./evsongsicon.png"
               alt="Description"
-              className="w-4 h-4 animate-bounce"
+              className="w-4 h-4 "
             />
           </div>
         </div>
