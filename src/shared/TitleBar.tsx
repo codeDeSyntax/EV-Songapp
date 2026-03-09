@@ -1,5 +1,14 @@
 import { useState, useEffect } from "react";
-import { Minus, Square, User2Icon, X, FileText, RefreshCw } from "lucide-react";
+import {
+  Minus,
+  Square,
+  User2Icon,
+  X,
+  FileText,
+  RefreshCw,
+  Download,
+  Loader2,
+} from "lucide-react";
 import { HomeFilled } from "@ant-design/icons";
 
 import { useAppSelector, useAppDispatch } from "@/store";
@@ -17,6 +26,8 @@ const TitleBar = () => {
   const [isHovered, setIsHovered] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
   const [updateReady, setUpdateReady] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
 
   const dispatch = useAppDispatch();
@@ -46,9 +57,10 @@ const TitleBar = () => {
     // also catch the version from update-can-available so we have it ready
     const onUpdateAvailable = (
       _e: Electron.IpcRendererEvent,
-      arg: { newVersion?: string },
+      arg: { update?: boolean; newVersion?: string },
     ) => {
       if (arg?.newVersion) setUpdateVersion(arg.newVersion);
+      if (arg?.update === true) setUpdateAvailable(true);
     };
     window.ipcRenderer.on("update-downloaded", onUpdateDownloaded);
     window.ipcRenderer.on("update-can-available", onUpdateAvailable);
@@ -268,7 +280,31 @@ const TitleBar = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Update ready badge */}
+            {/* Update available — user clicks to download */}
+            {updateAvailable && !updateReady && (
+              <button
+                onClick={() => {
+                  setIsDownloading(true);
+                  window.ipcRenderer.invoke("start-download");
+                }}
+                disabled={isDownloading}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium
+                  bg-blue-500/20 border border-blue-500/40 text-blue-400
+                  hover:bg-blue-500/30 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-default"
+                title={`v${updateVersion ?? "new version"} available`}
+                style={{ WebkitAppRegion: "no-drag" } as any}
+              >
+                {isDownloading ? (
+                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                ) : (
+                  <Download className="w-2.5 h-2.5" />
+                )}
+                {isDownloading
+                  ? "Downloading..."
+                  : `v${updateVersion} available`}
+              </button>
+            )}
+            {/* Update downloaded — user clicks to restart */}
             {updateReady && (
               <button
                 onClick={() => window.ipcRenderer.invoke("quit-and-install")}

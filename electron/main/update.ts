@@ -9,8 +9,8 @@ import type {
 const { autoUpdater } = createRequire(import.meta.url)("electron-updater");
 
 export function update(win: Electron.BrowserWindow) {
-  // Silent auto-download: download starts as soon as an update is found
-  autoUpdater.autoDownload = true;
+  // Auto-check on startup, but download only when user clicks
+  autoUpdater.autoDownload = false;
   autoUpdater.disableWebInstaller = false;
   autoUpdater.allowDowngrade = false;
 
