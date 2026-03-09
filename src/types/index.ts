@@ -1,11 +1,23 @@
+import { SongSlide } from "@/vmusic/ControlRoom/utils/lyricsParser";
+
 export interface Song {
+  size: any;
   id: string;
   title: string;
   path: string;
-  content: string;
+  content: string; // Base64-encoded JSON for .evsong files
   message?: string;
   categories: string[];
   dateModified: string;
+  isPrelisted?: boolean;
+  language?: string; // NEW: language property
+  slides?: SongSlide[]; // Decoded slides from backend
+  metadata?: {
+    created: string;
+    modified: string;
+    isPrelisted?: boolean;
+    language?: string; // NEW: language in metadata for .evsong
+  };
 }
 
 export interface EditSong {

@@ -8,7 +8,7 @@ export const useSongProjectionNavigation = () => {
 
   // Send navigation commands to projection window
   const sendNavigationCommand = useCallback(
-    async (command: "next" | "previous") => {
+    async (command: "next" | "previous" | "goto") => {
       try {
         console.log("🎵 Sending navigation command:", command);
         // Send the command via IPC to the projection window
@@ -19,6 +19,31 @@ export const useSongProjectionNavigation = () => {
         console.log("✅ Navigation command sent successfully");
       } catch (error) {
         console.error("❌ Failed to send navigation command:", error);
+      }
+    },
+    []
+  );
+
+  // Send section navigation commands to projection window
+  const sendSectionCommand = useCallback(
+    async (sectionType: "chorus" | "verse", sectionNumber?: number) => {
+      try {
+        console.log("🎵 Sending section navigation:", {
+          sectionType,
+          sectionNumber,
+        });
+        // Send the command via IPC to the projection window
+        await window.api.sendToSongProjection({
+          command: "goto-section",
+          type: "SECTION_NAVIGATION",
+          data: {
+            sectionType: sectionType,
+            sectionNumber: sectionNumber,
+          },
+        });
+        console.log("✅ Section navigation sent successfully");
+      } catch (error) {
+        console.error("❌ Failed to send section navigation:", error);
       }
     },
     []
@@ -50,6 +75,21 @@ export const useSongProjectionNavigation = () => {
     }
   }, [isProjectionActive, currentPage, sendNavigationCommand]);
 
+  const goToChorus = useCallback(() => {
+    if (isProjectionActive) {
+      sendSectionCommand("chorus");
+    }
+  }, [isProjectionActive, sendSectionCommand]);
+
+  const goToVerse = useCallback(
+    (verseNumber: number) => {
+      if (isProjectionActive) {
+        sendSectionCommand("verse", verseNumber);
+      }
+    },
+    [isProjectionActive, sendSectionCommand]
+  );
+
   // Listen for keyboard events when projection is active
   useEffect(() => {
     if (!isProjectionActive) return;
@@ -72,12 +112,29 @@ export const useSongProjectionNavigation = () => {
           event.preventDefault();
           goToPrevious();
           break;
+        case "c":
+        case "C":
+          event.preventDefault();
+          goToChorus();
+          break;
+        case "1":
+        case "2":
+        case "3":
+        case "4":
+        case "5":
+        case "6":
+        case "7":
+        case "8":
+        case "9":
+          event.preventDefault();
+          goToVerse(parseInt(event.key));
+          break;
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isProjectionActive, goToNext, goToPrevious]);
+  }, [isProjectionActive, goToNext, goToPrevious, goToChorus, goToVerse]);
 
   // Listen for projection state updates from the main window
   useEffect(() => {
@@ -107,6 +164,8 @@ export const useSongProjectionNavigation = () => {
     totalPages,
     goToNext,
     goToPrevious,
+    goToChorus,
+    goToVerse,
     sendFontSizeUpdate,
     canGoNext: isProjectionActive && currentPage < totalPages - 1,
     canGoPrevious: isProjectionActive && currentPage > 0,

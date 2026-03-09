@@ -1,18 +1,78 @@
-@import url("https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap");
+/* Raleway — self-hosted via @fontsource (works fully offline in Electron) */
+@import "@fontsource/raleway/300.css";
+@import "@fontsource/raleway/400.css";
+@import "@fontsource/raleway/500.css";
+@import "@fontsource/raleway/600.css";
+@import "@fontsource/raleway/700.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* CSS Variables for Theme - Automatically switch with dark mode */
+:root {
+  /* Light mode colors (default) - Light gray theme */
+  --app-bg: #a0a0a0;
+  --app-surface: #8a8a8a;
+  --app-surface-hover: #7a7a7a;
+  --app-border: #606060;
+  --app-text: #1c1c1c;
+  --app-text-muted: #303030;
+  --app-accent: #707070;
+}
+
+.dark {
+  /* Dark mode colors */
+  --app-bg: #1c1c1c;
+  --app-surface: #2c2c2c;
+  --app-surface-hover: #2f2f2f;
+  --app-border: #2a2a2a;
+  --app-text: #e5e5e5;
+  --app-text-muted: #a3a3a3;
+  --app-accent: #404040;
+}
+
+*,
+::before,
+::after {
+  box-sizing: border-box;
+}
+
+html,
 body {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "EB Garamond", "Times New Roman", serif;
-  overflow-x: hidden;
+  font-family: "Raleway", system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+li,
+span,
+button,
+div {
+  font-family: "Raleway", system-ui, sans-serif;
 }
 .wqote {
-  font-family: "Brush Script MT", "Cursive", "Pacifico", cursive;
+  font-family: "Raleway", system-ui, sans-serif;
+  font-style: italic;
 }
 .bod {
   border-width: 10px;
@@ -35,12 +95,14 @@ body {
   background-size: 20px 20px; /* Adjust the size of the background pattern */
 }
 .gridb {
-  background: linear-gradient(to right, white 1px, white 1px),
+  background:
+    linear-gradient(to right, white 1px, white 1px),
     linear-gradient(to bottom, white 1px, #fafafa 1px);
   background-size: 20px 20px; /* Adjust the size of the grid */
 }
 .gridb1 {
-  background: linear-gradient(to right, #fffdd5 1px, transparent 1px),
+  background:
+    linear-gradient(to right, #fffdd5 1px, transparent 1px),
     linear-gradient(to bottom, #fffdd5 1px, #faeed1 1px);
   background-size: 20px 20px; /* Adjust the size of the grid */
 }
@@ -67,134 +129,19 @@ h1 {
 button {
   border: none;
   border-radius: 10px;
+  background-color: transparent;
 }
 button:hover {
   cursor: pointer;
 }
+/* button:focus{
+  outline: "none";
+} */
 
 .inputcontrol {
   caret-color: white; /* Customize the caret color */
   font-size: 15px; /* Adjust font size to modify caret size */
   animation: caret-blink 1s infinite step-end; /* Control blinking rate */
-}
-
-@font-face {
-  font-family: "Anton SC";
-  src: url("/fonts/antonsc.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Big Shoulders Thin";
-  src: url("/fonts/bigshouldsvw.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Bitter Thin";
-  src: url("/fonts/bittervw.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Oswald ExtraLight";
-  src: url("/fonts/oswaldv.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "Archivo Black";
-  src: url("/fonts/archivoblack.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
-@font-face {
-  font-family: "Roboto Thin";
-  src: url("/fonts/robotovw.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
-@font-face {
-  font-family: "Cooper Black";
-  src: url("/fonts/COOPBL.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
-@font-face {
-  font-family: "Haettenschweiler";
-  src: url("/fonts/HATTEN.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
-@font-face {
-  font-family: "Impact";
-  src: url("/fonts/impact.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
-@font-face {
-  font-family: "Teko Light";
-  src: url("/fonts/teko.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
-@font-face {
-  font-family: "Alumini Sans Black";
-  src: url("/fonts/aluminisans.ttf") format("truetype");
-  font-weight: bold;
-  font-style: normal;
-}
-@font-face {
-  font-family: "LTFuzz";
-  src: url("./fonts/LTFuzz-Regular.ttf") format("truetype");
-  /* font-weight: bold;
-  font-style: normal; */
-}
-@font-face {
-  font-family: "ThePriest";
-  src: url("./fonts/thepriest.ttf") format("truetype");
-  /* font-weight: bold;
-  font-style: normal; */
-}
-@font-face {
-  font-family: "Rowdies";
-  src: url("./fonts/Rowdies-Bold.ttf") format("truetype");
-  /* font-weight: bold;
-  font-style: normal; */
-}
-@font-face {
-  font-family: "Rubik Dirt";
-  src: url("./fonts/RubikDirt-Regular.ttf") format("truetype");
-  /* font-weight: bold;
-  font-style: normal; */
-}
-@font-face {
-  font-family: "Milkyway DEMO";
-  src: url("./fonts/milkyway-demo.regular.ttf") format("truetype");
-  /* font-weight: bold;
-  font-style: normal; */
-}
-@font-face {
-  font-family: "Moliga DEMO";
-  src: url("./fonts/moliga-demo.regular.otf") format("truetype");
-  /* font-weight: bold;
-  font-style: normal; */
-}
-@font-face {
-  font-family: "Ketchup Manis Demo";
-  src: url("./fonts/ketchup-manis-demo.regular.ttf") format("truetype");
-  /* font-weight: bold;
-  font-style: normal; */
-}
-@font-face {
-  font-family: "Merich";
-  src: url("./fonts/merich.regular.otf") format("truetype");
-  /* font-weight: bold;
-  font-style: normal; */
 }
 
 /* Custom utilities for sleek presentation */
@@ -203,7 +150,9 @@ button:hover {
 }
 
 .text-shadow-lg {
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 2px 8px rgba(0, 0, 0, 0.6);
+  text-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.8),
+    0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 .backdrop-blur-xl {
@@ -254,12 +203,16 @@ button:hover {
   0%,
   100% {
     opacity: 0.6;
-    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3), 0 0 40px rgba(239, 68, 68, 0.2),
+    box-shadow:
+      0 0 20px rgba(239, 68, 68, 0.3),
+      0 0 40px rgba(239, 68, 68, 0.2),
       0 0 60px rgba(239, 68, 68, 0.1);
   }
   50% {
     opacity: 0.9;
-    box-shadow: 0 0 30px rgba(239, 68, 68, 0.5), 0 0 60px rgba(239, 68, 68, 0.3),
+    box-shadow:
+      0 0 30px rgba(239, 68, 68, 0.5),
+      0 0 60px rgba(239, 68, 68, 0.3),
       0 0 90px rgba(239, 68, 68, 0.2);
   }
 }

@@ -7,13 +7,58 @@ import {
   nativeImage,
   screen,
   protocol,
+  Tray,
+  Menu,
+  Notification,
+  globalShortcut,
+  nativeTheme,
+  clipboard,
+  powerSaveBlocker,
 } from "electron";
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import os from "node:os";
+import http from "node:http";
+import { Readable } from "node:stream";
 import { v4 as uuidv4 } from "uuid";
+import { google } from "googleapis";
+import Store from "electron-store";
+import archiver from "archiver";
+
+// Build-time constants injected by Vite define (main process sub-config)
+declare const __GOOGLE_CLIENT_ID__: string;
+declare const __GOOGLE_CLIENT_SECRET__: string;
+
+// Runtime-safe reads — Vite replaces the declare consts above at build time;
+// fallback to process.env for any edge-case (e.g. running ts-node directly)
+const GOOGLE_CLIENT_ID: string =
+  (typeof __GOOGLE_CLIENT_ID__ !== "undefined" ? __GOOGLE_CLIENT_ID__ : null) ??
+  process.env.CLIENT_ID ??
+  "";
+const GOOGLE_CLIENT_SECRET: string =
+  (typeof __GOOGLE_CLIENT_SECRET__ !== "undefined"
+    ? __GOOGLE_CLIENT_SECRET__
+    : null) ??
+  process.env.CLIENT_SECRET ??
+  "";
+
+// ---- Google Drive auth setup ----
+const REDIRECT_PORT = 41235;
+const REDIRECT_URI = `http://localhost:${REDIRECT_PORT}/callback`;
+const tokenStore = new Store<{ tokens?: any; lastBackupTime?: string }>({
+  name: "ev-google-auth",
+} as any);
+const oauth2Client = new google.auth.OAuth2(
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
+  REDIRECT_URI,
+);
+// Restore persisted tokens
+const _savedTokens = tokenStore.get("tokens");
+if (_savedTokens) oauth2Client.setCredentials(_savedTokens as any);
+
 // Import secret logger
 import {
   secretLogger,
@@ -24,6 +69,23 @@ import {
   logSongFileOp,
   logSongError,
 } from "../../src/utils/SecretLogger";
+// Import projection module
+import {
+  createSongPresentationWindow,
+  getProjectionState,
+  setProjectionActive,
+  setProjectionMinimized,
+  registerProjectionHandlers,
+  cleanupProjection,
+  getSongPresentationWindow,
+  getIsProjectionActive,
+} from "./projection";
+// Import PDF print handler
+import { registerPdfHandlers } from "./pdfPrinter";
+// Import font utilities
+import { getSystemFonts } from "./fontUtils";
+// Import auto-updater
+import { update } from "./update";
 
 const require = createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -61,19 +123,122 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 let mainWin: BrowserWindow | null = null;
+let splashWin: BrowserWindow | null = null;
 let projectionWin: BrowserWindow | null = null;
-let songPresentationWin: BrowserWindow | null = null;
 let isProjectionMinimized = false;
-let isSongPresentationMinimized = false;
-let isProjectionActive = false; // Track projection state separately
+let tray: Tray | null = null;
+let powerSaveId: number | null = null;
+
+// ── Power-save blocker ──────────────────────────────────────────────────────
+function startPowerSave() {
+  if (powerSaveId === null) {
+    powerSaveId = powerSaveBlocker.start("prevent-display-sleep");
+    console.log("🔋 Power save blocker started — display will not sleep");
+  }
+}
+function stopPowerSave() {
+  if (powerSaveId !== null && powerSaveBlocker.isStarted(powerSaveId)) {
+    powerSaveBlocker.stop(powerSaveId);
+    console.log("🔋 Power save blocker released");
+  }
+  powerSaveId = null;
+}
+
+// ── System tray menu builder ────────────────────────────────────────────────
+// Called after every projection state change to keep the menu accurate.
+function rebuildTrayMenu() {
+  if (!tray || tray.isDestroyed()) return;
+  const isActive = getIsProjectionActive();
+  const menu = Menu.buildFromTemplate([
+    { label: `East Voice  v${app.getVersion()}`, enabled: false },
+    { type: "separator" },
+    {
+      label: "Show Control Room",
+      click: () => {
+        if (mainWin && !mainWin.isDestroyed()) {
+          mainWin.show();
+          mainWin.focus();
+        }
+      },
+    },
+    {
+      label: isActive ? "Stop Projection" : "Start Projection",
+      click: () => {
+        if (isActive) {
+          const { songPresentationWin } = getProjectionState();
+          if (songPresentationWin && !songPresentationWin.isDestroyed()) {
+            setProjectionActive(false);
+            songPresentationWin.close();
+            stopPowerSave();
+            mainWin?.webContents.send("projection-state-changed", false);
+            rebuildTrayMenu();
+          }
+        } else {
+          // Ask renderer to resume with the current song
+          mainWin?.webContents.send("tray-action", {
+            action: "RESUME_PROJECTION",
+          });
+        }
+      },
+    },
+    {
+      label: "Focus Projection Window",
+      enabled: isActive,
+      click: () => {
+        const { songPresentationWin } = getProjectionState();
+        if (songPresentationWin && !songPresentationWin.isDestroyed()) {
+          if (songPresentationWin.isMinimized()) songPresentationWin.restore();
+          songPresentationWin.setAlwaysOnTop(true);
+          songPresentationWin.focus();
+          songPresentationWin.moveTop();
+          setTimeout(() => {
+            if (songPresentationWin && !songPresentationWin.isDestroyed())
+              songPresentationWin.setAlwaysOnTop(false);
+          }, 500);
+        }
+      },
+    },
+    { type: "separator" },
+    { label: "Quit East Voice", click: () => app.quit() },
+  ]);
+  tray.setContextMenu(menu);
+}
+
 const preload = path.join(__dirname, "../preload/index.mjs");
 const indexHtml = path.join(RENDERER_DIST, "index.html");
 const projectionHtml = path.join(RENDERER_DIST, "projection.html");
 
+function createSplashWindow() {
+  splashWin = new BrowserWindow({
+    width: 380,
+    height: 280,
+    frame: false,
+    transparent: false,
+    backgroundColor: "#faeed1",
+    resizable: false,
+    center: true,
+    skipTaskbar: true,
+    alwaysOnTop: true,
+    icon: path.join(process.env.VITE_PUBLIC, "evsongsicon.png"),
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+
+  splashWin.loadFile(path.join(process.env.VITE_PUBLIC, "splash.html"));
+  splashWin.on("closed", () => {
+    splashWin = null;
+  });
+}
+
 async function createMainWindow() {
-  mainWin = new BrowserWindow({
+  // Create window with default positioning first
+  let windowOptions = {
     title: "Main window",
     frame: false,
+    show: false, // hidden until splash closes
+    backgroundColor: "#0f0f13", // prevent white flash while React loads
     minWidth: 1000,
     minHeight: 800,
     icon: path.join(process.env.VITE_PUBLIC, "evsongsicon.png"),
@@ -84,24 +249,93 @@ async function createMainWindow() {
       contextIsolation: true,
       zoomFactor: 1.0,
     },
-  });
+  };
+
+  mainWin = new BrowserWindow(windowOptions);
+
+  // Visual Song Book-style positioning after window creation
+  try {
+    const displays = screen.getAllDisplays();
+    let controlDisplay = screen.getPrimaryDisplay(); // Default fallback
+
+    if (displays.length > 1) {
+      // Find internal (laptop) display for control interface
+      const internalDisplay = displays.find((display) => display.internal);
+      if (internalDisplay) {
+        controlDisplay = internalDisplay;
+        console.log(
+          "🖥️ Control interface using laptop display (Visual Song Book mode):",
+          {
+            id: internalDisplay.id,
+            bounds: internalDisplay.bounds,
+            internal: internalDisplay.internal,
+            isPrimary: internalDisplay.id === screen.getPrimaryDisplay().id,
+          },
+        );
+      } else {
+        // Fallback: Use non-external display if no internal display detected
+        const primaryDisplay = screen.getPrimaryDisplay();
+        const nonExternalDisplay =
+          displays.find((display) => display.id === primaryDisplay.id) ||
+          displays[0];
+        controlDisplay = nonExternalDisplay;
+        console.log("🖥️ Control interface fallback display:", {
+          id: controlDisplay.id,
+          bounds: controlDisplay.bounds,
+        });
+      }
+    }
+
+    //Position window on the appropriate display
+    mainWin.setBounds({
+      x: controlDisplay.bounds.x + 50, // Slight offset from edge
+      y: controlDisplay.bounds.y + 50,
+      width: Math.min(1200, controlDisplay.bounds.width - 100),
+      height: Math.min(900, controlDisplay.bounds.height - 100),
+    });
+  } catch (error) {
+    console.log("⚠️ Could not apply positioning:", error);
+    // Window will use default positioning
+  }
 
   if (VITE_DEV_SERVER_URL) {
     mainWin.loadURL(VITE_DEV_SERVER_URL);
-    mainWin.maximize();
     mainWin.setMenuBarVisibility(false);
-    mainWin.webContents.openDevTools();
     mainWin.webContents.setZoomFactor(1.0);
   } else {
-    mainWin.maximize();
     mainWin.setMenuBarVisibility(false);
     // mainWin.webContents.openDevTools();
     mainWin.loadFile(indexHtml);
   }
 
+  // Close splash and show main window once renderer is ready
+  mainWin.webContents.once("did-finish-load", () => {
+    setTimeout(() => {
+      if (splashWin && !splashWin.isDestroyed()) {
+        splashWin.close();
+      }
+      // maximize first so it appears full size immediately, then show
+      mainWin?.maximize();
+      mainWin?.show();
+      if (VITE_DEV_SERVER_URL) {
+        mainWin?.webContents.openDevTools();
+      }
+    }, 600); // brief pause so the progress bar animation completes
+  });
+
   mainWin.webContents.on("before-input-event", (event, input) => {
+    // F12 toggles dev tools
+    if (input.key === "F12" && input.type === "keyDown") {
+      if (mainWin?.webContents.isDevToolsOpened()) {
+        mainWin.webContents.closeDevTools();
+      } else {
+        mainWin?.webContents.openDevTools();
+      }
+      event.preventDefault();
+      return;
+    }
+
     if (
-      input.key === "F12" || // Disable F12 for dev tools
       (input.key === "I" && input.control && input.shift) || // Disable Ctrl+Shift+I or Cmd+Opt+I
       (input.key === "R" && input.control) || // Disable Ctrl+R for reload
       (input.key === "R" && input.meta) // Disable Cmd+R for reload on macOS
@@ -126,6 +360,8 @@ async function createMainWindow() {
 
   // Handle main window close event to cleanup all child windows
   mainWin.on("closed", () => {
+    const { songPresentationWin } = getProjectionState();
+
     logSystemInfo("Main application window closed", {
       songPresentationActive: !!(
         songPresentationWin && !songPresentationWin.isDestroyed()
@@ -134,18 +370,13 @@ async function createMainWindow() {
     });
 
     // Close all projection windows when main window closes
-    if (songPresentationWin && !songPresentationWin.isDestroyed()) {
-      songPresentationWin.close();
-      songPresentationWin = null;
-    }
+    cleanupProjection();
     if (projectionWin && !projectionWin.isDestroyed()) {
       projectionWin.close();
       projectionWin = null;
     }
 
     // Reset projection states
-    isProjectionActive = false;
-    isSongPresentationMinimized = false;
     isProjectionMinimized = false;
 
     // Clear main window reference
@@ -158,6 +389,7 @@ async function createMainWindow() {
 // Handle the escape key minimize functionality from the renderer
 ipcMain.on("minimizeProjection", () => {
   // UPDATED: Now handles both static projection (disabled) and React-based song presentation
+  const { songPresentationWin } = getProjectionState();
   if (songPresentationWin && !songPresentationWin.isDestroyed()) {
     songPresentationWin.minimize();
 
@@ -168,176 +400,155 @@ ipcMain.on("minimizeProjection", () => {
   }
 });
 
-async function createSongPresentationWindow() {
-  const displays = screen.getAllDisplays();
-  console.log("🖥️ Song Presentation - All displays detected:", displays.length);
-
-  // Log detailed display information
-  logSystemInfo("Display detection completed", {
-    displayCount: displays.length,
-    displays: displays.map((display, index) => ({
-      index,
-      id: display.id,
-      bounds: display.bounds,
-      workArea: display.workArea,
-      scaleFactor: display.scaleFactor,
-      rotation: display.rotation,
-      internal: display.internal,
-    })),
-  });
-
-  displays.forEach((display, index) => {
-    console.log(`🖥️ Display ${index}:`, {
-      id: display.id,
-      bounds: display.bounds,
-      workArea: display.workArea,
-      scaleFactor: display.scaleFactor,
-      rotation: display.rotation,
-      internal: display.internal,
-    });
-  });
-
-  let presentationDisplay = displays[0]; // Default to primary display
-  let isExternalDisplay = false;
-
-  // Find external display (projector) if available
-  if (displays.length > 1) {
-    // Improved external display detection
-    const externalDisplay = displays.find(
-      (display) =>
-        !display.internal || display.bounds.x !== 0 || display.bounds.y !== 0
-    );
-    if (externalDisplay) {
-      presentationDisplay = externalDisplay;
-      isExternalDisplay = true;
-      console.log("🎯 Song Presentation - Using external display:", {
-        id: externalDisplay.id,
-        bounds: externalDisplay.bounds,
-        internal: externalDisplay.internal,
-      });
-    } else {
-      console.log(
-        "⚠️ Song Presentation - No external display found, using primary"
-      );
-    }
-  } else {
-    console.log(
-      "⚠️ Song Presentation - Only one display detected, using primary"
-    );
-  }
-
-  // Create Song presentation window
-  songPresentationWin = new BrowserWindow({
-    title: "Song Presentation",
-    x: isExternalDisplay ? presentationDisplay.bounds.x : undefined,
-    y: isExternalDisplay ? presentationDisplay.bounds.y : undefined,
-    width: isExternalDisplay ? presentationDisplay.bounds.width : 1024,
-    height: isExternalDisplay ? presentationDisplay.bounds.height : 768,
-    frame: false,
-    show: true,
-    fullscreen: !isExternalDisplay, // Use fullscreen for primary display
-    alwaysOnTop: false,
-    skipTaskbar: true,
-    icon: path.join(process.env.VITE_PUBLIC || "", "evv.png"),
-    webPreferences: {
-      preload,
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
-  });
-
-  console.log("🪟 Song Presentation Window created with:", {
-    x: songPresentationWin.getBounds().x,
-    y: songPresentationWin.getBounds().y,
-    width: songPresentationWin.getBounds().width,
-    height: songPresentationWin.getBounds().height,
-    isExternalDisplay,
-    targetDisplay: presentationDisplay.bounds,
-  });
-
-  // Log detailed window creation info
-  logSongProjection("Projection window created", {
-    windowBounds: songPresentationWin.getBounds(),
-    isExternalDisplay,
-    targetDisplay: {
-      id: presentationDisplay.id,
-      bounds: presentationDisplay.bounds,
-      internal: presentationDisplay.internal,
-    },
-    displayCount: screen.getAllDisplays().length,
-  });
-
-  // For external displays, manually set bounds after creation to ensure proper coverage
-  if (isExternalDisplay) {
-    console.log("🔧 Setting manual bounds for external display...");
-    songPresentationWin.setBounds({
-      x: presentationDisplay.bounds.x,
-      y: presentationDisplay.bounds.y,
-      width: presentationDisplay.bounds.width,
-      height: presentationDisplay.bounds.height,
-    });
-    const finalBounds = songPresentationWin.getBounds();
-    console.log("✅ Manual bounds set:", finalBounds);
-
-    logSongProjection("External display bounds configured", {
-      originalBounds: presentationDisplay.bounds,
-      finalBounds,
-      displayId: presentationDisplay.id,
-    });
-  } else {
-    console.log("📱 Using primary display - no manual bounds needed");
-    logSongProjection("Using primary display for projection", {
-      bounds: songPresentationWin.getBounds(),
-    });
-  }
-
-  // Load the React-based song presentation display page
-  if (VITE_DEV_SERVER_URL) {
-    songPresentationWin.loadURL(
-      `${VITE_DEV_SERVER_URL}/#/song-presentation-display`
-    );
-    songPresentationWin.webContents.openDevTools();
-  } else {
-    songPresentationWin.loadFile(indexHtml, {
-      hash: "song-presentation-display",
-    });
-  }
-
-  songPresentationWin.on("closed", () => {
-    songPresentationWin = null;
-    isSongPresentationMinimized = false;
-    isProjectionActive = false; // Set projection as inactive when window is closed
-    // Notify main window that projection is no longer active
-    console.log("Sending projection state change: false (closed)");
-    mainWin?.webContents.send("projection-state-changed", false);
-  });
-
-  // Track minimization state - but don't affect projection active state for external displays
-  songPresentationWin.on("minimize", () => {
-    isSongPresentationMinimized = true;
-    // Only consider projection inactive if user explicitly minimized (not auto-minimize to external display)
-    // We'll keep projection active even when minimized to external display
-    console.log(
-      "Window minimized - keeping projection active for external display"
-    );
-  });
-
-  songPresentationWin.on("restore", () => {
-    isSongPresentationMinimized = false;
-    // Ensure projection is marked as active when restored
-    if (isProjectionActive) {
-      console.log("Sending projection state change: true (restored)");
-      mainWin?.webContents.send("projection-state-changed", true);
-    }
-  });
-
-  return songPresentationWin;
-}
-
 app.whenReady().then(() => {
+  // Show splash screen immediately, before the main window loads
+  createSplashWindow();
   createMainWindow();
+
+  // Wire up auto-updater (checks on startup, listens for IPC calls from renderer)
+  if (mainWin) update(mainWin);
+
+  // Register projection handlers
+  registerProjectionHandlers();
+
+  // Register PDF print handlers
+  registerPdfHandlers();
+
+  // Display Change Handlers — handle duplicate ↔ extend switches and hot-plug
+  // Repositions the projection window whenever display configuration changes.
+
+  /** Move the active projection window to the best available display. */
+  function repositionProjection() {
+    const presentationWin = getSongPresentationWindow();
+    if (!presentationWin || presentationWin.isDestroyed()) return;
+
+    const displays = screen.getAllDisplays();
+    if (displays.length === 0) return;
+
+    const primary = screen.getPrimaryDisplay();
+    // Prefer an external (non-internal) display; fall back to primary
+    const target =
+      displays.find((d) => !d.internal && d.id !== primary.id) ||
+      displays.find((d) => !d.internal) ||
+      primary;
+
+    console.log("📡 Repositioning projection to display:", {
+      id: target.id,
+      bounds: target.bounds,
+      displayCount: displays.length,
+    });
+
+    // Drop kiosk and alwaysOnTop before moving, then re-apply based on
+    // whether the target is an external display or the operator's screen.
+    //   External → kiosk + alwaysOnTop("screen-saver"): covers taskbar fully.
+    //   Primary / internal → fullscreen only: operator keeps Alt-Tab access.
+    const isExternal = !target.internal;
+    presentationWin.setKiosk(false);
+    presentationWin.setAlwaysOnTop(false);
+    presentationWin.setFullScreen(false);
+    presentationWin.setBounds({
+      x: target.bounds.x,
+      y: target.bounds.y,
+      width: target.bounds.width,
+      height: target.bounds.height,
+    });
+    if (isExternal) {
+      presentationWin.setKiosk(true);
+      presentationWin.setAlwaysOnTop(true, "screen-saver");
+    } else {
+      presentationWin.setFullScreen(true);
+    }
+
+    // Notify renderer so it can update its isExternalDisplay flag
+    mainWin?.webContents.send("display-config-changed", {
+      displayCount: displays.length,
+      projectionDisplayId: target.id,
+      isExternal: target.id !== primary.id,
+    });
+  }
+
+  screen.on("display-added", (_event, newDisplay) => {
+    console.log("🔌 Display connected:", {
+      id: newDisplay.id,
+      bounds: newDisplay.bounds,
+      internal: newDisplay.internal,
+    });
+    // When a second screen appears (e.g. user switched to Extend), move
+    // the projection window to that display.
+    repositionProjection();
+  });
+
+  screen.on("display-removed", (_event, oldDisplay) => {
+    console.log("🔌 Display disconnected:", {
+      id: oldDisplay.id,
+      bounds: oldDisplay.bounds,
+    });
+    // Display was removed (e.g. switched to Duplicate or unplugged).
+    // Reposition to whatever display is still available.
+    repositionProjection();
+  });
+
+  screen.on("display-metrics-changed", (_event, display, changedMetrics) => {
+    console.log("🔧 Display metrics changed:", {
+      id: display.id,
+      changedMetrics,
+    });
+
+    if (
+      changedMetrics.includes("bounds") ||
+      changedMetrics.includes("workArea")
+    ) {
+      // Resolution or DPI changed — reposition so kiosk fills the new bounds
+      repositionProjection();
+    }
+  });
+
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
+  });
+
+  // ── System tray ──────────────────────────────────────────────────────────
+  try {
+    const trayIconPath = path.join(process.env.VITE_PUBLIC, "evsongsicon.png");
+    tray = new Tray(nativeImage.createFromPath(trayIconPath));
+    tray.setToolTip("East Voice — Song Projector");
+    rebuildTrayMenu();
+    tray.on("double-click", () => {
+      if (mainWin && !mainWin.isDestroyed()) {
+        mainWin.show();
+        mainWin.focus();
+      }
+    });
+  } catch (e) {
+    console.warn("⚠️ Tray creation failed (icon missing?):", e);
+  }
+
+  // ── Global shortcuts (system-wide — work even when app is not focused) ────
+  // Modified keys prevent interference with normal OS/app typing.
+  try {
+    const sendShortcut = (action: string) => () => {
+      if (mainWin && !mainWin.isDestroyed())
+        mainWin.webContents.send("global-shortcut", { action });
+    };
+    globalShortcut.register("Ctrl+Shift+Right", sendShortcut("NEXT_SLIDE"));
+    globalShortcut.register("Ctrl+Shift+Left", sendShortcut("PREV_SLIDE"));
+    globalShortcut.register(
+      "Ctrl+Shift+Space",
+      sendShortcut("PROJECT_CURRENT"),
+    );
+    globalShortcut.register("Shift+F", sendShortcut("FOCUS_PROJECTION"));
+    console.log("✅ Global shortcuts registered");
+  } catch (e) {
+    console.warn("⚠️ Global shortcut registration failed:", e);
+  }
+
+  // ── Native theme (OS dark/light mode) listener ────────────────────────────
+  nativeTheme.on("updated", () => {
+    if (mainWin && !mainWin.isDestroyed()) {
+      mainWin.webContents.send("native-theme-updated", {
+        shouldUseDarkColors: nativeTheme.shouldUseDarkColors,
+      });
+    }
   });
 
   // Log system startup
@@ -354,18 +565,13 @@ app.on("before-quit", (event) => {
   console.log("App is quitting - cleaning up all windows...");
 
   // Close all projection windows
-  if (songPresentationWin && !songPresentationWin.isDestroyed()) {
-    songPresentationWin.close();
-    songPresentationWin = null;
-  }
+  cleanupProjection();
   if (projectionWin && !projectionWin.isDestroyed()) {
     projectionWin.close();
     projectionWin = null;
   }
 
-  // Reset all projection states
-  isProjectionActive = false;
-  isSongPresentationMinimized = false;
+  // Reset projection states
   isProjectionMinimized = false;
 });
 
@@ -378,6 +584,18 @@ app.on("window-all-closed", () => {
 app.on("will-quit", () => {
   console.log("App will quit - final cleanup...");
 
+  // Unregister all global shortcuts
+  globalShortcut.unregisterAll();
+
+  // Release power save blocker
+  stopPowerSave();
+
+  // Destroy tray
+  if (tray && !tray.isDestroyed()) {
+    tray.destroy();
+    tray = null;
+  }
+
   // Force close any remaining windows
   BrowserWindow.getAllWindows().forEach((win) => {
     if (!win.isDestroyed()) {
@@ -387,14 +605,11 @@ app.on("will-quit", () => {
 
   // Reset all variables
   mainWin = null;
-  songPresentationWin = null;
-
   projectionWin = null;
+  cleanupProjection();
 });
 
 ipcMain.handle("project-song", async (event, songData) => {
-  console.log("Using React-based song projection:", songData);
-
   // Log projection attempt
   logSongProjection("Song projection initiated", {
     title: songData.title || "Unknown",
@@ -404,7 +619,12 @@ ipcMain.handle("project-song", async (event, songData) => {
   });
 
   // Set projection as active
-  isProjectionActive = true;
+  setProjectionActive(true);
+  startPowerSave();
+  rebuildTrayMenu();
+
+  const { songPresentationWin, isSongPresentationMinimized } =
+    getProjectionState();
 
   // Check if window exists but is minimized
   if (
@@ -413,30 +633,28 @@ ipcMain.handle("project-song", async (event, songData) => {
     isSongPresentationMinimized
   ) {
     songPresentationWin.restore();
-    isSongPresentationMinimized = false;
+    setProjectionMinimized(false);
     setTimeout(() => {
       songPresentationWin?.webContents.send("display-song", songData);
       songPresentationWin?.focus();
       songPresentationWin?.moveTop();
     }, 300); // Short delay to ensure window is restored before sending data
     // Notify main window about projection state change
-    console.log("Sending projection state change: true (restored)");
     mainWin?.webContents.send("projection-state-changed", true);
     return;
   }
 
   // If window doesn't exist or was destroyed, create a new one
   if (!songPresentationWin || songPresentationWin.isDestroyed()) {
-    await createSongPresentationWindow();
+    const newWindow = await createSongPresentationWindow(mainWin || undefined);
     // Wait for window to be ready before sending data
-    songPresentationWin?.once("ready-to-show", () => {
-      songPresentationWin?.webContents.send("display-song", songData);
+    newWindow?.once("ready-to-show", () => {
+      newWindow?.webContents.send("display-song", songData);
       // Ensure window is properly focused and visible
-      songPresentationWin?.show();
-      songPresentationWin?.focus();
-      songPresentationWin?.moveTop();
+      newWindow?.show();
+      newWindow?.focus();
+      newWindow?.moveTop();
       // Notify main window about projection state change
-      console.log("Sending projection state change: true (new window)");
       mainWin?.webContents.send("projection-state-changed", true);
     });
   } else {
@@ -446,47 +664,107 @@ ipcMain.handle("project-song", async (event, songData) => {
     songPresentationWin.focus();
     songPresentationWin.moveTop();
     // Notify main window about projection state change
-    console.log("Sending projection state change: true (existing window)");
     mainWin?.webContents.send("projection-state-changed", true);
   }
 });
 
 // Add handler to check if projection window is open
+// BUG 5 fix: removed console.log + logSystemInfo — this is polled frequently
+// and writing to disk on every poll created constant I/O noise.
 ipcMain.handle("is-projection-active", async () => {
-  const isSongActive =
+  const { songPresentationWin, isProjectionActive } = getProjectionState();
+  return (
     isProjectionActive &&
-    songPresentationWin &&
-    !songPresentationWin.isDestroyed();
-
-  console.log("Checking projection state:", {
-    isActive: isSongActive,
-    isSongActive,
-  });
-
-  // Log projection state check
-  logSystemInfo("Projection state checked", {
-    isActive: isSongActive,
-    isSongActive,
-    songWindowExists: !!(
-      songPresentationWin && !songPresentationWin.isDestroyed()
-    ),
-  });
-
-  return isSongActive;
+    songPresentationWin != null &&
+    !songPresentationWin.isDestroyed()
+  );
 });
 
 // Add handler to close projection window
 ipcMain.handle("close-projection-window", async () => {
   let closed = false;
 
+  const { songPresentationWin } = getProjectionState();
   // Close song presentation window if it exists
   if (songPresentationWin && !songPresentationWin.isDestroyed()) {
-    isProjectionActive = false; // Set projection as inactive before closing
+    setProjectionActive(false); // Set projection as inactive before closing
+    stopPowerSave();
+    rebuildTrayMenu();
     songPresentationWin.close();
     closed = true;
+
+    // Notify main window that projection is no longer active
+    console.log(
+      "Sending projection state change: false (close-projection-window)",
+    );
+    mainWin?.webContents.send("projection-state-changed", false);
   }
 
   return closed;
+});
+
+// ── Clipboard ─────────────────────────────────────────────────────────────────
+ipcMain.handle("clipboard-write-text", (_event, text: string) => {
+  clipboard.writeText(text);
+  return { success: true };
+});
+
+ipcMain.handle("clipboard-read-text", () => clipboard.readText());
+
+// ── App version ────────────────────────────────────────────────────────────────
+ipcMain.handle("get-app-version", () => app.getVersion());
+
+// ── Launch on startup ──────────────────────────────────────────────────────────
+ipcMain.handle("get-login-item-settings", () => {
+  const s = app.getLoginItemSettings();
+  return { openAtLogin: s.openAtLogin };
+});
+
+ipcMain.handle("set-login-item-settings", (_event, openAtLogin: boolean) => {
+  app.setLoginItemSettings({ openAtLogin, openAsHidden: false });
+  return { openAtLogin: app.getLoginItemSettings().openAtLogin };
+});
+
+// ── Cursor screen point ────────────────────────────────────────────────────────
+ipcMain.handle("get-cursor-screen-point", () => screen.getCursorScreenPoint());
+
+// ── OS Notifications ──────────────────────────────────────────────────────────
+ipcMain.handle(
+  "send-os-notification",
+  (_event, payload: { title: string; body: string; silent?: boolean }) => {
+    try {
+      if (!Notification.isSupported())
+        return { success: false, reason: "not-supported" };
+      const n = new Notification({
+        title: payload.title,
+        body: payload.body,
+        silent: payload.silent ?? false,
+        icon: path.join(process.env.VITE_PUBLIC, "evsongsicon.png"),
+      });
+      n.show();
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, reason: e.message };
+    }
+  },
+);
+
+// ── Native theme ───────────────────────────────────────────────────────────────
+ipcMain.handle("get-native-theme", () => ({
+  shouldUseDarkColors: nativeTheme.shouldUseDarkColors,
+  themeSource: nativeTheme.themeSource,
+}));
+
+// ── Tray menu refresh (called from renderer when projection state changes) ─────
+ipcMain.handle("refresh-tray-menu", () => {
+  rebuildTrayMenu();
+  return { success: true };
+});
+
+// ── shell.openExternal ─────────────────────────────────────────────────────────
+ipcMain.handle("shell-open-external", (_event, url: string) => {
+  shell.openExternal(url);
+  return { success: true };
 });
 
 // Handle selecting a directory via the file dialog
@@ -497,15 +775,37 @@ ipcMain.handle("select-directory", async () => {
   return result.canceled ? null : result.filePaths[0];
 });
 
+// Get system fonts
+ipcMain.handle("get-system-fonts", async () => {
+  return await getSystemFonts();
+});
+
+// Get default songs directory
+ipcMain.handle("get-default-songs-directory", async () => {
+  const songsDir = path.join(app.getPath("userData"), "Songs");
+  // Ensure directory exists
+  if (!fs.existsSync(songsDir)) {
+    fs.mkdirSync(songsDir, { recursive: true });
+  }
+  return songsDir;
+});
+
 // Handle saving a song as a text file
 ipcMain.handle("save-song", async (event, { directory, title, content }) => {
+  // Use app data directory if no directory provided
+  const songsDirectory =
+    directory || path.join(app.getPath("userData"), "Songs");
+
   try {
+    // Ensure songs directory exists
+    await fs.promises.mkdir(songsDirectory, { recursive: true });
+
     // Validate inputs
-    if (!directory || !title || content === undefined) {
+    if (!title || content === undefined) {
       const errorMsg =
-        "Missing required fields: directory, title, and content are required.";
+        "Missing required fields: title and content are required.";
       logSongError("Song save validation failed", {
-        directory,
+        directory: songsDirectory,
         title,
         hasContent: content !== undefined,
       });
@@ -519,40 +819,67 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
       throw new Error(errorMsg);
     }
 
-    // Check if directory exists
-    if (!fs.existsSync(directory)) {
-      const errorMsg =
-        "The specified directory does not exist. Please select a valid folder.";
-      logSongError("Invalid directory path", { directory });
+    // Sanitize filename - remove invalid characters and extra spaces
+    const sanitizedTitle = title
+      .trim()
+      .replace(/[<>:"/\\|?*]/g, "") // Remove invalid filename characters
+      .replace(/\s+/g, " ") // Replace multiple spaces with single space
+      .replace(/\.+$/g, "") // Remove trailing periods
+      .substring(0, 200); // Limit length to prevent issues
+
+    if (sanitizedTitle.length === 0) {
+      const errorMsg = "Song title contains only invalid characters.";
+      logSongError("Invalid characters in title", { title, sanitizedTitle });
       throw new Error(errorMsg);
     }
 
     // Check directory permissions
     try {
-      fs.accessSync(directory, fs.constants.W_OK);
+      await fs.promises.access(songsDirectory, fs.constants.W_OK);
     } catch (permissionError) {
       const errorMsg =
-        "Permission denied. You don't have write access to the selected directory.";
+        "Permission denied. You don't have write access to the songs directory.";
       logSongError("Directory permission denied", {
-        directory,
+        directory: songsDirectory,
         error: permissionError,
       });
       throw new Error(errorMsg);
     }
 
-    const filePath = path.join(directory, `${title.trim()}.txt`);
-    const fileExists = fs.existsSync(filePath);
+    const filePath = path.join(songsDirectory, `${sanitizedTitle}.evsong`);
+
+    // Validate the final file path
+    if (!path.isAbsolute(filePath) || filePath.includes("..")) {
+      const errorMsg = "Invalid file path generated.";
+      logSongError("Path validation failed", {
+        filePath,
+        directory: songsDirectory,
+        sanitizedTitle,
+      });
+      throw new Error(errorMsg);
+    }
+
+    // Check if file already exists (non-blocking)
+    let fileExists = false;
+    try {
+      await fs.promises.access(filePath);
+      fileExists = true;
+    } catch {
+      fileExists = false;
+    }
 
     // Write the file (create new or overwrite existing)
-    fs.writeFileSync(filePath, content, "utf8");
+    // Content is expected to be base64-encoded JSON from the frontend
+    await fs.promises.writeFile(filePath, content, "utf8");
 
     const result = {
       success: true,
       filePath,
       isNewFile: !fileExists,
       message: fileExists
-        ? `Song "${title}" has been successfully updated.`
-        : `Song "${title}" has been successfully created.`,
+        ? `Song "${sanitizedTitle}" has been successfully updated.`
+        : `Song "${sanitizedTitle}" has been successfully created.`,
+      sanitizedTitle, // Return the sanitized title so UI can update if needed
     };
 
     // Log successful operation
@@ -561,11 +888,12 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
         ? "Song updated successfully"
         : "New song created successfully",
       {
-        title,
+        originalTitle: title,
+        sanitizedTitle,
         filePath,
         contentLength: content.length,
-        directory,
-      }
+        directory: songsDirectory,
+      },
     );
 
     return result;
@@ -574,7 +902,7 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
     logSongError("Failed to save song", {
       error: error instanceof Error ? error.message : String(error),
       title: title || "unknown",
-      directory: directory || "unknown",
+      directory: songsDirectory || "unknown",
     });
 
     // Handle specific error types
@@ -587,17 +915,17 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
       const code = (error as any).code;
       if (code === "ENOENT") {
         throw new Error(
-          "The file path is invalid or the directory no longer exists."
+          "The file path is invalid or the directory no longer exists. Please ensure the directory exists and the song title doesn't contain invalid characters.",
         );
       } else if (code === "EACCES" || code === "EPERM") {
         throw new Error(
-          "Permission denied. Cannot write to the selected location."
+          "Permission denied. Cannot write to the selected location.",
         );
       } else if (code === "ENOSPC") {
         throw new Error("Not enough disk space to save the file.");
       } else if (code === "EMFILE" || code === "ENFILE") {
         throw new Error(
-          "Too many files are open. Please close some applications and try again."
+          "Too many files are open. Please close some applications and try again.",
         );
       }
     }
@@ -606,40 +934,88 @@ ipcMain.handle("save-song", async (event, { directory, title, content }) => {
   }
 });
 
+// BUG 4 fix: cache which directories already exist so mkdir isn't called on
+// every refresh for a directory that hasn't changed.
+const existingDirsCache = new Set<string>();
+
 // Handle fetching songs from a directory
 ipcMain.handle("fetch-songs", async (event, directory) => {
   try {
-    const files = fs.readdirSync(directory);
+    // Use app data directory if no directory provided
+    const songsDirectory =
+      directory || path.join(app.getPath("userData"), "Songs");
+
+    // BUG 4 fix: only call mkdir when we haven't confirmed the dir exists yet
+    if (!existingDirsCache.has(songsDirectory)) {
+      await fs.promises.mkdir(songsDirectory, { recursive: true });
+      existingDirsCache.add(songsDirectory);
+    }
+
+    const files = await fs.promises.readdir(songsDirectory);
     const songs = await Promise.all(
       files
-        .filter((file) => file.endsWith(".txt"))
-        .map(async (file, index) => {
-          const filePath = path.join(directory, file);
-          const fileStats = fs.statSync(filePath);
-          const content = fs.readFileSync(filePath, "utf8");
+        .filter((file) => file.endsWith(".evsong"))
+        .map(async (file) => {
+          const filePath = path.join(songsDirectory, file);
+
+          // BUG 3 fix: read content first; only call stat() when the JSON
+          // doesn't include a modified timestamp (avoids an extra I/O round-trip
+          // for every file on every library refresh).
+          const encodedContent = await fs.promises.readFile(filePath, "utf8");
+
+          // Decode the base64-encoded JSON
+          let songData;
+          let isPrelisted = false;
+          try {
+            const jsonString = Buffer.from(encodedContent, "base64").toString(
+              "utf8",
+            );
+            songData = JSON.parse(jsonString);
+            isPrelisted = songData.metadata?.isPrelisted || false;
+          } catch (decodeError) {
+            console.error(`Failed to decode song file ${file}:`, decodeError);
+            // Skip invalid files
+            return null;
+          }
+
+          // Only stat the file when the JSON has no modified timestamp
+          const dateModified =
+            songData.metadata?.modified ||
+            (await fs.promises.stat(filePath)).mtime.toISOString();
+
+          // BUG 7 fix: use the filename (without extension) as a stable, unique ID.
+          // The previous index-based ID broke every time songs were added/removed.
+          const stableId = path.basename(file, ".evsong");
 
           return {
-            id: `bmusic${index + 1}`,
-            title: path.basename(file, ".txt"),
+            id: stableId,
+            title: songData.title || stableId,
             path: filePath,
-            content,
-            dateModified: fileStats.mtime.toISOString(),
+            content: encodedContent,
+            dateModified,
+            isPrelisted,
+            slides: songData.slides || [],
+            metadata: songData.metadata,
+            language: songData.metadata?.language || "English",
           };
-        })
+        }),
     );
+
+    // Filter out null entries (failed decodes)
+    const validSongs = songs.filter((song) => song !== null);
 
     // Log successful fetch
     logSongAction("Songs loaded from directory", {
-      directory,
-      songCount: songs.length,
+      directory: songsDirectory,
+      songCount: validSongs.length,
       fileCount: files.length,
     });
 
-    return songs;
+    return validSongs;
   } catch (error) {
     console.error("Error fetching songs:", error);
     logSongError("Failed to fetch songs from directory", {
-      directory,
+      directory: directory || app.getPath("userData"),
       error: error instanceof Error ? error.message : String(error),
     });
     throw new Error("Failed to fetch songs.");
@@ -651,18 +1027,15 @@ ipcMain.handle(
   "edit-song",
   async (event, { directory, newTitle, content, originalPath }) => {
     try {
-      const fileExists = fs.existsSync(originalPath);
-
-      if (fileExists) {
-        fs.writeFileSync(originalPath, content, "utf8");
-      } else {
-        fs.writeFileSync(originalPath, content, "utf8");
-      }
+      await fs.promises.writeFile(originalPath, content, "utf8");
 
       const newFilePath = path.join(directory, `${newTitle}.txt`);
       if (newTitle && newFilePath !== originalPath) {
-        if (fileExists && fs.existsSync(originalPath)) {
-          fs.renameSync(originalPath, newFilePath);
+        try {
+          await fs.promises.access(originalPath);
+          await fs.promises.rename(originalPath, newFilePath);
+        } catch {
+          /* file doesn't exist, skip rename */
         }
       }
 
@@ -671,27 +1044,31 @@ ipcMain.handle(
       console.error("Error editing song:", error);
       throw error;
     }
-  }
+  },
 );
 
 // Handle deleting a song
 ipcMain.handle("delete-song", async (event, filePath) => {
   try {
-    if (fs.existsSync(filePath)) {
-      const fileName = path.basename(filePath);
-      fs.unlinkSync(filePath);
+    const fileName = path.basename(filePath);
+    await fs.promises.unlink(filePath);
 
-      logSongFileOp("Song deleted successfully", {
-        fileName,
-        filePath,
-      });
+    logSongFileOp("Song deleted successfully", {
+      fileName,
+      filePath,
+    });
 
-      return true;
-    } else {
+    return true;
+  } catch (error) {
+    const isNotFound =
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      (error as any).code === "ENOENT";
+    if (isNotFound) {
       logSongError("Attempted to delete non-existent song", { filePath });
       throw new Error("File not found");
     }
-  } catch (error) {
     console.error("Error deleting song:", error);
     logSongError("Failed to delete song", {
       filePath,
@@ -700,6 +1077,222 @@ ipcMain.handle("delete-song", async (event, filePath) => {
     throw error;
   }
 });
+
+// ==================== BACKUP & GOOGLE DRIVE ====================
+
+/** Step 1: Open Google OAuth in the system browser and catch the redirect on a temp local server */
+ipcMain.handle("google-auth-start", async () => {
+  return new Promise<{ success: boolean }>((resolve, reject) => {
+    const authUrl = oauth2Client.generateAuthUrl({
+      access_type: "offline",
+      scope: ["https://www.googleapis.com/auth/drive.file"],
+      prompt: "consent",
+    });
+
+    let server: http.Server | null = null;
+    const authTimeout = setTimeout(
+      () => {
+        server?.close();
+        reject(new Error("Authentication timed out after 5 minutes."));
+      },
+      5 * 60 * 1000,
+    );
+
+    server = http.createServer(async (req, res) => {
+      if (!req.url?.startsWith("/callback")) return;
+      const url = new URL(req.url, `http://localhost:${REDIRECT_PORT}`);
+      const code = url.searchParams.get("code");
+      const error = url.searchParams.get("error");
+
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(
+        `<!DOCTYPE html><html><body style="font-family:Raleway,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;background:#fdf4d0;margin:0"><div style="text-align:center;color:#4a2c12"><h2 style="margin-bottom:8px">${error ? "❌ Failed" : "✅ Connected!"}</h2><p style="color:#78462a">${error ? error : "You can close this tab and return to East Voice."}</p></div></body></html>`,
+      );
+
+      clearTimeout(authTimeout);
+      server?.close();
+
+      if (error || !code) {
+        reject(new Error(error || "No authorisation code received."));
+        return;
+      }
+
+      try {
+        const { tokens } = await oauth2Client.getToken(code);
+        oauth2Client.setCredentials(tokens);
+        tokenStore.set("tokens", tokens);
+        resolve({ success: true });
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    server.listen(REDIRECT_PORT, () => {
+      shell.openExternal(authUrl);
+    });
+
+    server.on("error", (err) => {
+      clearTimeout(authTimeout);
+      reject(new Error(`Could not start auth server: ${err.message}`));
+    });
+  });
+});
+
+/** Check whether stored tokens are still valid */
+ipcMain.handle("google-drive-status", async () => {
+  const tokens = tokenStore.get("tokens");
+  if (!tokens) return { connected: false };
+  try {
+    oauth2Client.setCredentials(tokens as any);
+    // Use drive.about.get — works with drive.file scope (unlike oauth2 userinfo)
+    const drive = google.drive({ version: "v3", auth: oauth2Client });
+    const { data } = await drive.about.get({
+      fields: "user(emailAddress,displayName)",
+    });
+    // Persist any refreshed tokens
+    tokenStore.set("tokens", oauth2Client.credentials);
+    return {
+      connected: true,
+      email: data.user?.emailAddress ?? data.user?.displayName ?? "Connected",
+    };
+  } catch {
+    return { connected: false };
+  }
+});
+
+/** Revoke and delete stored credentials */
+ipcMain.handle("google-drive-disconnect", async () => {
+  try {
+    await oauth2Client.revokeCredentials();
+  } catch {
+    /* ignore revoke errors */
+  }
+  tokenStore.delete("tokens");
+  return { success: true };
+});
+
+/** Upload every .evsong file to a timestamped folder in Google Drive */
+ipcMain.handle(
+  "google-drive-backup",
+  async (_event, songsDirectory?: string) => {
+    const tokens = tokenStore.get("tokens");
+    if (!tokens)
+      throw new Error("Not connected to Google Drive. Please sign in first.");
+
+    oauth2Client.setCredentials(tokens as any);
+    const drive = google.drive({ version: "v3", auth: oauth2Client });
+    const dir = songsDirectory || path.join(app.getPath("userData"), "Songs");
+
+    // ── Step 1: ZIP all .evsong files into a temp file ──────────────────
+    mainWin?.webContents.send("backup-progress", { stage: "zipping" });
+
+    const files = await fs.promises.readdir(dir);
+    const songFiles = files.filter((f) => f.endsWith(".evsong"));
+    if (songFiles.length === 0)
+      throw new Error("No song files found to back up.");
+
+    const ts = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .replace("T", "_")
+      .split("Z")[0];
+    const zipName = `EastVoice_Backup_${ts}.zip`;
+    const tempZipPath = path.join(os.tmpdir(), zipName);
+
+    await new Promise<void>((resolve, reject) => {
+      const output = fs.createWriteStream(tempZipPath);
+      const archive = archiver("zip", { zlib: { level: 6 } });
+      output.on("close", resolve);
+      archive.on("error", reject);
+      archive.pipe(output);
+      for (const file of songFiles) {
+        archive.file(path.join(dir, file), { name: file });
+      }
+      archive.finalize();
+    });
+
+    // ── Step 2: Upload the single ZIP to Google Drive ────────────────────
+    mainWin?.webContents.send("backup-progress", { stage: "uploading" });
+
+    const zipContent = await fs.promises.readFile(tempZipPath);
+    const bodyStream = Readable.from(zipContent);
+
+    await drive.files.create({
+      requestBody: { name: zipName },
+      media: { mimeType: "application/zip", body: bodyStream },
+    });
+
+    // ── Step 3: Clean up temp file ───────────────────────────────────────
+    await fs.promises.unlink(tempZipPath).catch(() => {
+      /* ignore */
+    });
+
+    const backupTime = new Date().toISOString();
+    tokenStore.set("lastBackupTime", backupTime);
+    tokenStore.set("tokens", oauth2Client.credentials);
+    return { success: true, uploaded: songFiles.length, timestamp: backupTime };
+  },
+);
+
+/** ZIP all .evsong files and save to a user-chosen location */
+ipcMain.handle(
+  "backup-songs-local",
+  async (_event, songsDirectory?: string) => {
+    const dir = songsDirectory || path.join(app.getPath("userData"), "Songs");
+
+    const files = await fs.promises.readdir(dir);
+    const songFiles = files.filter((f) => f.endsWith(".evsong"));
+    if (songFiles.length === 0)
+      return {
+        success: false,
+        cancelled: true,
+        reason: "No song files found.",
+      };
+
+    const ts = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .replace("T", "_")
+      .split("Z")[0];
+    const zipName = `EastVoice_Backup_${ts}.zip`;
+
+    const { filePath, canceled } = await dialog.showSaveDialog(mainWin!, {
+      title: "Save backup ZIP",
+      defaultPath: zipName,
+      filters: [{ name: "ZIP Archive", extensions: ["zip"] }],
+    });
+
+    if (canceled || !filePath) return { success: false, cancelled: true };
+
+    await new Promise<void>((resolve, reject) => {
+      const output = fs.createWriteStream(filePath);
+      const archive = archiver("zip", { zlib: { level: 6 } });
+      output.on("close", resolve);
+      archive.on("error", reject);
+      archive.pipe(output);
+      for (const file of songFiles) {
+        archive.file(path.join(dir, file), { name: file });
+      }
+      archive.finalize();
+    });
+
+    const backupTime = new Date().toISOString();
+    tokenStore.set("lastBackupTime", backupTime);
+    return {
+      success: true,
+      count: songFiles.length,
+      destPath: filePath,
+      timestamp: backupTime,
+    };
+  },
+);
+
+/** Return the ISO timestamp of the last successful backup */
+ipcMain.handle("get-last-backup-time", async () => {
+  return tokenStore.get("lastBackupTime") ?? null;
+});
+
+// ================================================================
 
 async function loadImagesFromDirectory(dirPath: string) {
   const allowedExtensions = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
@@ -714,7 +1307,7 @@ async function loadImagesFromDirectory(dirPath: string) {
 
     const imageFiles = files
       .filter((file) =>
-        allowedExtensions.includes(path.extname(file).toLowerCase())
+        allowedExtensions.includes(path.extname(file).toLowerCase()),
       )
       .slice(0, 10); // Increase limit to 7 images for better selection
 
@@ -729,7 +1322,7 @@ async function loadImagesFromDirectory(dirPath: string) {
     console.log(
       "📁 loadImagesFromDirectory: Returning custom protocol URLs:",
       imagePaths.slice(0, 3),
-      "..."
+      "...",
     );
 
     // Log detailed image loading info
@@ -817,6 +1410,170 @@ ipcMain.handle("get-display-info", async () => {
   }
 });
 
+// Visual Song Book Override Test Handler
+ipcMain.handle("test-visual-songbook-override", async () => {
+  try {
+    const displays = screen.getAllDisplays();
+    const primaryDisplay = screen.getPrimaryDisplay();
+
+    console.log("🧪 Visual Song Book Override Test Results:");
+    console.log("==========================================");
+
+    // Test 1: Display Detection
+    const internalDisplay = displays.find((d) => d.internal);
+    const externalDisplay = displays.find((d) => !d.internal);
+
+    console.log("📊 Display Analysis:");
+    console.log(`Total Displays: ${displays.length}`);
+    console.log(
+      `Windows Main Display: ${primaryDisplay.id} at (${primaryDisplay.bounds.x}, ${primaryDisplay.bounds.y})`,
+    );
+    console.log(
+      `Internal (Laptop) Display: ${
+        internalDisplay
+          ? `${internalDisplay.id} at (${internalDisplay.bounds.x}, ${internalDisplay.bounds.y})`
+          : "Not detected"
+      }`,
+    );
+    console.log(
+      `External Display: ${
+        externalDisplay
+          ? `${externalDisplay.id} at (${externalDisplay.bounds.x}, ${externalDisplay.bounds.y})`
+          : "Not detected"
+      }`,
+    );
+
+    // Test 2: Visual Song Book Logic
+    let projectionTarget = primaryDisplay; // Default
+    let controlTarget = primaryDisplay; // Default
+
+    if (displays.length > 1) {
+      // Control interface: Always prefer laptop (internal) display
+      controlTarget =
+        internalDisplay ||
+        displays.find((d) => d.id !== primaryDisplay.id) ||
+        primaryDisplay;
+
+      // Projection: Always prefer external display, regardless of Windows main display setting
+      projectionTarget =
+        externalDisplay ||
+        displays.find((d) => d.id !== primaryDisplay.id) ||
+        primaryDisplay;
+    }
+
+    console.log("🎯 Visual Song Book Override Results:");
+    console.log(
+      `Control Interface Target: Display ${controlTarget.id} (${
+        controlTarget.internal ? "Laptop" : "External"
+      }) - Overriding Windows main display: ${
+        controlTarget.id !== primaryDisplay.id
+      }`,
+    );
+    console.log(
+      `Projection Target: Display ${projectionTarget.id} (${
+        projectionTarget.internal ? "Laptop" : "External"
+      }) - Overriding Windows main display: ${
+        projectionTarget.id !== primaryDisplay.id
+      }`,
+    );
+
+    // Test 3: Scenario Validation
+    const scenarios = [];
+
+    if (displays.length === 1) {
+      scenarios.push(
+        "✅ Single Display: Both control and projection on same display",
+      );
+    } else {
+      scenarios.push(
+        `✅ Multi-Display: Control on ${
+          controlTarget.internal ? "laptop" : "external"
+        }, Projection on ${projectionTarget.internal ? "laptop" : "external"}`,
+      );
+
+      if (primaryDisplay.internal && externalDisplay) {
+        scenarios.push(
+          "✅ Scenario 1: Laptop is Windows main → Projection goes to external (correct)",
+        );
+      } else if (!primaryDisplay.internal && internalDisplay) {
+        scenarios.push(
+          "✅ Scenario 2: External is Windows main → Control stays on laptop, Projection on external (Visual Song Book mode!)",
+        );
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        displayCount: displays.length,
+        windowsMainDisplay: primaryDisplay.id,
+        controlTarget: {
+          id: controlTarget.id,
+          bounds: controlTarget.bounds,
+          internal: controlTarget.internal,
+          isOverridingWindowsMain: controlTarget.id !== primaryDisplay.id,
+        },
+        projectionTarget: {
+          id: projectionTarget.id,
+          bounds: projectionTarget.bounds,
+          internal: projectionTarget.internal,
+          isOverridingWindowsMain: projectionTarget.id !== primaryDisplay.id,
+        },
+        scenarios,
+        visualSongBookModeActive:
+          controlTarget.internal &&
+          !projectionTarget.internal &&
+          !primaryDisplay.internal,
+      },
+    };
+  } catch (error) {
+    console.error("Error in Visual Song Book override test:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+});
+
+// Enhanced Projection API Configuration
+// =====================================
+// Note: Projection handlers moved to projection.ts module
+
+// Note: Test display and projection metrics handlers moved to projection.ts module
+
+// Note: Enhanced projection handlers moved to projection.ts module
+
+// Display Configuration Handlers
+ipcMain.handle("save-display-preferences", async (_, preferences) => {
+  try {
+    const prefsPath = path.join(
+      os.homedir(),
+      ".ev-songapp-display-config.json",
+    );
+    const prefsData = {
+      displayId: preferences.displayId,
+      mode: preferences.mode,
+      timestamp: Date.now(),
+    };
+
+    // BUG 2 fix: use async write — sync write blocked the IPC event loop
+    await fs.promises.writeFile(prefsPath, JSON.stringify(prefsData, null, 2));
+
+    logSystemInfo("Display preferences saved", prefsData);
+
+    return { success: true, data: prefsData };
+  } catch (error) {
+    console.error("Error saving display preferences:", error);
+    logSystemError("Failed to save display preferences", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+});
+
 // Secret Logging System Handlers
 ipcMain.handle(
   "log-to-secret-logger",
@@ -831,7 +1588,7 @@ ipcMain.handle(
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }
-  }
+  },
 );
 
 ipcMain.handle("get-secret-logs", async () => {
@@ -922,7 +1679,11 @@ ipcMain.handle("export-secret-logs", async () => {
         logs: logs,
       };
 
-      fs.writeFileSync(result.filePath, JSON.stringify(exportData, null, 2));
+      // BUG 2 fix: async write — sync write blocked the IPC event loop
+      await fs.promises.writeFile(
+        result.filePath,
+        JSON.stringify(exportData, null, 2),
+      );
       logSystemInfo("Secret logs exported by admin", {
         filePath: result.filePath,
         logCount: logs.length,
@@ -958,7 +1719,7 @@ ipcMain.handle(
           error instanceof Error ? error.message : "Failed to construct path",
       };
     }
-  }
+  },
 );
 
 // Handler to open file in default app (e.g., notepad for .txt files)
@@ -996,150 +1757,11 @@ function sanitizeFilename(title: string): string {
     .toLowerCase();
 }
 
-// New function to create React-based song projection window
-async function createSongProjectionWindow() {
-  const displays = screen.getAllDisplays();
-  let songProjectionDisplay = null;
-  let useMainDisplay = false;
+// Note: createSongProjectionWindow moved to projection.ts module
 
-  // Find external display (projector)
-  // if (displays.length > 1) {
-  //   songProjectionDisplay = displays.find(display =>
-  //     display.bounds.x !== 0 || display.bounds.y !== 0
-  //   );
-  // } else {
-  //   // Fallback to main display if no external display is found
-  //   useMainDisplay = true;
-  //   songProjectionDisplay = displays[0];
-  // }
+// Note: create-song-projection-window handler moved to projection.ts module
 
-  // Create a new song projection window
-  songPresentationWin = new BrowserWindow({
-    title: "Song Projection",
-    // x: useMainDisplay ? undefined : songProjectionDisplay?.bounds.x,
-    // y: useMainDisplay ? undefined : songProjectionDisplay?.bounds.y,
-    // width: songProjectionDisplay?.bounds.width || 800,
-    // height: songProjectionDisplay?.bounds.height || 600,
-    frame: false,
-    show: true,
-    minimizable: true,
-    fullscreen: true, // Only go fullscreen on external display
-    alwaysOnTop: false,
-    skipTaskbar: false, // Show in taskbar for easier access
-    icon: path.join(process.env.VITE_PUBLIC || "", "evv.png"),
-    webPreferences: {
-      preload,
-      nodeIntegration: false,
-      contextIsolation: true,
-      zoomFactor: 1.0,
-    },
-  });
-
-  if (VITE_DEV_SERVER_URL) {
-    songPresentationWin.loadURL(
-      `${VITE_DEV_SERVER_URL}/#/song-presentation-display`
-    );
-  } else {
-    songPresentationWin.loadFile(indexHtml, {
-      hash: "song-presentation-display",
-    });
-  }
-
-  // Track window state changes
-  songPresentationWin.on("minimize", () => {
-    isProjectionMinimized = true;
-  });
-
-  songPresentationWin.on("restore", () => {
-    isProjectionMinimized = false;
-  });
-
-  songPresentationWin.on("closed", () => {
-    songPresentationWin = null;
-    isProjectionMinimized = false;
-  });
-
-  return songPresentationWin;
-}
-
-// ipcMain handler for creating song projection window
-ipcMain.handle("create-song-projection-window", async (event, data) => {
-  try {
-    if (!songPresentationWin || songPresentationWin.isDestroyed()) {
-      await createSongProjectionWindow();
-
-      // Wait for window to be ready before sending initial data
-      songPresentationWin?.once("ready-to-show", () => {
-        if (data.songData) {
-          songPresentationWin?.webContents.send("display-song", data.songData);
-        }
-        songPresentationWin?.focus();
-      });
-    } else {
-      // Window exists, just focus it and update data
-      if (data.songData) {
-        songPresentationWin.webContents.send("display-song", data.songData);
-      }
-      songPresentationWin.focus();
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error("Error creating song projection window:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
-});
-
-// Song projection navigation and font size IPC handlers
-ipcMain.handle(
-  "send-to-song-projection",
-  async (event, { command, data, fontSize }) => {
-    try {
-      console.log("🎵 Main process received song projection command:", {
-        command,
-        data,
-        fontSize,
-      });
-
-      if (!songPresentationWin || songPresentationWin.isDestroyed()) {
-        console.log("❌ Song projection window not available");
-        return { success: false, error: "No projection window available" };
-      }
-
-      // Send command to the song presentation window
-      if (command) {
-        console.log("📤 Sending command to projection window:", {
-          command,
-          data,
-        });
-        songPresentationWin.webContents.send("song-projection-command", {
-          command,
-          data,
-        });
-      }
-
-      // Send font size update if provided
-      if (fontSize !== undefined) {
-        console.log(
-          "📤 Sending font size update to projection window:",
-          fontSize
-        );
-        songPresentationWin.webContents.send("font-size-update", fontSize);
-      }
-
-      return { success: true };
-    } catch (error) {
-      console.error("❌ Error sending to song projection:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
-    }
-  }
-);
+// Note: send-to-song-projection handler moved to projection.ts module
 
 ipcMain.handle("send-to-main-window", async (event, { type, data }) => {
   try {
@@ -1161,53 +1783,52 @@ ipcMain.handle("send-to-main-window", async (event, { type, data }) => {
   }
 });
 
+// ============== Enhanced Song Projection APIs ==============
+// All projection handlers have been moved to projection.ts module for better organization
+
+// Note: Display configuration and performance optimization handlers moved to projection.ts module
+
+// ============== End Enhanced APIs ==============
+
+// BUG 6 fix: cache validated image paths so the sync existsSync/statSync calls
+// are only paid once per unique path, not on every browser request.
+const allowedImageExtensions = new Set([
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".bmp",
+  ".webp",
+]);
+const validatedImagePaths = new Set<string>();
+
 // Register custom protocol for local images
 app.whenReady().then(() => {
-  // Register custom protocol to serve local images
   protocol.registerFileProtocol("local-image", (request, callback) => {
     try {
-      // Extract the file path from the URL
       const url = request.url.substring("local-image://".length);
       const filePath = decodeURIComponent(url);
 
-      console.log("🖼️ Custom protocol serving image:", filePath);
-
-      // Security check - ensure the file exists and is an image
-      if (fs.existsSync(filePath)) {
-        const ext = path.extname(filePath).toLowerCase();
-        const allowedExtensions = [
-          ".png",
-          ".jpg",
-          ".jpeg",
-          ".gif",
-          ".bmp",
-          ".webp",
-        ];
-
-        if (allowedExtensions.includes(ext)) {
-          // Log successful image serving
-          logSystemInfo("Background image served via custom protocol", {
-            filePath,
-            extension: ext,
-            fileSize: fs.statSync(filePath).size,
-          });
-          callback({ path: filePath });
-        } else {
-          console.error("❌ File is not an allowed image type:", ext);
-          logSystemError("Invalid image type requested", {
-            filePath,
-            extension: ext,
-            allowedExtensions,
-          });
-          callback({ error: -6 }); // INVALID_URL
-        }
-      } else {
-        console.error("❌ Image file not found:", filePath);
-        callback({ error: -6 }); // INVALID_URL
+      // Fast path: already validated in this session
+      if (validatedImagePaths.has(filePath)) {
+        callback({ path: filePath });
+        return;
       }
-    } catch (error) {
-      console.error("❌ Error in custom protocol handler:", error);
-      callback({ error: -6 }); // INVALID_URL
+
+      const ext = path.extname(filePath).toLowerCase();
+      if (!allowedImageExtensions.has(ext)) {
+        callback({ error: -6 });
+        return;
+      }
+
+      if (fs.existsSync(filePath)) {
+        validatedImagePaths.add(filePath);
+        callback({ path: filePath });
+      } else {
+        callback({ error: -6 });
+      }
+    } catch {
+      callback({ error: -6 });
     }
   });
 });

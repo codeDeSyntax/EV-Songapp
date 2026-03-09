@@ -12,12 +12,23 @@ interface Window {
     maximizeApp: () => void;
     closeApp: () => void;
     selectDirectory: () => void;
-    saveSong: (directory: string, title: string, content: string) => void;
+    getSystemFonts: () => Promise<string[]>;
+    saveSong: (
+      directory: string,
+      title: string,
+      content: string,
+    ) => Promise<{
+      success: boolean;
+      filePath: string;
+      isNewFile: boolean;
+      message: string;
+      sanitizedTitle: string;
+    }>;
     editSong: (
       directory: string,
       newTitle: string,
       content: string,
-      originalPath: string
+      originalPath: string,
     ) => void;
     searchSong: (directory: string, searchTerm: string) => Promise<Song[]>;
     fetchSongs: (directory: string) => Promise<Song[]>;
@@ -27,25 +38,26 @@ interface Window {
     projectSong: (songs: any) => void;
     isProjectionActive: () => Promise<boolean>;
     closeProjectionWindow: () => Promise<boolean>;
+    focusProjectionWindow: () => Promise<{ success: boolean; reason?: string }>;
     onProjectionStateChanged: (
-      callback: (isActive: boolean) => void
+      callback: (isActive: boolean) => void,
     ) => () => void;
     onDisplaySong: (callback: (songData: Song) => void) => void;
     onDisplayInfo: (callback: (info: any) => void) => void;
     getImages: (dirPath: string) => Promise<string[]>;
     createEvPresentation: (
       path: string,
-      presentation: Omit<Presentation, "id" | "createdAt" | "updatedAt">
+      presentation: Omit<Presentation, "id" | "createdAt" | "updatedAt">,
     ) => Promise<Presentation>;
     loadEvPresentations: (path: string) => Promise<Presentation[]>;
     deleteEvPresentation: (id: string, directory: string) => Promise<void>;
     updateEvPresentation: (
       id: string,
       directoryPath: string,
-      presentation: Partial<Presentation>
+      presentation: Partial<Presentation>,
     ) => Promise<Presentation>;
     createBiblePresentationWindow: (
-      data: any
+      data: any,
     ) => Promise<{ success: boolean; error?: string }>;
     sendToBiblePresentation: (data: {
       type: string;
@@ -53,13 +65,18 @@ interface Window {
     }) => Promise<{ success: boolean; error?: string }>;
     focusMainWindow: () => Promise<{ success: boolean; error?: string }>;
     openFileInDefaultApp: (
-      filePath: string
+      filePath: string,
     ) => Promise<{ success: boolean; error?: string }>;
     constructFilePath: (
       basePath: string,
-      fileName: string
+      fileName: string,
     ) => Promise<{ success: boolean; path?: string; error?: string }>;
     getDisplayInfo: () => Promise<{
+      success: boolean;
+      data?: any;
+      error?: string;
+    }>;
+    testVisualSongBookOverride: () => Promise<{
       success: boolean;
       data?: any;
       error?: string;
@@ -122,7 +139,13 @@ interface Window {
       type: string;
       command?: string;
       fontSize?: number;
+      fontFamily?: string;
       data?: any;
+      slide?: { content: string; type: string; number?: number };
+      songTitle?: string;
+      currentIndex?: number;
+      totalSlides?: number;
+      [key: string]: any;
     }) => Promise<{ success: boolean; error?: string }>;
     onSongProjectionUpdate: (callback: (data: any) => void) => () => void;
     sendToMainWindow: (data: {
@@ -132,5 +155,98 @@ interface Window {
     onSongProjectionCommand: (callback: (data: any) => void) => () => void;
     onFontSizeUpdate: (callback: (fontSize: number) => void) => () => void;
     onMainWindowMessage: (callback: (data: any) => void) => () => void;
+    // Display preferences methods
+    saveDisplayPreferences: (preferences: {
+      displayId: number;
+      mode: string;
+    }) => Promise<{ success: boolean; data?: any; error?: string }>;
+    loadDisplayPreferences: () => Promise<{
+      success: boolean;
+      data?: { displayId: number; mode: string; timestamp: number } | null;
+      error?: string;
+    }>;
+    // Windows Display Mode Control (like Windows + P)
+    setWindowsDisplayMode: (
+      mode: "extend" | "duplicate" | "internal" | "external",
+    ) => Promise<{
+      success: boolean;
+      mode?: string;
+      error?: string;
+    }>;
+    getWindowsDisplayMode: () => Promise<{
+      success: boolean;
+      mode?: string;
+      activeMonitors?: number;
+      totalMonitors?: number;
+      error?: string;
+    }>;
+
+    // ── Backup & Google Drive ──────────────────────────────────────────────
+    googleAuthStart: () => Promise<{ success: boolean }>;
+    googleDriveStatus: () => Promise<{ connected: boolean; email?: string }>;
+    googleDriveDisconnect: () => Promise<{ success: boolean }>;
+    googleDriveBackup: (songsDir?: string) => Promise<{
+      success: boolean;
+      uploaded: number;
+      timestamp: string;
+      folderId: string;
+    }>;
+    backupSongsLocal: (songsDir?: string) => Promise<{
+      success: boolean;
+      cancelled?: boolean;
+      count?: number;
+      destDir?: string;
+      timestamp?: string;
+    }>;
+    getLastBackupTime: () => Promise<string | null>;
+    onBackupProgress: (
+      callback: (progress: { stage: "zipping" | "uploading" }) => void,
+    ) => () => void;
+    generatePdf: (
+      type: "prelist" | "database",
+      songs: any[],
+    ) => Promise<{ success: boolean; cancelled?: boolean; path?: string }>;
+
+    // Clipboard
+    clipboardWrite: (text: string) => Promise<{ success: boolean }>;
+    clipboardRead: () => Promise<string>;
+
+    // App info
+    getAppVersion: () => Promise<string>;
+
+    // Launch on startup
+    getLoginItemSettings: () => Promise<{ openAtLogin: boolean }>;
+    setLoginItemSettings: (
+      openAtLogin: boolean,
+    ) => Promise<{ openAtLogin: boolean }>;
+
+    // Cursor
+    getCursorScreenPoint: () => Promise<{ x: number; y: number }>;
+
+    // OS Notifications
+    sendOsNotification: (payload: {
+      title: string;
+      body: string;
+      silent?: boolean;
+    }) => Promise<{ success: boolean; reason?: string }>;
+
+    // Native theme
+    getNativeTheme: () => Promise<{
+      shouldUseDarkColors: boolean;
+      themeSource: string;
+    }>;
+    onNativeThemeChange: (
+      callback: (info: { shouldUseDarkColors: boolean }) => void,
+    ) => () => void;
+
+    // Tray
+    refreshTrayMenu: () => Promise<{ success: boolean }>;
+    onTrayAction: (callback: (action: string) => void) => () => void;
+
+    // Global shortcuts
+    onGlobalShortcut: (callback: (action: string) => void) => () => void;
+
+    // Shell
+    shellOpenExternal: (url: string) => Promise<{ success: boolean }>;
   };
 }

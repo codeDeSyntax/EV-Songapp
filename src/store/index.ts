@@ -2,6 +2,12 @@ import { configureStore } from "@reduxjs/toolkit";
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 import appSlice, { AppState } from "./slices/appSlice";
 import songSlice from "./slices/songSlice";
+import songSlidesSlice from "./slices/songSlidesSlice";
+import uiSlice from "./slices/uiSlice";
+import projectionSlice from "./slices/projectionSlice";
+
+import projectionHistorySlice from "./slices/projectionHistorySlice";
+import statisticsSlice from "./slices/statisticsSlice";
 
 /**
  * Redux store configuration optimized for large song collections.
@@ -13,6 +19,11 @@ export const store = configureStore({
   reducer: {
     songs: songSlice,
     app: appSlice,
+    songSlides: songSlidesSlice,
+    ui: uiSlice,
+    projection: projectionSlice,
+    projectionHistory: projectionHistorySlice,
+    statistics: statisticsSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -23,11 +34,21 @@ export const store = configureStore({
           "songs/setSongs",
           "songs/setSelectedSong",
           "songs/toggleFavorite",
+          "songSlides/setSlides",
         ],
         // Ignore these field paths in all actions
-        ignoredActionsPaths: ["payload.songs", "payload.content"],
+        ignoredActionsPaths: [
+          "payload.songs",
+          "payload.content",
+          "payload.slides",
+        ],
         // Ignore these paths in the state
-        ignoredPaths: ["songs.songs", "songs.filteredSongs", "songs.favorites"],
+        ignoredPaths: [
+          "songs.songs",
+          "songs.filteredSongs",
+          "songs.favorites",
+          "songSlides.slides",
+        ],
         // Reduce warning threshold to catch only very slow operations
         warnAfter: 128,
       },

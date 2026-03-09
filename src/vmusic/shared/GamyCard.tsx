@@ -1,0 +1,89 @@
+import React from "react";
+
+interface GamyCardProps {
+  title?: string;
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+  isDarkMode: boolean;
+  icon?: React.ReactNode;
+  transparent?: boolean;
+  blackBackground?: boolean;
+}
+
+/**
+ * Reusable Bento Grid Card Component
+ * Consistent styling across all Bible Studio cards
+ */
+export const GamyCard: React.FC<GamyCardProps> = ({
+  title,
+  children,
+  className = "",
+  style,
+  isDarkMode,
+  icon,
+  transparent = false,
+  blackBackground = false,
+}) => {
+  return (
+    <div
+      className={`rounded-xl p-2 border flex flex-col overflow-hidden relative ${className} ${
+        transparent ? "" : "backdrop-blur-sm"
+      }`}
+      style={{
+        ...(transparent
+          ? {
+              background: "transparent",
+              backgroundImage: "none",
+              boxShadow: "none",
+              border: `1px solid ${isDarkMode ? "#444" : "#ccc"}`,
+              fontFamily: "garamond",
+            }
+          : {
+              // background:
+              //   blackBackground && isDarkMode
+              //     ? "#000000"
+              //     : isDarkMode
+              //     ? "linear-gradient(145deg, #2c2c2c, #1a1a1a)"
+              //     : "linear-gradient(145deg, #9a9a9a, #8a8a8a)",
+              // backgroundImage:
+              //   blackBackground && isDarkMode
+              //     ? "repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px)"
+              //     : isDarkMode
+              //     ? "linear-gradient(145deg, #2c2c2c, #1a1a1a), repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(255, 255, 255, 0.015) 20px, rgba(255, 255, 255, 0.015) 21px)"
+              //     : "linear-gradient(145deg, #9a9a9a, #8a8a8a), repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(0, 0, 0, 0.03) 20px, rgba(0, 0, 0, 0.03) 21px), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(0, 0, 0, 0.03) 20px, rgba(0, 0, 0, 0.03) 21px)",
+              boxShadow:
+                blackBackground && isDarkMode
+                  ? "inset 2px 2px 4px rgba(0,0,0,0.8), inset -2px -2px 4px rgba(255,255,255,0.03), 0 8px 16px rgba(0,0,0,0.6)"
+                  : isDarkMode
+                  ? "inset 2px 2px 4px rgba(0,0,0,0.6), inset -2px -2px 4px rgba(255,255,255,0.05), 0 8px 16px rgba(0,0,0,0.4)"
+                  : "inset 2px 2px 4px rgba(0,0,0,0.3), inset -2px -2px 4px rgba(255,255,255,0.2), 0 8px 16px rgba(0, 0, 0, 0.1)",
+              border: `1px solid ${
+                blackBackground && isDarkMode
+                  ? "#222"
+                  : isDarkMode
+                  ? "#444"
+                  : "#606060"
+              }`,
+            }),
+        ...style,
+      }}
+    >
+      {title && (
+        <div className="flex items-center gap-2 mb-2 flex-shrink-0 relative z-10">
+          {icon && (
+            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#252525] to-[#1a1a1a] flex items-center justify-center shadow-md">
+              {icon}
+            </div>
+          )}
+          <h3 className="text-[0.9rem] font-semibold text-gray-900 dark:text-gray-100">
+            {title}
+          </h3>
+        </div>
+      )}
+      <div className="flex- overflow-auto no-scrollbar relative z-10">
+        {children}
+      </div>
+    </div>
+  );
+};

@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { ArrowLeftCircle } from "lucide-react";
-import BlessedMusic from "./vmusic/BlessedMusic";
-import EditSong from "./vmusic/EditForm";
+import ControlRoom from "./vmusic/ControlRoom";
 import WorkspaceSelector from "./vmusic/Welcome";
-import CreateSong from "./vmusic/Form";
-import SongPresentation from "./vmusic/PresentationMode";
-import SongCollectionManager from "./vmusic/Categorize";
 import UserGuidePage from "./vmusic/Userguide";
-import PresentationBackgroundSelector from "./vmusic/BackgroundChoose";
-import SongPresentationDisplay from "./vmusic/components/SongPresentationDisplay";
-import Recents from "./vmusic/Recents";
+import SongPresentationDisplay from "./vmusic/components/SongPresentationDisplay/SongPresentationDisplay";
+import FloatingProjectionPreview from "./components/FloatingProjectionPreview";
+import Update from "./vmusic/update";
 import { useAppSelector, useAppDispatch } from "./store";
 import { setCurrentScreen } from "./store/slices/appSlice";
 import { SecretLogsManager } from "./components/SecretLogsManager";
+import { useProjectionState } from "./hooks/useProjectionState";
 
 const App = () => {
   const currentScreen = useAppSelector((state) => state.app.currentScreen);
   const dispatch = useAppDispatch();
   const [currentRoute, setCurrentRoute] = useState(window.location.hash);
+
+  // Projection state for floating preview
+  const { isActive, isVisible, hideFloatingPreview } = useProjectionState();
 
   // Handle hash-based routing for special pages like Bible presentation
   useEffect(() => {
@@ -82,29 +82,29 @@ const App = () => {
         className={`flex flex-col h-screen w-screen thin-scrollbar no-scrollbar bg-white dark:bg-ltgray `}
         style={{ fontFamily: "Palatino" }}
       >
-        {/* <BlessedMusic /> */}
+        {/* Auto-updater — renders a modal when a new version is available */}
+        <Update />
+
+        {/* Main App Content */}
         {currentScreen === "Home" ? (
           <WorkspaceSelector />
-        ) : currentScreen === "create" ? (
-          <CreateSong />
         ) : currentScreen === "Songs" ? (
-          <BlessedMusic />
-        ) : currentScreen === "edit" ? (
-          <EditSong />
-        ) : currentScreen === "Presentation" ? (
-          <SongPresentation />
-        ) : currentScreen === "categorize" ? (
-          <SongCollectionManager />
+          <ControlRoom />
         ) : currentScreen === "userguide" ? (
           <UserGuidePage />
-        ) : currentScreen === "backgrounds" ? (
-          <PresentationBackgroundSelector />
-        ) : currentScreen === "recents" ? (
-          <Recents />
         ) : (
           <WorkspaceSelector />
         )}
-        {/* <SongPresentation/> */}
+
+        {/* Floating Projection Preview - Only show when projection is active and not on projection display page */}
+        {isVisible &&
+          currentRoute !== "#/song-presentation-display" &&
+          currentRoute !== "#song-presentation-display" && (
+            <FloatingProjectionPreview
+              isVisible={isVisible}
+              onClose={hideFloatingPreview}
+            />
+          )}
       </div>
     </SecretLogsManager>
   );

@@ -32,7 +32,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
     // Check system preference as fallback
     const prefersDark = window.matchMedia?.(
-      "(prefers-color-scheme: dark)"
+      "(prefers-color-scheme: dark)",
     ).matches;
     return prefersDark || false;
   });
@@ -46,7 +46,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       "Songs ThemeProvider: Applying theme - isDarkMode:",
       isDarkMode,
       "currentScreen:",
-      currentScreen
+      currentScreen,
     );
 
     // Apply dark mode class to document
@@ -70,6 +70,15 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     // Store preference
     localStorage.setItem("songsDarkMode", newMode.toString());
   };
+
+  // Sync with OS dark/light mode changes in real time
+  useEffect(() => {
+    if (!window.api?.onNativeThemeChange) return;
+    const unsub = window.api.onNativeThemeChange(({ shouldUseDarkColors }) => {
+      setIsDarkMode(shouldUseDarkColors);
+    });
+    return unsub;
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode }}>

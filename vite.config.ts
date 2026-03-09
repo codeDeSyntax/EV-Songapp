@@ -1,13 +1,14 @@
 import { rmSync } from "node:fs";
 import path from "node:path";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import electron from "vite-plugin-electron/simple";
 import pkg from "./package.json";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ command }) => {
-  
+export default defineConfig(({ command, mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+
   rmSync("dist-electron", { recursive: true, force: true });
 
   const isServe = command === "serve";
@@ -29,20 +30,24 @@ export default defineConfig(({ command }) => {
           onstart(args) {
             if (process.env.VSCODE_DEBUG) {
               console.log(
-                /* For `.vscode/.debug.script.mjs` */ "[startup] Electron App"
+                /* For `.vscode/.debug.script.mjs` */ "[startup] Electron App",
               );
             } else {
               args.startup();
             }
           },
           vite: {
+            define: {
+              __GOOGLE_CLIENT_ID__: JSON.stringify(env.CLIENT_ID || ""),
+              __GOOGLE_CLIENT_SECRET__: JSON.stringify(env.CLIENT_SECRET || ""),
+            },
             build: {
               sourcemap,
               minify: isBuild,
               outDir: "dist-electron/main",
               rollupOptions: {
                 external: Object.keys(
-                  "dependencies" in pkg ? pkg.dependencies : {}
+                  "dependencies" in pkg ? pkg.dependencies : {},
                 ),
               },
             },
@@ -59,7 +64,7 @@ export default defineConfig(({ command }) => {
               outDir: "dist-electron/preload",
               rollupOptions: {
                 external: Object.keys(
-                  "dependencies" in pkg ? pkg.dependencies : {}
+                  "dependencies" in pkg ? pkg.dependencies : {},
                 ),
               },
             },

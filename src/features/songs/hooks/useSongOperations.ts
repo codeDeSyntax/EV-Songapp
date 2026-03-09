@@ -14,8 +14,6 @@ import {
   setShowDeleteDialog,
   deleteSongFromState,
   clearSearch,
-  addToRecents,
-  removeFromRecents,
   ViewMode,
   ActiveTab,
 } from "@/store/slices/songSlice";
@@ -61,17 +59,10 @@ export const useSongOperations = () => {
         window.api.onDisplaySong((selectedSong) => {
           console.log(`songData: ${selectedSong.title}`);
         });
-
-        // Add song to recents when presented
-        dispatch(addToRecents(song));
       }
     },
     [dispatch]
   );
-
-  const goToPresentation = useCallback(() => {
-    dispatch(setCurrentScreen("Presentation"));
-  }, [dispatch]);
 
   const presentSelectedSong = useCallback(() => {
     if (selectedSong) {
@@ -82,14 +73,6 @@ export const useSongOperations = () => {
   // Navigation operations
   const goToEdit = useCallback(() => {
     dispatch(setCurrentScreen("edit"));
-  }, [dispatch]);
-
-  const goToCreate = useCallback(() => {
-    dispatch(setCurrentScreen("create"));
-  }, [dispatch]);
-
-  const goToCategorize = useCallback(() => {
-    dispatch(setCurrentScreen("categorize"));
   }, [dispatch]);
 
   const goToUserGuide = useCallback(() => {
@@ -154,7 +137,9 @@ export const useSongOperations = () => {
   const loadSongs = useCallback(async () => {
     try {
       dispatch(setLoading(true));
-      const songsData = (await window.api.fetchSongs(songRepo)) as Song[];
+
+      // Always load from app data directory (empty string triggers default)
+      const songsData = (await window.api.fetchSongs("")) as Song[];
       dispatch(setSongs(songsData));
     } catch (error) {
       // Extract meaningful information from error for better user experience
@@ -227,14 +212,6 @@ export const useSongOperations = () => {
     }
   }, [deleteSong, selectedSong]);
 
-  // Remove song from recents
-  const removeRecentSong = useCallback(
-    (songId: string, date: string) => {
-      dispatch(removeFromRecents({ songId, date }));
-    },
-    [dispatch]
-  );
-
   return {
     // State
     songs,
@@ -254,11 +231,8 @@ export const useSongOperations = () => {
     selectSong,
     deselectSong,
     presentSong,
-    goToPresentation,
     presentSelectedSong,
     goToEdit,
-    goToCreate,
-    goToCategorize,
     goToUserGuide,
     goToBackgrounds,
     updateSearchQuery,
@@ -273,6 +247,5 @@ export const useSongOperations = () => {
     hideDeleteConfirmation,
     deleteSong,
     deleteSelectedSong,
-    removeRecentSong,
   };
 };

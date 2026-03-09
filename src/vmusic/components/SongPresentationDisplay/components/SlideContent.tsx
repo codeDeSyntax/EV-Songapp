@@ -1,0 +1,314 @@
+import React, {
+  useRef,
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+} from "react";
+
+interface SlideContentProps {
+  content: string;
+  fontFamily: string;
+  fontSizeMultiplier: number;
+  backgroundImage: string;
+  overlayOpacity?: number;
+  baseFontSize?: number;
+  sectionType?: string;
+  sectionNumber?: number;
+  isLastVerse?: boolean;
+  totalVerses?: number;
+  showVerseFraction?: boolean;
+  renderBackgroundOnly?: boolean;
+  renderTextOnly?: boolean;
+}
+
+export const SlideContent: React.FC<SlideContentProps> = ({
+  content,
+  fontFamily,
+  fontSizeMultiplier,
+  backgroundImage,
+  overlayOpacity = 0.3,
+  baseFontSize = 80,
+  sectionType,
+  sectionNumber,
+  isLastVerse,
+  totalVerses,
+  showVerseFraction,
+  renderBackgroundOnly = false,
+  renderTextOnly = false,
+}) => {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textContentRef = useRef<HTMLDivElement>(null);
+  const [calculatedFontSize, setCalculatedFontSize] = useState(baseFontSize);
+  const [isResizing, setIsResizing] = useState(false);
+
+  useEffect(() => {
+    // Force font to load
+    if (document.fonts) {
+      document.fonts.ready.then(() => {
+        console.log("  - All fonts are loaded and ready");
+      });
+    }
+  }, [fontFamily]);
+
+  // Detect background type
+  const backgroundType = useMemo(() => {
+    if (backgroundImage.startsWith("solid:")) {
+      return "solid";
+    }
+    if (backgroundImage.startsWith("gradient:")) {
+      return "gradient";
+    }
+    if (
+      backgroundImage.endsWith(".mp4") ||
+      backgroundImage.endsWith(".webm") ||
+      backgroundImage.endsWith(".mov")
+    ) {
+      return "video";
+    }
+    return "image";
+  }, [backgroundImage]);
+
+  // Extract color/gradient value
+  const backgroundValue = useMemo(() => {
+    if (backgroundType === "solid") {
+      return backgroundImage.replace("solid:", "");
+    }
+    if (backgroundType === "gradient") {
+      return backgroundImage.replace("gradient:", "");
+    }
+    return backgroundImage;
+  }, [backgroundImage, backgroundType]);
+
+  // Check if background is a video (legacy check kept for compatibility)
+  const isVideo = useMemo(() => {
+    return backgroundType === "video";
+  }, [backgroundType]);
+
+  // Auto-play video when it loads
+  useEffect(() => {
+    if (isVideo && videoRef.current) {
+      videoRef.current.play().catch((err) => {
+        console.log("Video autoplay prevented:", err);
+      });
+    }
+  }, [isVideo, backgroundImage]);
+
+  // Split content into lines
+  const contentLines = useMemo(() => {
+    if (!content) return [];
+    return content.split("\n").filter((line) => line.trim());
+  }, [content]);
+
+  // Binary search auto-sizing to find maximum font size that fits
+  const resizeToFit = useCallback(() => {
+    if (!textContentRef.current || !containerRef.current) return;
+    if (isResizing) return;
+
+    setIsResizing(true);
+
+    const contentElement = textContentRef.current;
+    const containerElement = containerRef.current;
+
+    // Available space — container uses py-4 (16px top + 16px bottom = 32px total)
+    const paddingVertical = 32;
+    const availableHeight = containerElement.clientHeight - paddingVertical;
+
+    // Binary search for optimal font size
+    let low = 12;
+    let high = 500 * fontSizeMultiplier;
+    let optimalSize = low;
+
+    // Very small safety margin (1%) to prevent edge overflow while maximizing size
+    const heightMargin = availableHeight * 0.01;
+
+    // Binary search with 20 iterations for speed while maintaining precision
+    for (let i = 0; i < 20; i++) {
+      const testSize = Math.floor((low + high) / 2);
+
+      // Apply test size
+      contentElement.style.fontSize = `${testSize}px`;
+
+      // Calculate dynamic line height based on font size
+      let lineHeight = 1.2;
+      if (testSize >= 100) lineHeight = 1.0;
+      else if (testSize >= 80) lineHeight = 1.4;
+      else if (testSize >= 60) lineHeight = 1.4;
+      else if (testSize >= 40) lineHeight = 1.4;
+      else lineHeight = 1.3;
+
+      contentElement.style.lineHeight = `${lineHeight}`;
+
+      // Force layout reflow to get accurate measurements
+      contentElement.offsetHeight;
+
+      // Measure actual rendered height
+      const contentHeight = contentElement.scrollHeight;
+
+      // Check if content fits
+      if (contentHeight <= availableHeight - heightMargin) {
+        // Fits - try larger
+        optimalSize = testSize;
+        low = testSize + 1;
+      } else {
+        // Too big - try smaller
+        high = testSize - 1;
+      }
+    }
+
+    setCalculatedFontSize(optimalSize);
+    setIsResizing(false);
+  }, [isResizing, fontSizeMultiplier, contentLines.length]);
+
+  // Trigger resize on content change - only when content actually changes
+  useEffect(() => {
+    if (
+      textContentRef.current &&
+      containerRef.current &&
+      content &&
+      !renderBackgroundOnly
+    ) {
+      requestAnimationFrame(() => {
+        resizeToFit();
+      });
+    }
+  }, [content, fontFamily, fontSizeMultiplier]);
+
+  // Trigger resize when refs become ready - single RAF is enough
+  useEffect(() => {
+    if (textContentRef.current && containerRef.current && content) {
+      requestAnimationFrame(() => {
+        resizeToFit();
+      });
+    }
+  }, []);
+
+  // Window resize listener
+  useEffect(() => {
+    window.addEventListener("resize", resizeToFit);
+    return () => window.removeEventListener("resize", resizeToFit);
+  }, [resizeToFit]);
+
+  return (
+    <div className="absolute inset-0 flex items-center justify-center">
+      {/* Background - Video, Image, Solid Color, or Gradient (Only render if not text-only mode) */}
+      {!renderTextOnly && (
+        <>
+          {backgroundType === "video" ? (
+            <video
+              ref={videoRef}
+              className="absolute inset-0 w-full h-full object-cover"
+              src={backgroundValue}
+              autoPlay
+              loop
+              muted
+              playsInline
+            />
+          ) : backgroundType === "solid" ? (
+            <div
+              className="absolute inset-0"
+              style={{ backgroundColor: backgroundValue }}
+            />
+          ) : backgroundType === "gradient" ? (
+            <div
+              className="absolute inset-0"
+              style={{ background: backgroundValue }}
+            />
+          ) : (
+            <img
+              className="absolute inset-0 w-full h-full object-cover"
+              src={backgroundValue}
+              alt="Background"
+            />
+          )}
+
+          {/* Dark overlay for better text visibility */}
+          <div
+            className="absolute inset-0 bg-black transition-opacity duration-200"
+            style={{ opacity: overlayOpacity }}
+          />
+        </>
+      )}
+
+      {/* Content container (Only render if not background-only mode) */}
+      {!renderBackgroundOnly && (
+        <div
+          ref={containerRef}
+          className="relative z-10 w-full h-full flex items-center justify-center px-8 py-4"
+        >
+          <div
+            ref={textContentRef}
+            className="text-center w-full"
+            style={{
+              fontFamily: fontFamily,
+              fontSize: `${calculatedFontSize}px`,
+              lineHeight: calculatedFontSize >= 100 ? 1.0 : 1.2,
+            }}
+          >
+            {contentLines.map((line, index) => (
+              <p
+                key={index}
+                className="m-0 font-bold text-white drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]"
+                style={{
+                  fontFamily: fontFamily,
+                  marginBottom:
+                    index < contentLines.length - 1
+                      ? `${Math.floor(calculatedFontSize * 0.1)}px`
+                      : "0",
+                  whiteSpace: "normal",
+                  wordWrap: "break-word",
+                  textShadow: `
+                  0 0 8px rgba(0, 0, 0, 0.9),
+                  0 0 12px rgba(0, 0, 0, 0.8),
+                  0 0 16px rgba(0, 0, 0, 0.7),
+                  3px 3px 6px rgba(0, 0, 0, 0.8),
+                  -3px -3px 6px rgba(0, 0, 0, 0.8),
+                  3px -3px 6px rgba(0, 0, 0, 0.8),
+                  -3px 3px 6px rgba(0, 0, 0, 0.8),
+                  5px 5px 10px rgba(0, 0, 0, 0.6),
+                  -5px -5px 10px rgba(0, 0, 0, 0.6)
+                `,
+                }}
+              >
+                {line.trim() || " "}
+              </p>
+            ))}
+          </div>
+          {/* Section number at bottom right, with total verses if verse */}
+          {sectionType && sectionNumber !== undefined && (
+            <mark
+              className="absolute bottom-1 right-4 text-4xl font-sans font-bold px-4 select-none pointer-events-none z-20"
+              style={{
+                backgroundColor:
+                  sectionType.toLowerCase() === "verse" &&
+                  sectionNumber === totalVerses
+                    ? "#ef4444" // red-500
+                    : "#fef08a", // yellow-200 (default mark color)
+                color:
+                  sectionType.toLowerCase() === "verse" &&
+                  sectionNumber === totalVerses
+                    ? "white"
+                    : "black",
+              }}
+            >
+              {sectionType.toLowerCase() === "verse" &&
+              showVerseFraction &&
+              totalVerses ? (
+                <>
+                  {sectionNumber === totalVerses && "L - "}Verse {sectionNumber}{" "}
+                  / {totalVerses}
+                </>
+              ) : (
+                <>
+                  {sectionType} {sectionNumber}
+                </>
+              )}
+            </mark>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};

@@ -1,0 +1,43 @@
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Clipboard board -->
+  <rect x="18" y="22" width="44" height="52" rx="4" fill="currentColor" opacity="0.15"/>
+  <rect x="18" y="22" width="44" height="52" rx="4" stroke="currentColor" stroke-width="2.5" opacity="0.6"/>
+  
+  <!-- Clipboard clip/top -->
+  <path d="M28 22C28 19.7909 29.7909 18 32 18H48C50.2091 18 52 19.7909 52 22V26H28V22Z" fill="currentColor" opacity="0.3"/>
+  <rect x="32" y="14" width="16" height="8" rx="2" fill="currentColor" opacity="0.4"/>
+  
+  <!-- Text lines on clipboard -->
+  <line x1="26" y1="34" x2="54" y2="34" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  <line x1="26" y1="42" x2="54" y2="42" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  <line x1="26" y1="50" x2="48" y2="50" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  <line x1="26" y1="58" x2="54" y2="58" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  
+  <!-- Paste/Document icon coming in -->
+  <g opacity="0.8">
+    <rect x="38" y="44" width="28" height="32" rx="3" fill="currentColor" opacity="0.2"/>
+    <rect x="38" y="44" width="28" height="32" rx="3" stroke="currentColor" stroke-width="2.5"/>
+    
+    <!-- Lines on pasted document -->
+    <line x1="44" y1="52" x2="60" y2="52" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+    <line x1="44" y1="58" x2="60" y2="58" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+    <line x1="44" y1="64" x2="56" y2="64" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  </g>
+  
+  <!-- Arrow/Movement indicator -->
+  <g opacity="0.7">
+    <path d="M35 56L39 52L35 48" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="30" y1="52" x2="38" y2="52" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Sparkle/Action indicators -->
+  <circle cx="24" cy="30" r="2" fill="currentColor" opacity="0.5">
+    <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="68" cy="38" r="2" fill="currentColor" opacity="0.5">
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="64" cy="26" r="1.5" fill="currentColor" opacity="0.5">
+    <animate attributeName="opacity" values="0.4;0.9;0.4" dur="3s" repeatCount="indefinite"/>
+  </circle>
+</svg>

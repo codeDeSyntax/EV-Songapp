@@ -16,6 +16,8 @@ release
 
 # Editor directories and files
 .vscode/.debug.env
+.env
+.env.*
 .idea
 .DS_Store
 *.suo
