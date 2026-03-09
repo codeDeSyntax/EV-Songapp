@@ -41,15 +41,6 @@ export function update(win: Electron.BrowserWindow) {
     win.webContents.send("download-progress", info);
   });
 
-  // ── DEV SIMULATION ── fires the badge after 5s so you can test the UI
-  // Remove this block before shipping the next release.
-  if (!app.isPackaged) {
-    setTimeout(() => {
-      win.webContents.send("update-downloaded", { version: "99.9.9" });
-    }, 5000);
-    return;
-  }
-
   // Checking for updates
   ipcMain.handle("check-update", async () => {
     try {
