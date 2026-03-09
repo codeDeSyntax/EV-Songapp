@@ -341,7 +341,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
   return (
     <div className="h-full flex flex-col rounded-md bg-white/50 dark:bg-app-surface relative overflow-hidden">
       {/* Neural Network Canvas Background */}
-      <NeuralNetworkBackground isDarkMode={isDarkMode} opacity={0.25} />
+      {/* <NeuralNetworkBackground isDarkMode={isDarkMode} opacity={0.25} /> */}
 
       {/* Header */}
       <div className="px-3 py-2.5 border-b border-app-border flex items-center justify-between flex-shrink-0 relative z-10">
