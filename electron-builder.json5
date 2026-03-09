@@ -8,7 +8,13 @@
   directories: {
     output: "release/${version}",
   },
-  files: ["dist-electron", "dist"],
+  files: [
+    "dist-electron",
+    "dist",
+    "node_modules/**/*",
+    "!node_modules/.cache/**",
+    "!node_modules/.vite/**",
+  ],
   win: {
     icon: "public/evsongsicon.ico",
     target: [
