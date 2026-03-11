@@ -49,16 +49,7 @@ export default defineConfig(({ command, mode }) => {
               minify: isBuild,
               outDir: "dist-electron/main",
               rollupOptions: {
-                // Externalize electron, Node built-ins, and heavy packages.
-                // googleapis alone pulls in 2 400+ modules and OOMs the bundler.
-                external: [
-                  "electron",
-                  "electron-updater",
-                  /^node:/,
-                  "googleapis",
-                  /^googleapis\//,
-                  "googleapis-common",
-                ],
+                external: ["electron", "electron-updater", /^node:/],
               },
             },
           },

@@ -8,17 +8,7 @@
   directories: {
     output: "release/${version}",
   },
-  files: [
-    "dist-electron",
-    "dist",
-    "node_modules/googleapis/**",
-    "node_modules/googleapis-common/**",
-    "node_modules/gaxios/**",
-    "node_modules/gcp-metadata/**",
-    "node_modules/gtoken/**",
-    "node_modules/google-auth-library/**",
-    "node_modules/google-gax/**",
-  ],
+  files: ["dist-electron", "dist"],
   win: {
     icon: "public/evsongsicon.ico",
     target: [

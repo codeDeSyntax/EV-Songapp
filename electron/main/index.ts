@@ -21,9 +21,6 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import os from "node:os";
 import http from "node:http";
-import { Readable } from "node:stream";
-import { v4 as uuidv4 } from "uuid";
-import { google } from "googleapis";
 import archiver from "archiver";
 
 // ---------------------------------------------------------------------------
@@ -94,19 +91,78 @@ const GOOGLE_CLIENT_SECRET: string =
   "";
 
 // ---- Google Drive auth setup ----
+interface GoogleTokens {
+  access_token: string;
+  refresh_token?: string;
+  expiry_date?: number;
+  token_type?: string;
+  scope?: string;
+}
+
 const REDIRECT_PORT = 41235;
 const REDIRECT_URI = `http://localhost:${REDIRECT_PORT}/callback`;
-const tokenStore = new JsonStore<{ tokens?: any; lastBackupTime?: string }>({
-  name: "ev-google-auth",
-});
-const oauth2Client = new google.auth.OAuth2(
-  GOOGLE_CLIENT_ID,
-  GOOGLE_CLIENT_SECRET,
-  REDIRECT_URI,
-);
-// Restore persisted tokens
-const _savedTokens = tokenStore.get("tokens");
-if (_savedTokens) oauth2Client.setCredentials(_savedTokens as any);
+const tokenStore = new JsonStore<{
+  tokens?: GoogleTokens;
+  lastBackupTime?: string;
+}>({ name: "ev-google-auth" });
+
+async function exchangeCodeForTokens(code: string): Promise<GoogleTokens> {
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code,
+      client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
+      redirect_uri: REDIRECT_URI,
+      grant_type: "authorization_code",
+    }).toString(),
+  });
+  if (!res.ok) throw new Error(`Token exchange failed: ${await res.text()}`);
+  const data = (await res.json()) as any;
+  return {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    expiry_date: data.expires_in
+      ? Date.now() + data.expires_in * 1000
+      : undefined,
+    token_type: data.token_type,
+    scope: data.scope,
+  };
+}
+
+async function getValidAccessToken(): Promise<string> {
+  let tokens = tokenStore.get("tokens");
+  if (!tokens) throw new Error("Not connected to Google Drive.");
+  const needsRefresh = tokens.expiry_date
+    ? tokens.expiry_date < Date.now() + 60_000
+    : false;
+  if (needsRefresh) {
+    if (!tokens.refresh_token)
+      throw new Error("Session expired. Please sign in again.");
+    const res = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        refresh_token: tokens.refresh_token,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        grant_type: "refresh_token",
+      }).toString(),
+    });
+    if (!res.ok) throw new Error(`Token refresh failed: ${await res.text()}`);
+    const data = (await res.json()) as any;
+    tokens = {
+      ...tokens,
+      access_token: data.access_token,
+      expiry_date: data.expires_in
+        ? Date.now() + data.expires_in * 1000
+        : undefined,
+    };
+    tokenStore.set("tokens", tokens);
+  }
+  return tokens.access_token;
+}
 
 // Import secret logger
 import {
@@ -1132,11 +1188,15 @@ ipcMain.handle("delete-song", async (event, filePath) => {
 /** Step 1: Open Google OAuth in the system browser and catch the redirect on a temp local server */
 ipcMain.handle("google-auth-start", async () => {
   return new Promise<{ success: boolean }>((resolve, reject) => {
-    const authUrl = oauth2Client.generateAuthUrl({
+    const authParams = new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      redirect_uri: REDIRECT_URI,
+      response_type: "code",
+      scope: "https://www.googleapis.com/auth/drive.file",
       access_type: "offline",
-      scope: ["https://www.googleapis.com/auth/drive.file"],
       prompt: "consent",
     });
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${authParams.toString()}`;
 
     let server: http.Server | null = null;
     const authTimeout = setTimeout(
@@ -1167,8 +1227,7 @@ ipcMain.handle("google-auth-start", async () => {
       }
 
       try {
-        const { tokens } = await oauth2Client.getToken(code);
-        oauth2Client.setCredentials(tokens);
+        const tokens = await exchangeCodeForTokens(code);
         tokenStore.set("tokens", tokens);
         resolve({ success: true });
       } catch (err) {
@@ -1189,17 +1248,15 @@ ipcMain.handle("google-auth-start", async () => {
 
 /** Check whether stored tokens are still valid */
 ipcMain.handle("google-drive-status", async () => {
-  const tokens = tokenStore.get("tokens");
-  if (!tokens) return { connected: false };
+  if (!tokenStore.get("tokens")) return { connected: false };
   try {
-    oauth2Client.setCredentials(tokens as any);
-    // Use drive.about.get — works with drive.file scope (unlike oauth2 userinfo)
-    const drive = google.drive({ version: "v3", auth: oauth2Client });
-    const { data } = await drive.about.get({
-      fields: "user(emailAddress,displayName)",
-    });
-    // Persist any refreshed tokens
-    tokenStore.set("tokens", oauth2Client.credentials);
+    const accessToken = await getValidAccessToken();
+    const res = await fetch(
+      "https://www.googleapis.com/drive/v3/about?fields=user(emailAddress%2CdisplayName)",
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+    if (!res.ok) return { connected: false };
+    const data = (await res.json()) as any;
     return {
       connected: true,
       email: data.user?.emailAddress ?? data.user?.displayName ?? "Connected",
@@ -1211,10 +1268,16 @@ ipcMain.handle("google-drive-status", async () => {
 
 /** Revoke and delete stored credentials */
 ipcMain.handle("google-drive-disconnect", async () => {
-  try {
-    await oauth2Client.revokeCredentials();
-  } catch {
-    /* ignore revoke errors */
+  const tokens = tokenStore.get("tokens");
+  if (tokens) {
+    try {
+      await fetch(
+        `https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(tokens.access_token)}`,
+        { method: "POST" },
+      );
+    } catch {
+      /* ignore revoke errors */
+    }
   }
   tokenStore.delete("tokens");
   return { success: true };
@@ -1224,12 +1287,9 @@ ipcMain.handle("google-drive-disconnect", async () => {
 ipcMain.handle(
   "google-drive-backup",
   async (_event, songsDirectory?: string) => {
-    const tokens = tokenStore.get("tokens");
-    if (!tokens)
+    if (!tokenStore.get("tokens"))
       throw new Error("Not connected to Google Drive. Please sign in first.");
 
-    oauth2Client.setCredentials(tokens as any);
-    const drive = google.drive({ version: "v3", auth: oauth2Client });
     const dir = songsDirectory || path.join(app.getPath("userData"), "Songs");
 
     // ── Step 1: ZIP all .evsong files into a temp file ──────────────────
@@ -1263,13 +1323,36 @@ ipcMain.handle(
     // ── Step 2: Upload the single ZIP to Google Drive ────────────────────
     mainWin?.webContents.send("backup-progress", { stage: "uploading" });
 
+    const accessToken = await getValidAccessToken();
     const zipContent = await fs.promises.readFile(tempZipPath);
-    const bodyStream = Readable.from(zipContent);
+    const boundary = `ev_backup_${Date.now()}`;
+    const metaPart = Buffer.from(
+      `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: zipName })}\r\n`,
+    );
+    const mediaHeader = Buffer.from(
+      `--${boundary}\r\nContent-Type: application/zip\r\n\r\n`,
+    );
+    const closing = Buffer.from(`\r\n--${boundary}--`);
+    const uploadBody = Buffer.concat([
+      metaPart,
+      mediaHeader,
+      zipContent,
+      closing,
+    ]);
 
-    await drive.files.create({
-      requestBody: { name: zipName },
-      media: { mimeType: "application/zip", body: bodyStream },
-    });
+    const uploadRes = await fetch(
+      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": `multipart/related; boundary=${boundary}`,
+        },
+        body: uploadBody,
+      },
+    );
+    if (!uploadRes.ok)
+      throw new Error(`Drive upload failed: ${await uploadRes.text()}`);
 
     // ── Step 3: Clean up temp file ───────────────────────────────────────
     await fs.promises.unlink(tempZipPath).catch(() => {
@@ -1278,7 +1361,6 @@ ipcMain.handle(
 
     const backupTime = new Date().toISOString();
     tokenStore.set("lastBackupTime", backupTime);
-    tokenStore.set("tokens", oauth2Client.credentials);
     return { success: true, uploaded: songFiles.length, timestamp: backupTime };
   },
 );
