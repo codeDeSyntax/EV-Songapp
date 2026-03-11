@@ -128,7 +128,7 @@ h1 {
 } */
 button {
   border: none;
-  border-radius: 10px;
+  /* border-radius: 10px; */
   background-color: transparent;
 }
 button:hover {

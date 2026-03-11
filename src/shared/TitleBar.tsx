@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Minus, Square, User2Icon, X, FileText } from "lucide-react";
+import { Minus, Maximize2, X, FileText, Home, User2 } from "lucide-react";
+
+declare const __APP_VERSION__: string;
 import UpdateManager from "./UpdateManager";
-import { HomeFilled } from "@ant-design/icons";
 
 import { useAppSelector, useAppDispatch } from "@/store";
 import {
@@ -15,7 +16,6 @@ import { ThemeToggle } from "./ThemeToggler";
 import { useTheme } from "@/Provider/Theme";
 
 const TitleBar = () => {
-  const [isHovered, setIsHovered] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
 
   const dispatch = useAppDispatch();
@@ -109,7 +109,7 @@ const TitleBar = () => {
 
   return (
     <div
-      className="h-6 w-full fixed flex z-50 top-0 m-auto select-none"
+      className="h-7  w-full fixed flex z-50 top-0 m-auto select-none"
       style={
         {
           WebkitAppRegion: "drag",
@@ -129,126 +129,88 @@ const TitleBar = () => {
         } as any
       }
     >
-      <div className="flex w-full items-center justify-center px-2">
-        {/* Control buttons excluded from dragging */}
+      <div className="flex w-full items-center justify-center px-1">
         <div
-          className="flex items-center justify-between w-full m-auto space-x-2"
-          style={{ WebkitAppRegion: "no-drag" } as any} // Exclude control buttons from dragging
+          className="flex items-center justify-between w-full"
+          style={{ WebkitAppRegion: "no-drag" } as any}
         >
-          <div className="flex items-center justify-center gap-2">
-            <div
-              onClick={handleClose}
-              onMouseEnter={() => setIsHovered("close")}
-              onMouseLeave={() => setIsHovered(null)}
-              className="w-4 h-4 rounded-full bg-[#FF5F57] hover:bg-red-600 hover:cursor-pointer flex items-center justify-center"
+          {/* LEFT: logo + action buttons */}
+          <div className="flex items-center gap-1">
+            <img src="./evsongsicon.png" alt="icon" className="w-5 h-5 mr-1" />
+
+            <button
+              onClick={() => dispatch(setCurrentScreen("Home"))}
+              className={`w-7 h-7 rounded flex items-center justify-center cursor-pointer transition-colors text-white/80 hover:text-white hover:bg-white/15 ${
+                currentScreen === "Songs" ? "" : "hidden"
+              }`}
+              title="Home"
             >
-              {/* {isHovered === "close" && ( */}
-              <X className="text-white z-20 size-5" />
-            </div>
-            <div
-              onClick={handleMinimize}
-              onMouseEnter={() => setIsHovered("minimize")}
-              onMouseLeave={() => setIsHovered(null)}
-              className="w-4 h-4 text-white rounded-full bg-black hover:bg-yellow-600 hover:cursor-pointer flex items-center justify-center hover:text-white"
+              <Home className="w-5 h-5" />
+            </button>
+
+            <button
+              onClick={() => dispatch(setCurrentScreen("userguide"))}
+              className={`w-7 h-7 rounded flex items-center justify-center cursor-pointer transition-colors ${
+                currentScreen !== "Songs" ? "hidden" : ""
+              } ${
+                currentScreen === "userguide"
+                  ? "bg-white/20 text-white"
+                  : "text-white/80 hover:text-white hover:bg-white/15"
+              }`}
+              title="User guide"
             >
-              {/* {isHovered === "minimize" && ( */}
-              <Minus className="text-white z-20 size-6" />
-            </div>
-            <div
-              onClick={handleMaximize}
-              onMouseEnter={() => setIsHovered("maximize")}
-              onMouseLeave={() => setIsHovered(null)}
-              className="w-4 h-4 rounded-full bg-black hover:bg-green-600 hover:cursor-pointer flex items-center justify-center"
-            >
-              {/* {isHovered === "maximize" && ( */}
-              <Square className="text-white z-20 size-2" />
-            </div>
-            <div className="flex items-center justify-center gap-2">
-              <div
-                onClick={() => dispatch(setCurrentScreen("Home"))}
-                className={`w-6 h-6 rounded-full flex items-center justify-center group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800
-                 ${currentScreen === "Songs" ? "bg-primary/20" : "hidden"}
-                `}
-              >
-                <HomeFilled className="w-4 h-4 text-app-text group-hover:text-black dark:group-hover:text-white" />
-              </div>
-              {/* <div
-                onClick={setThemeChoice}
-                className={`w-6 h-6 rounded-full flex items-center justify-center group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 ${
-                  currentScreen === "Songs" ? "flex" : "hidden"
-                }`}
-                title="Mild theme 🟤"
-              >
-                <SwitchCamera className="w-4 h-4 text-app-text group-hover:text-black dark:group-hover:text-white" />
-              </div> */}
-              {/* <div
-                onClick={() => dispatch(setCurrentScreen("backgrounds"))}
-                className={`w-6 h-6 rounded-full flex items-center justify-center group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 relative ${
-                  currentScreen === "backgrounds" ? "bg-primary/10" : ""
-                }`}
-                title="Presentation backgrounds"
-              >
-                <GalleryHorizontal className="w-4 h-4 text-app-text group-hover:text-black dark:group-hover:text-white" />
-                {currentScreen === "backgrounds" && (
-                  <div className="absolute -bottom-2 w-1 h-1 rounded-full bg-primary"></div>
+              <User2 className="w-5 h-5" />
+            </button>
+
+            <ThemeToggle />
+
+            {/* Song title + slide badge */}
+            {currentScreen === "Songs" && (displayTitle || currentSlide) && (
+              <div className="flex items-center gap-1.5 ml-1">
+                {displayTitle && (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/10 rounded border border-white/15">
+                    <FileText className="w-3 h-3 text-white/60 flex-shrink-0" />
+                    <span className="text-[11px] font-medium text-white/80 max-w-[180px] truncate">
+                      {displayTitle}
+                    </span>
+                  </div>
                 )}
-              </div> */}
-              <div
-                onClick={() => dispatch(setCurrentScreen("userguide"))}
-                className={`w-6 h-6 rounded-full flex items-center justify-center group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 relative ${
-                  currentScreen !== "Songs" && "hidden"
-                } ${currentScreen === "userguide" ? "bg-primary/10" : ""}`}
-                title="User manual"
-              >
-                <User2Icon className="w-4 h-4 text-app-text group-hover:text-black dark:group-hover:text-white" />
-                {currentScreen === "userguide" && (
-                  <div className="absolute -bottom-2 w-1 h-1 rounded-full bg-primary"></div>
+                {currentSlide && (
+                  <div className="px-2 py-0.5 bg-white/15 rounded border border-white/20">
+                    <span className="text-[11px] font-semibold text-white">
+                      {currentSlide.label}
+                    </span>
+                  </div>
                 )}
               </div>
-              <ThemeToggle />
-              <UpdateManager />
-              {/* Song Title and Current Slide Display */}
-              {currentScreen === "Songs" && (displayTitle || currentSlide) && (
-                <div className="flex items-center gap-2">
-                  {displayTitle && (
-                    <div className="flex items-center gap-2 px-3 py-1 bg-app-surface/50 rounded-full border border-app-border/30 backdrop-blur-sm">
-                      <FileText className="w-3 h-3 text-app-text-muted" />
-                      <span className="text-sm font-medium text-app-text max-w-[200px] truncate">
-                        {displayTitle && (
-                          <div className="flex items-center gap-2 px-3 py-1 bg-app-surface/50 rounded-full border border-app-border/30 backdrop-blur-sm">
-                            <FileText className="w-3 h-3 text-app-text-muted" />
-                            <span className="text-sm font-medium text-app-text max-w-[200px] truncate">
-                              {displayTitle}
-                            </span>
-                            {/* Show language for debugging */}
-                            <span className="ml-2 text-xs text-app-text-muted">
-                              {selectedSong?.language ||
-                                selectedSong?.metadata?.language ||
-                                "N/A"}
-                            </span>
-                          </div>
-                        )}
-                      </span>
-                    </div>
-                  )}
-                  {currentSlide && (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-app-accent/20 rounded-full border border-app-accent/30 backdrop-blur-sm">
-                      <span className="text-xs font-bold text-white ">
-                        {currentSlide.label}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <img
-              src="./evsongsicon.png"
-              alt="Description"
-              className="w-4 h-4 "
-            />
+          {/* RIGHT: version pill + Windows-style window controls */}
+          <div className="flex items-center gap-1 mr-1">
+            <UpdateManager />
+            <div className="w-px h-3.5 bg-white/15 mx-0.5" />
+            <button
+              onClick={handleMinimize}
+              className="w-10 h-6 flex items-center justify-center text-white/70 hover:text-white bg-white/20 hover:bg-white/15 transition-colors"
+              title="Minimize"
+            >
+              <Minus className="w-3.5 h-3.5" strokeWidth={2} />
+            </button>
+            <button
+              onClick={handleMaximize}
+              className="w-10 h-6 flex items-center justify-center text-white/70 hover:text-white bg-white/20 hover:bg-white/15 transition-colors"
+              title="Maximize"
+            >
+              <Maximize2 className="w-3 h-3" strokeWidth={2} />
+            </button>
+            <button
+              onClick={handleClose}
+              className="w-10 h-6 flex items-center justify-center text-white/70 hover:text-white bg-red-500 hover:bg-red-500 transition-colors"
+              title="Close"
+            >
+              <X className="w-3.5 h-3.5" strokeWidth={2} />
+            </button>
           </div>
         </div>
       </div>

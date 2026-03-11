@@ -26,7 +26,7 @@ const UpdateManager: React.FC = () => {
   const [downloadPercent, setDownloadPercent] = useState(0);
   const [showPanel, setShowPanel] = useState(false);
   const [isManualChecking, setIsManualChecking] = useState(false);
-  const [panelPos, setPanelPos] = useState({ top: 30, left: 8 });
+  const [panelPos, setPanelPos] = useState({ top: 30, right: 8 });
 
   const panelRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -92,7 +92,7 @@ const UpdateManager: React.FC = () => {
       const rect = btnRef.current.getBoundingClientRect();
       setPanelPos({
         top: rect.bottom + 6,
-        left: rect.left,
+        right: window.innerWidth - rect.right,
       });
     }
     setShowPanel((v) => !v);
@@ -319,7 +319,7 @@ const UpdateManager: React.FC = () => {
         <div
           ref={panelRef}
           className="fixed z-[99999] w-72 rounded-xl overflow-hidden shadow-2xl border bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600"
-          style={{ top: panelPos.top, left: panelPos.left }}
+          style={{ top: panelPos.top, right: panelPos.right }}
         >
           {/* Header */}
           <div className="px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-zinc-600">
@@ -349,26 +349,35 @@ const UpdateManager: React.FC = () => {
 
   return (
     <>
-      {/* Trigger button */}
+      {/* Trigger button — version pill */}
       <button
         ref={btnRef}
         onClick={handleToggle}
         style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-        className={`relative w-6 h-6 rounded-full flex items-center justify-center cursor-pointer transition-colors ${
-          showPanel ? "bg-white/10" : "hover:bg-white/10"
+        className={`relative flex items-center gap-1.5 h-5 px-2 rounded cursor-pointer transition-all border ${
+          showPanel
+            ? "bg-white/15 border-white/25 text-white"
+            : "bg-white/8 border-white/12 text-white/70 hover:bg-white/15 hover:border-white/25 hover:text-white"
         }`}
         title="Software updates"
       >
         <RefreshCcw
-          className={`w-3.5 h-3.5 transition-colors ${iconColor} ${
+          className={`w-3 h-3 flex-shrink-0 ${
             updateStatus === "checking" ? "animate-spin" : ""
-          }`}
-          strokeWidth={2}
+          } ${iconColor}`}
+          strokeWidth={2.5}
         />
+        <span className="text-[10px] font-mono font-medium leading-none">
+          v{__APP_VERSION__}
+        </span>
         {(updateReady ||
-          updateStatus === "downloading" ||
-          updateStatus === "available") && (
-          <span className="absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-yellow-400" />
+          updateStatus === "available" ||
+          updateStatus === "downloading") && (
+          <span
+            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+              updateStatus === "downloading" ? "bg-blue-400" : "bg-yellow-400"
+            }`}
+          />
         )}
       </button>
 
