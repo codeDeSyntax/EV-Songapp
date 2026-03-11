@@ -1,5 +1,7 @@
 import { app, ipcMain } from "electron";
 import { createRequire } from "node:module";
+import fs from "node:fs";
+import path from "node:path";
 import type {
   ProgressInfo,
   UpdateDownloadedEvent,
@@ -8,79 +10,133 @@ import type {
 
 const { autoUpdater } = createRequire(import.meta.url)("electron-updater");
 
+// ── Preference storage ───────────────────────────────────────────────────────
+// Stored at: userData/bor-update-prefs.json
+// Default: { autoUpdate: false } → manual mode
+
+function prefsPath() {
+  return path.join(app.getPath("userData"), "bor-update-prefs.json");
+}
+
+function readPrefs(): { autoUpdate: boolean } {
+  try {
+    return JSON.parse(fs.readFileSync(prefsPath(), "utf8"));
+  } catch {
+    return { autoUpdate: false };
+  }
+}
+
+function writePrefs(prefs: { autoUpdate: boolean }) {
+  fs.writeFileSync(prefsPath(), JSON.stringify(prefs, null, 2), "utf8");
+}
+
+// ── Main update function ─────────────────────────────────────────────────────
+
 export function update(win: Electron.BrowserWindow) {
-  // Auto-check on startup, but download only when user clicks
-  autoUpdater.autoDownload = false;
+  const prefs = readPrefs();
+  autoUpdater.autoDownload = prefs.autoUpdate;
   autoUpdater.disableWebInstaller = false;
   autoUpdater.allowDowngrade = false;
 
-  // start check
-  autoUpdater.on("checking-for-update", function () {});
-  // update available — download starts automatically because autoDownload = true
-  autoUpdater.on("update-available", (arg: UpdateInfo) => {
-    win.webContents.send("update-can-available", {
-      update: true,
-      version: app.getVersion(),
-      newVersion: arg?.version,
-    });
-  });
-  // update not available
-  autoUpdater.on("update-not-available", (arg: UpdateInfo) => {
-    win.webContents.send("update-can-available", {
-      update: false,
-      version: app.getVersion(),
-      newVersion: arg?.version,
-    });
-  });
-  // download finished — tell the renderer to show the TitleBar badge
-  autoUpdater.on("update-downloaded", (info: UpdateDownloadedEvent) => {
-    win.webContents.send("update-downloaded", { version: info.version });
-  });
-  // forward download progress to renderer
-  autoUpdater.on("download-progress", (info: ProgressInfo) => {
-    win.webContents.send("download-progress", info);
+  // Helper: send a status update to renderer
+  const send = (
+    status:
+      | "checking"
+      | "available"
+      | "downloading"
+      | "ready"
+      | "up-to-date"
+      | "error",
+    extra?: object,
+  ) => {
+    if (!win.isDestroyed()) {
+      win.webContents.send("update-status", { status, ...extra });
+    }
+  };
+
+  // ── autoUpdater events ─────────────────────────────────────────────────────
+
+  autoUpdater.on("checking-for-update", () => {
+    send("checking");
   });
 
-  // Checking for updates
-  ipcMain.handle("check-update", async () => {
-    try {
-      return await autoUpdater.checkForUpdatesAndNotify();
-    } catch (error) {
-      return { message: "Network error", error };
+  autoUpdater.on("update-available", (info: UpdateInfo) => {
+    if (autoUpdater.autoDownload) {
+      // auto mode: download already started — show downloading state
+      send("downloading", { version: info.version, percent: 0 });
+    } else {
+      // manual mode: show "Download" button
+      send("available", { version: info.version });
     }
   });
 
-  // Start downloading and feedback on progress
-  ipcMain.handle("start-download", (event: Electron.IpcMainInvokeEvent) => {
-    startDownload(
-      (error, progressInfo) => {
-        if (error) {
-          // feedback download error message
-          event.sender.send("update-error", { message: error.message, error });
-        } else {
-          // feedback update progress message
-          event.sender.send("download-progress", progressInfo);
-        }
-      },
-      () => {
-        // feedback update downloaded message
-        event.sender.send("update-downloaded");
-      },
-    );
+  autoUpdater.on("update-not-available", () => {
+    send("up-to-date");
   });
 
-  // Install now
+  autoUpdater.on("download-progress", (info: ProgressInfo) => {
+    send("downloading", {
+      percent: Math.floor(info.percent),
+    });
+  });
+
+  autoUpdater.on("update-downloaded", (info: UpdateDownloadedEvent) => {
+    send("ready", { version: info.version });
+  });
+
+  autoUpdater.on("error", (err: Error) => {
+    send("error", { message: err.message });
+  });
+
+  // ── IPC handlers ───────────────────────────────────────────────────────────
+
+  // Trigger update check manually
+  ipcMain.handle("check-update", async () => {
+    try {
+      send("checking");
+      return await autoUpdater.checkForUpdatesAndNotify();
+    } catch (err: any) {
+      send("error", { message: err.message });
+      return { message: "Network error", error: err };
+    }
+  });
+
+  // Start download (manual mode — called when user clicks "Download")
+  ipcMain.handle("download-update", async () => {
+    try {
+      send("downloading", { percent: 0 });
+      await autoUpdater.downloadUpdate();
+    } catch (err: any) {
+      send("error", { message: err.message });
+    }
+  });
+
+  // Read current preference
+  ipcMain.handle("get-update-preference", () => {
+    return readPrefs();
+  });
+
+  // Save preference + apply immediately for current session
+  ipcMain.handle(
+    "set-update-preference",
+    (_e, newPrefs: { autoUpdate: boolean }) => {
+      writePrefs(newPrefs);
+      autoUpdater.autoDownload = newPrefs.autoUpdate;
+      return newPrefs;
+    },
+  );
+
+  // Install the downloaded update
   ipcMain.handle("quit-and-install", () => {
     autoUpdater.quitAndInstall(false, true);
   });
-}
 
-function startDownload(
-  callback: (error: Error | null, info: ProgressInfo | null) => void,
-  _complete: (event: UpdateDownloadedEvent) => void,
-) {
-  // download-progress and update-downloaded are already forwarded to the
-  // renderer via top-level listeners in update(). Just kick off the download.
-  autoUpdater.on("error", (error: Error) => callback(error, null));
-  autoUpdater.downloadUpdate();
+  // ── Auto-check on startup ──────────────────────────────────────────────────
+  // Wait for the renderer to finish loading before checking, so the
+  // update-status event is received by the mounted React component.
+  win.webContents.once("did-finish-load", () => {
+    setTimeout(() => {
+      autoUpdater.checkForUpdatesAndNotify().catch(() => {});
+    }, 3000);
+  });
 }

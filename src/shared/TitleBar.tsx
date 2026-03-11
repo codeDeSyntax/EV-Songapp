@@ -29,6 +29,7 @@ const TitleBar = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
+  const [downloadPercent, setDownloadPercent] = useState(0);
 
   const dispatch = useAppDispatch();
   const currentScreen = useAppSelector((state) => state.app.currentScreen);
@@ -45,28 +46,48 @@ const TitleBar = () => {
   const selectedSong = useAppSelector((state) => state.songs.selectedSong);
   const { isDarkMode, toggleDarkMode } = useTheme();
 
-  // Listen for update-downloaded from the main process
+  // Listen for update-status from the main process
   useEffect(() => {
-    const onUpdateDownloaded = (
+    const onUpdateStatus = (
       _e: Electron.IpcRendererEvent,
-      info?: { version?: string },
+      payload: {
+        status: string;
+        version?: string;
+        percent?: number;
+        message?: string;
+      },
     ) => {
-      setUpdateReady(true);
-      setUpdateVersion(info?.version ?? null);
+      switch (payload.status) {
+        case "available":
+          setUpdateAvailable(true);
+          setUpdateVersion(payload.version ?? null);
+          break;
+        case "downloading":
+          setIsDownloading(true);
+          setUpdateAvailable(false);
+          setDownloadPercent(payload.percent ?? 0);
+          if (payload.version) setUpdateVersion(payload.version);
+          break;
+        case "ready":
+          setUpdateReady(true);
+          setIsDownloading(false);
+          setUpdateAvailable(false);
+          setDownloadPercent(100);
+          if (payload.version) setUpdateVersion(payload.version);
+          break;
+        case "error":
+          setIsDownloading(false);
+          break;
+        case "up-to-date":
+          setUpdateAvailable(false);
+          setUpdateReady(false);
+          setIsDownloading(false);
+          break;
+      }
     };
-    // also catch the version from update-can-available so we have it ready
-    const onUpdateAvailable = (
-      _e: Electron.IpcRendererEvent,
-      arg: { update?: boolean; newVersion?: string },
-    ) => {
-      if (arg?.newVersion) setUpdateVersion(arg.newVersion);
-      if (arg?.update === true) setUpdateAvailable(true);
-    };
-    window.ipcRenderer.on("update-downloaded", onUpdateDownloaded);
-    window.ipcRenderer.on("update-can-available", onUpdateAvailable);
+    window.ipcRenderer.on("update-status", onUpdateStatus);
     return () => {
-      window.ipcRenderer.off("update-downloaded", onUpdateDownloaded);
-      window.ipcRenderer.off("update-can-available", onUpdateAvailable);
+      window.ipcRenderer.off("update-status", onUpdateStatus);
     };
   }, []);
 
@@ -281,11 +302,13 @@ const TitleBar = () => {
 
           <div className="flex items-center gap-2">
             {/* Update available — user clicks to download */}
-            {updateAvailable && !updateReady && (
+            {(updateAvailable || isDownloading) && !updateReady && (
               <button
                 onClick={() => {
-                  setIsDownloading(true);
-                  window.ipcRenderer.invoke("start-download");
+                  if (!isDownloading) {
+                    setIsDownloading(true);
+                    window.ipcRenderer.invoke("download-update");
+                  }
                 }}
                 disabled={isDownloading}
                 className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium
@@ -300,7 +323,7 @@ const TitleBar = () => {
                   <Download className="w-2.5 h-2.5" />
                 )}
                 {isDownloading
-                  ? "Downloading..."
+                  ? `Downloading... ${downloadPercent > 0 ? `${Math.round(downloadPercent)}%` : ""}`
                   : `v${updateVersion} available`}
               </button>
             )}

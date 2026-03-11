@@ -17,6 +17,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+     "release": "node scripts/release.mjs",
     "pree2e": "vite build --mode=test",
     "e2e": "playwright test",
     "package": "electron-packager . songscast --platform=win32 --arch=x64  --icon=J:\\electron\\songsapp\\public\\evsongsicon.ico --out=release/ --overwrite --asar"

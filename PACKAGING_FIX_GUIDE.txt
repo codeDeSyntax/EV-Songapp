@@ -1,0 +1,130 @@
+ELECTRON PACKAGING FIX GUIDE
+============================
+Problem: App crashes on launch with one of these errors after installing the built .exe:
+
+  Error: Cannot find package 'conf' imported from .../node_modules/electron-store/index.js
+  Error: Cannot find module 'builder-util-runtime'
+
+ROOT CAUSE
+----------
+The default vite-plugin-electron template externalizes ALL dependencies from the
+main process bundle (so Vite doesn't bundle them). This means at runtime the app
+tries to load them from node_modules. But electron-builder's default files config
+only packages dist-electron and dist — NOT node_modules. So at runtime, packages
+like electron-store, conf, electron-updater, and builder-util-runtime are simply
+missing from the installed app.
+
+A second pnpm-specific issue: pnpm uses a virtual store with symlinks by default.
+Transitive dependencies (deps-of-deps) are NOT hoisted to the top-level node_modules.
+So even if you include node_modules in the packaged files, packages like
+builder-util-runtime (a dep of electron-updater) can't be found by Node's resolver.
+
+
+THE THREE FIXES
+---------------
+
+FIX 1 — vite.config.ts: Bundle everything except electron, electron-updater, and node builtins
+------------------------------------------------------------------------------------------------
+Change the rollupOptions.external in BOTH the main and preload vite configs.
+
+BEFORE (broken default):
+  rollupOptions: {
+    external: Object.keys("dependencies" in pkg ? pkg.dependencies : {}),
+  }
+
+AFTER (fixed):
+  rollupOptions: {
+    external: ["electron", "electron-updater", /^node:/],
+  }
+
+Why: This tells Vite to bundle all npm packages (googleapis, electron-store, archiver,
+uuid, etc.) directly into dist-electron/main/index.js. Only electron itself and Node
+built-ins (node:fs, node:path, etc.) stay external — those are provided by Electron.
+electron-updater is kept external because it's a CJS package that uses internal
+requires that Vite can't fully bundle.
+
+Apply this to BOTH the main build config and the preload build config inside
+vite.config.ts.
+
+
+FIX 2 — .npmrc: Force pnpm to use a flat/hoisted node_modules
+--------------------------------------------------------------
+Create a file named .npmrc in the project root with this content:
+
+  node-linker=hoisted
+
+Then run:
+  pnpm install
+
+Why: By default pnpm uses a virtual store with symlinks. This means transitive
+dependencies (like builder-util-runtime, which is a dependency of electron-updater)
+are NOT placed in the top-level node_modules. When electron-updater does a CJS
+require("builder-util-runtime") at runtime, Node can't find it.
+
+Setting node-linker=hoisted makes pnpm behave like npm — every package and its
+transitive deps are placed in a flat top-level node_modules, making them resolvable.
+
+
+FIX 3 — electron/main/update.ts: Keep electron-updater loaded via createRequire
+---------------------------------------------------------------------------------
+The update.ts file should load electron-updater using createRequire, NOT a regular
+ESM import. This is because electron-updater is a CJS package and needs to be loaded
+at runtime from node_modules (which we now handle correctly via fixes 1 and 2).
+
+CORRECT (keep this):
+  import { createRequire } from "node:module";
+  const { autoUpdater } = createRequire(import.meta.url)("electron-updater");
+
+WRONG (do not use):
+  import { autoUpdater } from "electron-updater";   // ← breaks with ESM/CJS mismatch
+
+
+BONUS FIX — electron-builder.json5: Make releases non-draft
+------------------------------------------------------------
+By default electron-builder publishes GitHub releases as DRAFTS.
+electron-updater cannot see draft releases — it only reads published releases.
+
+Add releaseType: "release" to the publish config:
+
+  publish: {
+    provider: "github",
+    owner: "yourOwner",
+    repo: "yourRepo",
+    releaseType: "release",   // ← ADD THIS
+  }
+
+
+BONUS FIX — .github/workflows/release.yml: Add write permissions
+-----------------------------------------------------------------
+The GitHub Actions GITHUB_TOKEN needs write permissions to publish releases.
+Add this to the job:
+
+  jobs:
+    build-windows:
+      runs-on: windows-latest
+      permissions:
+        contents: write     // ← ADD THIS
+
+
+SUMMARY CHECKLIST FOR EACH PROJECT
+------------------------------------
+[ ] vite.config.ts — change external in main config:
+      external: ["electron", "electron-updater", /^node:/]
+
+[ ] vite.config.ts — change external in preload config (same):
+      external: ["electron", "electron-updater", /^node:/]
+
+[ ] Create .npmrc in project root:
+      node-linker=hoisted
+
+[ ] Run: pnpm install  (to regenerate flat node_modules)
+
+[ ] electron/main/update.ts — use createRequire to load electron-updater, not ESM import
+
+[ ] electron-builder.json5 — add releaseType: "release" to publish config
+
+[ ] .github/workflows/release.yml — add permissions: contents: write to the job
+
+[ ] Commit pnpm-lock.yaml (CI needs it)
+
+[ ] Push tag to trigger CI: npm version patch && git push --follow-tags
