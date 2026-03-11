@@ -8,7 +8,17 @@
   directories: {
     output: "release/${version}",
   },
-  files: ["dist-electron", "dist"],
+  files: [
+    "dist-electron",
+    "dist",
+    "node_modules/googleapis/**",
+    "node_modules/googleapis-common/**",
+    "node_modules/gaxios/**",
+    "node_modules/gcp-metadata/**",
+    "node_modules/gtoken/**",
+    "node_modules/google-auth-library/**",
+    "node_modules/google-gax/**",
+  ],
   win: {
     icon: "public/evsongsicon.ico",
     target: [
@@ -23,10 +33,13 @@
     oneClick: false,
     perMachine: false,
     allowToChangeInstallationDirectory: true,
+    allowElevation: true,
     deleteAppDataOnUninstall: false,
     installerIcon: "public/evsongsicon.ico",
     uninstallerIcon: "public/evsongsicon.ico",
     installerHeaderIcon: "public/evsongsicon.ico",
+    // Kill running app before install so files aren't locked
+    include: "build/installer.nsh",
   },
   publish: {
     provider: "github",

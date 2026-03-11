@@ -44,7 +44,6 @@
     "electron": "^29.1.1",
     "electron-builder": "^24.13.3",
     "electron-packager": "^17.1.2",
-    "electron-store": "^11.0.2",
     "framer-motion": "^11.5.4",
     "googleapis": "^171.4.0",
     "lucide-react": "^0.441.0",

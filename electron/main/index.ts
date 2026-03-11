@@ -24,8 +24,57 @@ import http from "node:http";
 import { Readable } from "node:stream";
 import { v4 as uuidv4 } from "uuid";
 import { google } from "googleapis";
-import Store from "electron-store";
 import archiver from "archiver";
+
+// ---------------------------------------------------------------------------
+// Minimal JSON-file store — replaces electron-store with zero external deps.
+// Uses only Node.js built-ins; Vite bundles this inline with no issues.
+// ---------------------------------------------------------------------------
+class JsonStore<T extends Record<string, unknown>> {
+  private readonly filePath: string;
+  private data: Partial<T>;
+
+  constructor(opts: { name: string }) {
+    this.filePath = path.join(app.getPath("userData"), `${opts.name}.json`);
+    try {
+      if (fs.existsSync(this.filePath)) {
+        this.data = JSON.parse(
+          fs.readFileSync(this.filePath, "utf8"),
+        ) as Partial<T>;
+      } else {
+        this.data = {};
+      }
+    } catch {
+      this.data = {};
+    }
+  }
+
+  private flush(): void {
+    try {
+      fs.writeFileSync(
+        this.filePath,
+        JSON.stringify(this.data, null, 2),
+        "utf8",
+      );
+    } catch (e) {
+      console.error("[JsonStore] write error", e);
+    }
+  }
+
+  get<K extends keyof T>(key: K): T[K] | undefined {
+    return this.data[key];
+  }
+
+  set<K extends keyof T>(key: K, value: T[K]): void {
+    this.data[key] = value;
+    this.flush();
+  }
+
+  delete<K extends keyof T>(key: K): void {
+    delete this.data[key];
+    this.flush();
+  }
+}
 
 // Build-time constants injected by Vite define (main process sub-config)
 declare const __GOOGLE_CLIENT_ID__: string;
@@ -47,9 +96,9 @@ const GOOGLE_CLIENT_SECRET: string =
 // ---- Google Drive auth setup ----
 const REDIRECT_PORT = 41235;
 const REDIRECT_URI = `http://localhost:${REDIRECT_PORT}/callback`;
-const tokenStore = new Store<{ tokens?: any; lastBackupTime?: string }>({
+const tokenStore = new JsonStore<{ tokens?: any; lastBackupTime?: string }>({
   name: "ev-google-auth",
-} as any);
+});
 const oauth2Client = new google.auth.OAuth2(
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,

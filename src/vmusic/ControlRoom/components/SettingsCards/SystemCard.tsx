@@ -9,6 +9,8 @@ export const SystemCard: React.FC<SystemCardProps> = () => {
   const [version, setVersion] = useState<string>("...");
   const [openAtLogin, setOpenAtLogin] = useState(false);
   const [savingStartup, setSavingStartup] = useState(false);
+  const [autoUpdate, setAutoUpdate] = useState(false);
+  const [savingAutoUpdate, setSavingAutoUpdate] = useState(false);
 
   useEffect(() => {
     window.api
@@ -19,7 +21,27 @@ export const SystemCard: React.FC<SystemCardProps> = () => {
       ?.getLoginItemSettings?.()
       .then((s) => setOpenAtLogin(s.openAtLogin))
       .catch(() => {});
+    window.ipcRenderer
+      .invoke("get-update-preference")
+      .then((prefs: { autoUpdate: boolean }) =>
+        setAutoUpdate(prefs?.autoUpdate ?? false),
+      )
+      .catch(() => {});
   }, []);
+
+  const handleAutoUpdateToggle = async (next: boolean) => {
+    setSavingAutoUpdate(true);
+    try {
+      await window.ipcRenderer.invoke("set-update-preference", {
+        autoUpdate: next,
+      });
+      setAutoUpdate(next);
+    } catch {
+      /* ignore */
+    } finally {
+      setSavingAutoUpdate(false);
+    }
+  };
 
   const handleStartupToggle = async (next: boolean) => {
     setSavingStartup(true);
@@ -62,6 +84,24 @@ export const SystemCard: React.FC<SystemCardProps> = () => {
           checked={openAtLogin}
           onChange={handleStartupToggle}
           loading={savingStartup}
+          size="small"
+        />
+      </div>
+
+      {/* Auto-update */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-medium text-app-text">Auto-update</p>
+          <p className="text-[11px] mt-0.5 text-app-text-muted">
+            {autoUpdate
+              ? "Downloads updates automatically"
+              : "Notify only, manual download"}
+          </p>
+        </div>
+        <Switch
+          checked={autoUpdate}
+          onChange={handleAutoUpdateToggle}
+          loading={savingAutoUpdate}
           size="small"
         />
       </div>

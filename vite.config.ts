@@ -16,6 +16,9 @@ export default defineConfig(({ command, mode }) => {
   const sourcemap = isServe || !!process.env.VSCODE_DEBUG;
 
   return {
+    define: {
+      __APP_VERSION__: JSON.stringify(pkg.version),
+    },
     resolve: {
       alias: {
         "@": path.join(__dirname, "src"),
@@ -46,9 +49,16 @@ export default defineConfig(({ command, mode }) => {
               minify: isBuild,
               outDir: "dist-electron/main",
               rollupOptions: {
-                // Only externalize electron and Node.js built-ins.
-                // Bundle all npm dependencies so nothing is missing at runtime.
-                external: ["electron", "electron-updater", /^node:/],
+                // Externalize electron, Node built-ins, and heavy packages.
+                // googleapis alone pulls in 2 400+ modules and OOMs the bundler.
+                external: [
+                  "electron",
+                  "electron-updater",
+                  /^node:/,
+                  "googleapis",
+                  /^googleapis\//,
+                  "googleapis-common",
+                ],
               },
             },
           },

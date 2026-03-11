@@ -1,14 +1,6 @@
 import { useState, useEffect } from "react";
-import {
-  Minus,
-  Square,
-  User2Icon,
-  X,
-  FileText,
-  RefreshCw,
-  Download,
-  Loader2,
-} from "lucide-react";
+import { Minus, Square, User2Icon, X, FileText } from "lucide-react";
+import UpdateManager from "./UpdateManager";
 import { HomeFilled } from "@ant-design/icons";
 
 import { useAppSelector, useAppDispatch } from "@/store";
@@ -25,11 +17,6 @@ import { useTheme } from "@/Provider/Theme";
 const TitleBar = () => {
   const [isHovered, setIsHovered] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState<boolean>(false);
-  const [updateReady, setUpdateReady] = useState(false);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
-  const [downloadPercent, setDownloadPercent] = useState(0);
 
   const dispatch = useAppDispatch();
   const currentScreen = useAppSelector((state) => state.app.currentScreen);
@@ -45,51 +32,6 @@ const TitleBar = () => {
   // Get the selected song from Redux for language display
   const selectedSong = useAppSelector((state) => state.songs.selectedSong);
   const { isDarkMode, toggleDarkMode } = useTheme();
-
-  // Listen for update-status from the main process
-  useEffect(() => {
-    const onUpdateStatus = (
-      _e: Electron.IpcRendererEvent,
-      payload: {
-        status: string;
-        version?: string;
-        percent?: number;
-        message?: string;
-      },
-    ) => {
-      switch (payload.status) {
-        case "available":
-          setUpdateAvailable(true);
-          setUpdateVersion(payload.version ?? null);
-          break;
-        case "downloading":
-          setIsDownloading(true);
-          setUpdateAvailable(false);
-          setDownloadPercent(payload.percent ?? 0);
-          if (payload.version) setUpdateVersion(payload.version);
-          break;
-        case "ready":
-          setUpdateReady(true);
-          setIsDownloading(false);
-          setUpdateAvailable(false);
-          setDownloadPercent(100);
-          if (payload.version) setUpdateVersion(payload.version);
-          break;
-        case "error":
-          setIsDownloading(false);
-          break;
-        case "up-to-date":
-          setUpdateAvailable(false);
-          setUpdateReady(false);
-          setIsDownloading(false);
-          break;
-      }
-    };
-    window.ipcRenderer.on("update-status", onUpdateStatus);
-    return () => {
-      window.ipcRenderer.off("update-status", onUpdateStatus);
-    };
-  }, []);
 
   // Get current slide info
   const currentSlide = slides.find((slide) => slide.id === currentSlideId);
@@ -264,6 +206,7 @@ const TitleBar = () => {
                 )}
               </div>
               <ThemeToggle />
+              <UpdateManager />
               {/* Song Title and Current Slide Display */}
               {currentScreen === "Songs" && (displayTitle || currentSlide) && (
                 <div className="flex items-center gap-2">
@@ -301,47 +244,6 @@ const TitleBar = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Update available — user clicks to download */}
-            {(updateAvailable || isDownloading) && !updateReady && (
-              <button
-                onClick={() => {
-                  if (!isDownloading) {
-                    setIsDownloading(true);
-                    window.ipcRenderer.invoke("download-update");
-                  }
-                }}
-                disabled={isDownloading}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium
-                  bg-blue-500/20 border border-blue-500/40 text-blue-400
-                  hover:bg-blue-500/30 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-default"
-                title={`v${updateVersion ?? "new version"} available`}
-                style={{ WebkitAppRegion: "no-drag" } as any}
-              >
-                {isDownloading ? (
-                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                ) : (
-                  <Download className="w-2.5 h-2.5" />
-                )}
-                {isDownloading
-                  ? `Downloading... ${downloadPercent > 0 ? `${Math.round(downloadPercent)}%` : ""}`
-                  : `v${updateVersion} available`}
-              </button>
-            )}
-            {/* Update downloaded — user clicks to restart */}
-            {updateReady && (
-              <button
-                onClick={() => window.ipcRenderer.invoke("quit-and-install")}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium
-                  bg-green-500/20 border border-green-500/40 text-green-400
-                  hover:bg-green-500/30 transition-colors cursor-pointer"
-                title={`Restart to install v${updateVersion ?? "new version"}`}
-                style={{ WebkitAppRegion: "no-drag" } as any}
-              >
-                <RefreshCw className="w-2.5 h-2.5 animate-spin" />
-                Restart to update
-              </button>
-            )}
-
             <img
               src="./evsongsicon.png"
               alt="Description"
