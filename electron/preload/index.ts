@@ -96,18 +96,6 @@ contextBridge.exposeInMainWorld("api", {
     displayId: number;
     mode: string;
   }) => ipcRenderer.invoke("set-projection-preferences", preferences),
-  logToSecretLogger: (logData: {
-    application: string;
-    category: string;
-    message: string;
-    details?: any;
-  }) => ipcRenderer.invoke("log-to-secret-logger", logData),
-  getSecretLogs: () => ipcRenderer.invoke("get-secret-logs"),
-  clearSecretLogs: () => ipcRenderer.invoke("clear-secret-logs"),
-  exportSecretLogs: () => ipcRenderer.invoke("export-secret-logs"),
-  getLogSettings: () => ipcRenderer.invoke("get-log-settings"),
-  updateLogSettings: (settings: any) =>
-    ipcRenderer.invoke("update-log-settings", settings),
 
   // Song Projection Navigation and Font Size API
   sendToSongProjection: (data: {

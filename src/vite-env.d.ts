@@ -81,60 +81,6 @@ interface Window {
       data?: any;
       error?: string;
     }>;
-    logToSecretLogger: (logData: {
-      application: "SONGS" | "BIBLE" | "EVPRESENTER" | "SYSTEM";
-      category:
-        | "INFO"
-        | "WARNING"
-        | "ERROR"
-        | "ACTION"
-        | "PROJECTION"
-        | "FILE_OPERATION";
-      message: string;
-      details?: any;
-    }) => Promise<{ success: boolean; error?: string }>;
-    getSecretLogs: () => Promise<{
-      success: boolean;
-      logs?: Array<{
-        id: string;
-        timestamp: number;
-        date: string;
-        application: "SONGS" | "BIBLE" | "EVPRESENTER" | "SYSTEM";
-        category:
-          | "INFO"
-          | "WARNING"
-          | "ERROR"
-          | "ACTION"
-          | "PROJECTION"
-          | "FILE_OPERATION";
-        message: string;
-        details?: string;
-        age: string;
-      }>;
-      error?: string;
-    }>;
-    clearSecretLogs: () => Promise<{ success: boolean; error?: string }>;
-    exportSecretLogs: () => Promise<{
-      success: boolean;
-      filePath?: string;
-      error?: string;
-    }>;
-    getLogSettings: () => Promise<{
-      success: boolean;
-      settings?: {
-        autoCleanup: boolean;
-        interval: number;
-        unit: "minutes" | "hours" | "days" | "weeks";
-        customInterval: number;
-      };
-      error?: string;
-    }>;
-    updateLogSettings: (settings: {
-      autoCleanup: boolean;
-      interval: number;
-      unit: "minutes" | "hours" | "days" | "weeks";
-      customInterval: number;
-    }) => Promise<{ success: boolean; error?: string }>;
     sendToSongProjection: (data: {
       type: string;
       command?: string;

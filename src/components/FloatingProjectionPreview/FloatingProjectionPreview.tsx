@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { X, Maximize2, Minimize2, Monitor, Wifi } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAppSelector } from "@/store";
+import { selectDisplaySlides } from "@/store/slices/songSlidesSlice";
 
 interface SongSection {
   type: string;
@@ -28,8 +30,48 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
   const [isMinimized, setIsMinimized] = useState(false);
 
   // Current song data - simplified to just show section name
-  const [currentSectionName, setCurrentSectionName] = useState<string>("");
-  const [songTitle, setSongTitle] = useState("");
+  const [messageSectionName, setMessageSectionName] = useState<string>("");
+
+  const { currentDisplayIndex, currentSlideId, slides } = useAppSelector(
+    (state) => state.songSlides,
+  );
+  const displaySlides = useAppSelector(selectDisplaySlides);
+
+  const currentDisplaySlide =
+    currentDisplayIndex >= 0 && currentDisplayIndex < displaySlides.length
+      ? displaySlides[currentDisplayIndex]
+      : null;
+
+  const fallbackCurrentSlide =
+    !currentDisplaySlide && currentSlideId
+      ? slides.find((slide) => slide.id === currentSlideId) || null
+      : null;
+
+  const formatSectionName = (
+    type?: string,
+    number?: number,
+    label?: string,
+  ) => {
+    if (label) return label;
+    if (!type) return "";
+    const prettyType = `${type.charAt(0).toUpperCase()}${type.slice(1)}`;
+    if (typeof number === "number" && !Number.isNaN(number)) {
+      return `${prettyType} ${number}`;
+    }
+    return prettyType;
+  };
+
+  const derivedSectionName =
+    formatSectionName(
+      currentDisplaySlide?.type,
+      currentDisplaySlide?.number,
+      currentDisplaySlide?.label,
+    ) ||
+    formatSectionName(
+      fallbackCurrentSlide?.type,
+      fallbackCurrentSlide?.number,
+      fallbackCurrentSlide?.label,
+    );
 
   // Refs
   const previewRef = useRef<HTMLDivElement>(null);
@@ -111,13 +153,8 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
             : currentSection;
 
           console.log("🎵 Updating current section:", sectionName);
-          setCurrentSectionName(sectionName);
+          setMessageSectionName(sectionName);
         }
-      }
-
-      // Handle song updates
-      if (data.type === "SONG_UPDATE" && data.song) {
-        setSongTitle(data.song.title || "Unknown Song");
       }
     };
 
@@ -131,10 +168,11 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
 
   // Get section display text - simplified to just show section name
   const getSectionDisplayText = () => {
-    if (!currentSectionName) {
+    const sectionName = derivedSectionName || messageSectionName;
+    if (!sectionName) {
       return "No Section";
     }
-    return currentSectionName;
+    return sectionName;
   };
 
   if (!isVisible) return null;

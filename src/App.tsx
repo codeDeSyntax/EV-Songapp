@@ -8,7 +8,6 @@ import FloatingProjectionPreview from "./components/FloatingProjectionPreview";
 import Update from "./vmusic/update";
 import { useAppSelector, useAppDispatch } from "./store";
 import { setCurrentScreen } from "./store/slices/appSlice";
-import { SecretLogsManager } from "./components/SecretLogsManager";
 import { useProjectionState } from "./hooks/useProjectionState";
 
 const App = () => {
@@ -77,36 +76,34 @@ const App = () => {
   }, []);
 
   return (
-    <SecretLogsManager>
-      <div
-        className={`flex flex-col h-screen w-screen thin-scrollbar no-scrollbar bg-white dark:bg-ltgray `}
-        style={{ fontFamily: "Palatino" }}
-      >
-        {/* Auto-updater — renders a modal when a new version is available */}
-        <Update />
+    <div
+      className={`flex flex-col h-screen w-screen thin-scrollbar no-scrollbar bg-white dark:bg-ltgray `}
+      style={{ fontFamily: "Palatino" }}
+    >
+      {/* Auto-updater — renders a modal when a new version is available */}
+      <Update />
 
-        {/* Main App Content */}
-        {currentScreen === "Home" ? (
-          <WorkspaceSelector />
-        ) : currentScreen === "Songs" ? (
-          <ControlRoom />
-        ) : currentScreen === "userguide" ? (
-          <UserGuidePage />
-        ) : (
-          <WorkspaceSelector />
+      {/* Main App Content */}
+      {currentScreen === "Home" ? (
+        <WorkspaceSelector />
+      ) : currentScreen === "Songs" ? (
+        <ControlRoom />
+      ) : currentScreen === "userguide" ? (
+        <UserGuidePage />
+      ) : (
+        <WorkspaceSelector />
+      )}
+
+      {/* Floating Projection Preview - Only show when projection is active and not on projection display page */}
+      {isVisible &&
+        currentRoute !== "#/song-presentation-display" &&
+        currentRoute !== "#song-presentation-display" && (
+          <FloatingProjectionPreview
+            isVisible={isVisible}
+            onClose={hideFloatingPreview}
+          />
         )}
-
-        {/* Floating Projection Preview - Only show when projection is active and not on projection display page */}
-        {isVisible &&
-          currentRoute !== "#/song-presentation-display" &&
-          currentRoute !== "#song-presentation-display" && (
-            <FloatingProjectionPreview
-              isVisible={isVisible}
-              onClose={hideFloatingPreview}
-            />
-          )}
-      </div>
-    </SecretLogsManager>
+    </div>
   );
 };
 

@@ -37,6 +37,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [gradientMiddle, setGradientMiddle] = useState("#4a4a4a");
   const [gradientEnd, setGradientEnd] = useState("#1a1a1a");
   const [gradientAngle, setGradientAngle] = useState(135);
+  const [gradientPreset, setGradientPreset] = useState<string | null>(null);
 
   // Load saved opacity and background from localStorage on mount
   useEffect(() => {
@@ -94,7 +95,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     if (bgType === "solid") {
       backgroundValue = `solid:${solidColor}`;
     } else {
-      backgroundValue = `gradient:linear-gradient(${gradientAngle}deg, ${gradientStart}, ${gradientMiddle}, ${gradientEnd})`;
+      backgroundValue = gradientPreset
+        ? `gradient:${gradientPreset}`
+        : `gradient:linear-gradient(${gradientAngle}deg, ${gradientStart}, ${gradientMiddle}, ${gradientEnd})`;
     }
 
     localStorage.setItem("bmusicpresentationbg", backgroundValue);
@@ -114,25 +117,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const handlePresetColor = (color: string) => {
     // Check if it's a gradient (contains any gradient type)
     if (color.includes("gradient")) {
-      // It's a gradient preset - apply it directly
-      const backgroundValue = `gradient:${color}`;
-      localStorage.setItem("bmusicpresentationbg", backgroundValue);
-      setSelectedBgSrc(backgroundValue);
-
-      // Switch to gradient mode
-      // setBgType("gradient");
-
-      // Dispatch storage event for updates
-      window.dispatchEvent(
-        new StorageEvent("storage", {
-          key: "bmusicpresentationbg",
-          oldValue: null,
-          newValue: backgroundValue,
-          storageArea: localStorage,
-        }),
-      );
+      // Stage preset only; persistence happens on explicit Apply.
+      setBgType("gradient");
+      setGradientPreset(color);
+      setSelectedBgSrc(`gradient:${color}`);
     } else {
       // It's a solid color
+      setGradientPreset(null);
       setSolidColor(color);
     }
   };
@@ -168,11 +159,26 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             gradientEnd={gradientEnd}
             gradientAngle={gradientAngle}
             onBgTypeChange={setBgType}
-            onSolidColorChange={setSolidColor}
-            onGradientStartChange={setGradientStart}
-            onGradientMiddleChange={setGradientMiddle}
-            onGradientEndChange={setGradientEnd}
-            onGradientAngleChange={setGradientAngle}
+            onSolidColorChange={(color) => {
+              setGradientPreset(null);
+              setSolidColor(color);
+            }}
+            onGradientStartChange={(color) => {
+              setGradientPreset(null);
+              setGradientStart(color);
+            }}
+            onGradientMiddleChange={(color) => {
+              setGradientPreset(null);
+              setGradientMiddle(color);
+            }}
+            onGradientEndChange={(color) => {
+              setGradientPreset(null);
+              setGradientEnd(color);
+            }}
+            onGradientAngleChange={(angle) => {
+              setGradientPreset(null);
+              setGradientAngle(angle);
+            }}
             onPresetColorSelect={handlePresetColor}
             onApplyBackground={handleApplyBackground}
           />

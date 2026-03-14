@@ -133,8 +133,8 @@ export const useProjectionData = () => {
   // Listen for background and font changes
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "bmusicpresentationbg" && e.newValue) {
-        dispatch(setBackgroundImage(e.newValue));
+      if (e.key === "bmusicpresentationbg") {
+        dispatch(setBackgroundImage(e.newValue || "./wood7.png"));
       }
       if (e.key === "bmusicfontFamily" && e.newValue) {
         dispatch(setFontFamily(e.newValue));
@@ -366,10 +366,7 @@ export const useProjectionData = () => {
       }
 
       // Handle index-only navigation from PreviewPanel / SongLibraryPanel
-      if (
-        data.type === "SLIDE_UPDATE" &&
-        data.currentIndex !== undefined
-      ) {
+      if (data.type === "SLIDE_UPDATE" && data.currentIndex !== undefined) {
         dispatch(setCurrentIndex(data.currentIndex));
         commandProcessingRef.current = false;
         return;
