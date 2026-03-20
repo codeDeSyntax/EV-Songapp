@@ -297,23 +297,13 @@ export const QueueFlowPanel: React.FC<QueueFlowPanelProps> = ({
             </p>
           </div>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {queueSongs.map((song, index) => {
               const isActive = selectedSong?.id === song.id;
               const isDone = doneSongIds.includes(song.id);
 
               return (
-                <DepthSurface
-                  key={song.id}
-                  className={`group rounded-lg px-2 py-1 ${
-                    isActive ? "ring-1 ring-app-accent" : ""
-                  }`}
-                  surfaceClassName={
-                    isActive
-                      ? "bg-gradient-to-br from-app-accent/30 via-app-accent/20 to-app-accent/15 border border-app-accent/40"
-                      : "bg-gradient-to-br from-white/20 via-white/12 to-white/8 border border-white/20"
-                  }
-                >
+                <div key={song.id} className={`group rounded-lg px-2  `}>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -325,15 +315,17 @@ export const QueueFlowPanel: React.FC<QueueFlowPanelProps> = ({
                         <DepthSurface className="text-[9px] px-1.5 py-0.5 rounded-full text-app-text-muted tabular-nums leading-none">
                           {index + 1}
                         </DepthSurface>
-                        <span
-                          className={`text-[11px] truncate ${
+                        {/* dashed line */}
+                        <DepthSurface
+                          className={`text-[11px] truncate py-1 px-4 ${
                             isDone
-                              ? "line-through text-app-text-muted"
-                              : "text-app-text"
-                          }`}
+                            ? "line-through text-app-text-muted"
+                            : "text-app-text"
+                            }`}
                         >
                           {song.title}
-                        </span>
+                        </DepthSurface>
+                            <div className="flex-1 border-t border-dashed border-app-accent mx-1" />
                       </div>
                     </button>
 
@@ -371,7 +363,7 @@ export const QueueFlowPanel: React.FC<QueueFlowPanelProps> = ({
                       </DepthButton>
                     </div>
                   </div>
-                </DepthSurface>
+                </div>
               );
             })}
           </div>
