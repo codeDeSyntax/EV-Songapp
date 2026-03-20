@@ -390,7 +390,7 @@ const UpdateManager: React.FC = () => {
           } ${iconColor}`}
           strokeWidth={2.5}
         />
-        <span className="text-[10px] ml-2 font-[impact] font-bold leading-none tracking-widest">
+        <span className="text-[14px] ml-2 text-white font- leading-none ">
           v{__APP_VERSION__}
         </span>
         {(updateReady ||

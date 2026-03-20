@@ -160,8 +160,8 @@ const TitleBar = () => {
             <DepthButton
               onClick={handleClose}
               sizeClassName="w-10 h-6 rounded "
-              inactiveClassName="text-black dark:text-white/90 border-yellow-500/70 hover:text-white"
-              inactiveSurfaceClassName="bg-gradient-to-br from-yellow-500 via-yellow-500 to-yellow-600 group-hover:from-yellow-500 group-hover:via-yellow-600 group-hover:to-yellow-600"
+              inactiveClassName="text-black dark:text-white/90 border-red-500/70 hover:text-white"
+              inactiveSurfaceClassName="bg-gradient-to-br from-red-500 via-red-500 to-red-600 group-hover:from-red-500 group-hover:via-red-600 group-hover:to-red-600"
               title="Close"
             >
               <X className="w-3.5 h-3.5 text-black dark:text-white/90" strokeWidth={3} />

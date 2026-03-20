@@ -1,12 +1,17 @@
-import React, { useState } from "react";
+import React from "react";
 import { SongLibraryPanel } from "./SongLibraryPanel";
 import { PreviewPanel } from "./PreviewPanel";
 import { BackgroundSelectorPanel } from "./BackgroundSelectorPanel";
 import { PrelistPanel } from "./PrelistPanel";
-import { BottomRightPanel } from "./BottomRightPanel";
+import { QuickActionsCard } from "./QuickActionsCard";
 import { FloatingSongEditor } from "./FloatingSongEditor";
 import { FloatingNewSongModal } from "./FloatingNewSongModal";
-import { useAppSelector } from "@/store";
+import { useAppDispatch, useAppSelector } from "@/store";
+import { SettingsView } from "../components/SettingsView";
+import { StatisticsView } from "../components/StatisticsView";
+import { AllSongsView } from "./AllSongsView";
+import { Song } from "@/types";
+import { setRightPanelView } from "@/store/slices/uiSlice";
 
 interface BentoGridProps {
   isDarkMode: boolean;
@@ -21,6 +26,8 @@ interface BentoGridProps {
     message: string,
     type: "success" | "error" | "warning" | "info",
   ) => void;
+  songs: Song[];
+  onSelectSongFromSearch: (song: Song) => void;
 }
 
 export const BentoGrid: React.FC<BentoGridProps> = ({
@@ -33,10 +40,14 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
   deleteSlideRequested,
   onDeleteSlideComplete,
   addToast,
+  songs,
+  onSelectSongFromSearch,
 }) => {
+  const dispatch = useAppDispatch();
   const songRepo = useAppSelector((state) => state.songs.songRepo);
   const showSongEditor = useAppSelector((state) => state.ui.showSongEditor);
   const showNewSongModal = useAppSelector((state) => state.ui.showNewSongModal);
+  const rightPanelView = useAppSelector((state) => state.ui.rightPanelView);
 
   return (
     <div className="w-full h-full p-2 overflow-hidden ">
@@ -51,32 +62,57 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
           />
         </div>
 
-        {/* Right Side - Two Rows */}
-        <div className="col-span-9 h-full gap-2 flex flex-col overflow-hidden ">
-          {/* Top Row - Preview and Background Selector */}
-          <div className="h-[53vh]   grid grid-cols-5 gap-2  overflow-hidden ">
-            <div className="col-span-4 min-h-[100%]">
-              <PreviewPanel
+        {/* Right Side - Dynamic View */}
+        <div className="col-span-9 h-full overflow-hidden relative">
+          {rightPanelView === "settings" ? (
+            <div className="h-full w-full relative rounded-xl overflow-hidden">
+              <SettingsView
                 isDarkMode={isDarkMode}
-                toggleDarkMode={toggleDarkMode}
-                songRepo={songRepo}
-                onSaveSuccess={onSaveSuccess}
-                onSaveError={onSaveError}
-                loadSongs={loadSongs}
-                onRequestDelete={onRequestDelete}
-                deleteSlideRequested={deleteSlideRequested}
-                onDeleteSlideComplete={onDeleteSlideComplete}
-                addToast={addToast}
+                onToggleDarkMode={toggleDarkMode}
               />
             </div>
-            <BackgroundSelectorPanel isDarkMode={isDarkMode} />
-          </div>
+          ) : rightPanelView === "statistics" ? (
+            <div className="h-full w-full relative rounded-xl overflow-hidden">
+              <StatisticsView isDarkMode={isDarkMode} />
+            </div>
+          ) : rightPanelView === "allSongs" ? (
+            <AllSongsView
+              songs={songs}
+              onSelectSong={(song) => {
+                onSelectSongFromSearch(song);
+                dispatch(setRightPanelView("bento"));
+              }}
+            />
+          ) : (
+            <div className="h-full gap-2 flex flex-col overflow-hidden ">
+              <div className="h-[53vh] grid grid-cols-12 gap-2 overflow-hidden">
+                <div className="col-span-8 min-h-[100%]">
+                  <PreviewPanel
+                    isDarkMode={isDarkMode}
+                    toggleDarkMode={toggleDarkMode}
+                    songRepo={songRepo}
+                    onSaveSuccess={onSaveSuccess}
+                    onSaveError={onSaveError}
+                    loadSongs={loadSongs}
+                    onRequestDelete={onRequestDelete}
+                    deleteSlideRequested={deleteSlideRequested}
+                    onDeleteSlideComplete={onDeleteSlideComplete}
+                    addToast={addToast}
+                  />
+                </div>
+                <div className="col-span-2 min-h-[100%] overflow-hidden">
+                  <BackgroundSelectorPanel isDarkMode={isDarkMode} />
+                </div>
+                <div className="col-span-2 min-h-[100%] overflow-hidden">
+                  <QuickActionsCard isDarkMode={isDarkMode} />
+                </div>
+              </div>
 
-          {/* Bottom Two Equal Panels - Takes 40% height */}
-          <div className="h-[35vh] grid grid-cols-1 gap-2 overflow-hidden">
-            <PrelistPanel isDarkMode={isDarkMode} />
-            {/* <BottomRightPanel isDarkMode={isDarkMode} /> */}
-          </div>
+              <div className="h-[35vh] grid grid-cols-1 gap-2 overflow-hidden">
+                <PrelistPanel isDarkMode={isDarkMode} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

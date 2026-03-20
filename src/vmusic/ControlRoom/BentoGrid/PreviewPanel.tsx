@@ -23,14 +23,12 @@ import { TitleInputDialog } from "../components/TitleInputDialog";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { SlideEditor } from "../components/SlideEditor";
 import { AddSlideDialog } from "../components/AddSlideDialog";
-import { SettingsView } from "../components/SettingsView";
 import { encodeSongData, validateSongForSave } from "../utils/songFileFormat";
 import { useProjectionState } from "@/features/songs/hooks/useProjectionState";
 import { Song } from "@/types";
 import { updateSong } from "@/store/slices/songSlice";
 import { addProjectionEntry } from "@/store/slices/projectionHistorySlice";
 import { recordProjection } from "@/store/slices/statisticsSlice";
-import { StatisticsView } from "../components/StatisticsView";
 
 interface PreviewPanelProps {
   isDarkMode: boolean;
@@ -72,8 +70,6 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   const displaySlides = useAppSelector(selectDisplaySlides); // Display slides with chorus repetition
   const songs = useAppSelector((state) => state.songs.songs);
   const {
-    showSettings,
-    showStatistics,
     isEditingSlide,
     showAddSlideDialog,
     showTitleDialog,
@@ -383,6 +379,14 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     }
 
     try {
+      const projectedTitle = songTitle || "Untitled Song";
+      const projectionSongId =
+        currentSongId ||
+        `unsaved-${
+          projectedTitle.trim().toLowerCase().replace(/\s+/g, "-") || "untitled"
+        }`;
+      const projectedAt = Date.now();
+
       const songData = {
         title: songTitle,
         content: displaySlides.map((s) => s.content).join("\n\n"),
@@ -415,17 +419,17 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       // Add to projection history
       dispatch(
         addProjectionEntry({
-          songId: currentSongId || `temp-${Date.now()}`,
-          songTitle: songTitle,
+          songId: projectionSongId,
+          songTitle: projectedTitle,
         }),
       );
 
       // Persist statistics
       dispatch(
         recordProjection({
-          songId: currentSongId || `temp-${Date.now()}`,
-          songTitle: songTitle,
-          projectedAt: Date.now(),
+          songId: projectionSongId,
+          songTitle: projectedTitle,
+          projectedAt,
         }),
       );
 
@@ -619,28 +623,34 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       );
       const result = await window.api.saveSong("", title, encodedContent);
 
-      const newSong: Song = {
-        id: Date.now().toString(),
-        title: result.sanitizedTitle || title,
-        path: result.filePath || "",
-        content: encodedContent,
-        categories: [],
-        dateModified: new Date().toISOString(),
-        size: encodedContent.length,
-        isPrelisted: true,
-        language: lang || "English",
-        metadata: {
-          created: new Date().toISOString(),
-          modified: new Date().toISOString(),
+      if (currentSongId) {
+        const updatedSong: Song = {
+          id: currentSongId,
+          title: result.sanitizedTitle || title,
+          path: result.filePath || "",
+          content: encodedContent,
+          categories: [],
+          dateModified: new Date().toISOString(),
+          size: encodedContent.length,
           isPrelisted: true,
           language: lang || "English",
-        },
-      };
+          metadata: {
+            created: new Date().toISOString(),
+            modified: new Date().toISOString(),
+            isPrelisted: true,
+            language: lang || "English",
+          },
+        };
+        dispatch(updateSong(updatedSong));
+      }
 
-      dispatch(updateSong(newSong));
       addToast(`"${title}" added to prelist! 🎵`, "success");
       dispatch(setShowPrelistTitleDialog(false));
       loadSongs();
+
+      window.dispatchEvent(
+        new CustomEvent("queueflow:action", { detail: { type: "refresh" } }),
+      );
     } catch (error) {
       console.error("Error adding to prelist:", error);
       addToast("Failed to add to prelist. Please try again.", "error");
@@ -760,8 +770,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     }
   };
 
-  const showHUD =
-    !isEditingSlide && !showAddSlideDialog && !showSettings && !showStatistics;
+  const showHUD = !isEditingSlide && !showAddSlideDialog;
 
   return (
     <div onClick={handleClick} className="h-full relative z-10">
@@ -827,15 +836,6 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           <div
             className="absolute inset-0 bg-black transition-opacity duration-200"
             style={{ opacity: overlayOpacity }}
-          />
-        )}
-
-        {/* ── Overlay panels (settings / statistics) ── */}
-        {showStatistics && <StatisticsView isDarkMode={isDarkMode} />}
-        {showSettings && (
-          <SettingsView
-            isDarkMode={isDarkMode}
-            onToggleDarkMode={toggleDarkMode}
           />
         )}
 

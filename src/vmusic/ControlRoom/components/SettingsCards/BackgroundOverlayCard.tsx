@@ -5,6 +5,7 @@ interface BackgroundOverlayCardProps {
   localOpacity: number;
   selectedBgSrc: string;
   onOpacityChange: (value: number) => void;
+  isCompact?: boolean;
 }
 
 export const BackgroundOverlayCard: React.FC<BackgroundOverlayCardProps> = ({
@@ -12,18 +13,27 @@ export const BackgroundOverlayCard: React.FC<BackgroundOverlayCardProps> = ({
   localOpacity,
   selectedBgSrc,
   onOpacityChange,
+  isCompact = true,
 }) => {
   return (
     <div
-      className="rounded-2xl p-4 flex-shrink-0 w-80 flex flex-col no-scrollbar h-full"
-      style={{
-        backgroundColor: isDarkMode
-          ? "rgba(255, 255, 255, 0.05)"
-          : "rgba(0, 0, 0, 0.03)",
-        border: `1px solid ${
-          isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"
-        }`,
-      }}
+      className={`flex flex-col no-scrollbar ${
+        isCompact
+          ? "rounded-2xl p-4 flex-shrink-0 w-80 h-full"
+          : "w-full max-w-2xl mx-auto rounded-2xl border border-app-border bg-app-surface p-4 md:p-5"
+      }`}
+      style={
+        isCompact
+          ? {
+              backgroundColor: isDarkMode
+                ? "rgba(255, 255, 255, 0.05)"
+                : "rgba(0, 0, 0, 0.03)",
+              border: `1px solid ${
+                isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"
+              }`,
+            }
+          : undefined
+      }
     >
       <div className="flex items-start justify-between mb-2.5">
         <div>

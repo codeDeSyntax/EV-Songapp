@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { FolderUp, Menu, Image, Video, Check, X } from "lucide-react";
+import { DepthSurface } from "@/shared/DepthButton";
 
 interface Background {
   name: string;
@@ -21,7 +22,7 @@ export const BackgroundSelectorPanel: React.FC<
   const [selectedBackground, setSelectedBackground] =
     useState<Background | null>(null);
   const [pendingBackground, setPendingBackground] = useState<Background | null>(
-    null
+    null,
   );
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [confirmationPosition, setConfirmationPosition] = useState({
@@ -29,7 +30,7 @@ export const BackgroundSelectorPanel: React.FC<
     y: 0,
   });
   const [customImagesPath, setCustomImagesPath] = useState(
-    localStorage.getItem("vmusicImageDirectory") || ""
+    localStorage.getItem("vmusicImageDirectory") || "",
   );
   const [isLoading, setIsLoading] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -70,7 +71,7 @@ export const BackgroundSelectorPanel: React.FC<
               src,
               category: "Custom",
               isCustom: true,
-            })
+            }),
           );
           setBackgrounds(customBackgrounds);
         } catch (error) {
@@ -125,7 +126,7 @@ export const BackgroundSelectorPanel: React.FC<
         .replace(/^gradient:/, "");
 
       const savedBg = backgrounds.find(
-        (bg) => bg.src === savedBackgroundSrc || bg.src === srcWithoutPrefix
+        (bg) => bg.src === savedBackgroundSrc || bg.src === srcWithoutPrefix,
       );
       if (savedBg) {
         setSelectedBackground(savedBg);
@@ -135,7 +136,7 @@ export const BackgroundSelectorPanel: React.FC<
 
   const handleSelectBackground = (
     background: Background,
-    event: React.MouseEvent
+    event: React.MouseEvent,
   ) => {
     // Set as pending and show preview only
     setPendingBackground(background);
@@ -151,7 +152,7 @@ export const BackgroundSelectorPanel: React.FC<
     window.dispatchEvent(
       new CustomEvent("preview-background-change", {
         detail: { src: background.src, isPreview: true },
-      })
+      }),
     );
 
     // Show confirmation modal
@@ -171,14 +172,14 @@ export const BackgroundSelectorPanel: React.FC<
         oldValue: null,
         newValue: pendingBackground.src,
         storageArea: localStorage,
-      })
+      }),
     );
 
     // Also dispatch custom event to confirm the background change
     window.dispatchEvent(
       new CustomEvent("preview-background-change", {
         detail: { src: pendingBackground.src, isPreview: false },
-      })
+      }),
     );
 
     setShowConfirmation(false);
@@ -191,7 +192,7 @@ export const BackgroundSelectorPanel: React.FC<
     window.dispatchEvent(
       new CustomEvent("preview-background-change", {
         detail: { src: revertSrc, isPreview: false, isCancel: true },
-      })
+      }),
     );
 
     setShowConfirmation(false);
@@ -223,14 +224,14 @@ export const BackgroundSelectorPanel: React.FC<
         oldValue: selectedBackground?.src || null,
         newValue: null,
         storageArea: localStorage,
-      })
+      }),
     );
 
     // Notify preview panel to clear background
     window.dispatchEvent(
       new CustomEvent("preview-background-change", {
         detail: { src: "", isPreview: false },
-      })
+      }),
     );
 
     setShowMenu(false);
@@ -253,27 +254,27 @@ export const BackgroundSelectorPanel: React.FC<
         oldValue: selectedBackground?.src || null,
         newValue: null,
         storageArea: localStorage,
-      })
+      }),
     );
 
     // Notify preview panel to clear background
     window.dispatchEvent(
       new CustomEvent("preview-background-change", {
         detail: { src: "", isPreview: false },
-      })
+      }),
     );
 
     setShowMenu(false);
   };
 
   return (
-    <div className="h-full flex flex-col overflow-hidden rounded-lg bg-app-surface">
+    <DepthSurface className="h-full flex flex-col overflow-hidden rounded-lg ">
       {/* Header */}
-      <div className="px-3 pt-2.5 pb-2 border-b border-app-border flex items-center justify-between flex-shrink-0 gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <h3 className="text-ew-sm font-semibold text-app-text whitespace-nowrap">
+      <div className="px-3 pt-2.5  border-b border-app-border flex flex-col items-center justify-between flex-shrink-0 gap-2">
+        <div className="flex  items-center gap-2">
+          <span className="text-ew-sm font-semibold text-app-text whitespace-nowrap">
             Backgrounds
-          </h3>
+          </span>
           {backgrounds.length > 0 && (
             <span className="text-[10px] text-app-text-muted tabular-nums bg-app-bg border border-app-border px-1.5 py-0.5 rounded-full leading-none">
               {backgrounds.length}
@@ -281,7 +282,7 @@ export const BackgroundSelectorPanel: React.FC<
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="flex items-center w-full gap-1.5 flex-shrk-0">
           {/* Images / Videos icon toggle */}
           <div className="flex gap-0.5 p-0.5 rounded-md bg-black/[0.04] dark:bg-white/5">
             <div
@@ -372,7 +373,9 @@ export const BackgroundSelectorPanel: React.FC<
               className="w-16 h-16 mb-2 opacity-40"
             />
             <p className="text-[11px] font-medium text-app-text-muted">
-              {customImagesPath ? `No ${mediaType} found` : "No directory selected"}
+              {customImagesPath
+                ? `No ${mediaType} found`
+                : "No directory selected"}
             </p>
             <p className="text-[10px] text-app-text-muted/70">
               {customImagesPath
@@ -394,8 +397,8 @@ export const BackgroundSelectorPanel: React.FC<
                     isPending
                       ? "ring-2 ring-amber-400 shadow-md"
                       : isSelected
-                      ? "ring-2 ring-app-accent shadow-md"
-                      : "ring-1 ring-app-border/60 hover:ring-app-border hover:shadow-sm"
+                        ? "ring-2 ring-app-accent shadow-md"
+                        : "ring-1 ring-app-border/60 hover:ring-app-border hover:shadow-sm"
                   }`}
                 >
                   {mediaType === "videos" ? (
@@ -425,7 +428,9 @@ export const BackgroundSelectorPanel: React.FC<
                   {/* Pending badge */}
                   {isPending && (
                     <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center shadow-md">
-                      <span className="text-[9px] font-bold leading-none">?</span>
+                      <span className="text-[9px] font-bold leading-none">
+                        ?
+                      </span>
                     </div>
                   )}
 
@@ -472,6 +477,6 @@ export const BackgroundSelectorPanel: React.FC<
           </div>
         </div>
       )}
-    </div>
+    </DepthSurface>
   );
 };

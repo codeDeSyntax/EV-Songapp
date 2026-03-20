@@ -22,7 +22,7 @@ const loadStatsFromStorage = (): SongStatisticsEntry[] => {
       const parsed = JSON.parse(stored) as SongStatisticsEntry[];
       const now = Date.now();
       return parsed.filter(
-        (entry) => now - entry.lastProjected < THREE_MONTHS_MS
+        (entry) => now - entry.lastProjected < THREE_MONTHS_MS,
       );
     }
   } catch (error) {
@@ -54,13 +54,13 @@ const statisticsSlice = createSlice({
         songId: string;
         songTitle: string;
         projectedAt: number;
-      }>
+      }>,
     ) => {
       const { songId, songTitle, projectedAt } = action.payload;
       const now = Date.now();
       // Remove entries older than 3 months
       state.stats = state.stats.filter(
-        (entry) => now - entry.lastProjected < THREE_MONTHS_MS
+        (entry) => now - entry.lastProjected < THREE_MONTHS_MS,
       );
       const existing = state.stats.find((s) => s.songId === songId);
       if (existing) {
@@ -77,8 +77,11 @@ const statisticsSlice = createSlice({
           lastProjected: projectedAt,
         });
       }
-      // Sort by count descending
-      state.stats.sort((a, b) => b.count - a.count);
+      // Sort by count descending; if tied, most recently projected first.
+      state.stats.sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count;
+        return b.lastProjected - a.lastProjected;
+      });
       saveStatsToStorage(state.stats);
     },
     clearStatistics: (state) => {

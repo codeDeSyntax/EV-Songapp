@@ -18,6 +18,7 @@ interface ColorGradientCardProps {
   onGradientAngleChange: (angle: number) => void;
   onPresetColorSelect: (color: string) => void;
   onApplyBackground: () => void;
+  isCompact?: boolean;
 }
 
 interface RecentGradient {
@@ -77,6 +78,7 @@ export const ColorGradientCard: React.FC<ColorGradientCardProps> = ({
   onGradientAngleChange,
   onPresetColorSelect,
   onApplyBackground,
+  isCompact = true,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [recentGradients, setRecentGradients] = useState<RecentGradient[]>([]);
@@ -98,7 +100,7 @@ export const ColorGradientCard: React.FC<ColorGradientCardProps> = ({
     start: string,
     middle: string,
     end: string,
-    angle: number
+    angle: number,
   ) => {
     const newGradient = { start, middle, end, angle };
     setRecentGradients((prev) => {
@@ -108,7 +110,7 @@ export const ColorGradientCard: React.FC<ColorGradientCardProps> = ({
           g.start === start &&
           g.middle === middle &&
           g.end === end &&
-          g.angle === angle
+          g.angle === angle,
       );
       if (exists) return prev;
 
@@ -174,15 +176,23 @@ export const ColorGradientCard: React.FC<ColorGradientCardProps> = ({
 
   return (
     <div
-      className="rounded-2xl p-4 flex-shrink-0 w-80 flex flex-col no-scrollbar h-full"
-      style={{
-        backgroundColor: isDarkMode
-          ? "rgba(255, 255, 255, 0.05)"
-          : "rgba(0, 0, 0, 0.03)",
-        border: `1px solid ${
-          isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"
-        }`,
-      }}
+      className={`flex flex-col no-scrollbar ${
+        isCompact
+          ? "rounded-2xl p-4 flex-shrink-0 w-80 h-full"
+          : "w-full max-w-3xl mx-auto rounded-2xl border border-app-border bg-app-surface p-4 md:p-5"
+      }`}
+      style={
+        isCompact
+          ? {
+              backgroundColor: isDarkMode
+                ? "rgba(255, 255, 255, 0.05)"
+                : "rgba(0, 0, 0, 0.03)",
+              border: `1px solid ${
+                isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"
+              }`,
+            }
+          : undefined
+      }
     >
       {/* Header with inline type selector */}
       <div className="flex items-center justify-between mb-2.5">

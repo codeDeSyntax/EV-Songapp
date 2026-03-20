@@ -11,7 +11,7 @@ interface ProjectionHistoryState {
   history: ProjectionHistoryEntry[];
 }
 
-const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000; // 2 weeks in milliseconds
+const TWO_MONTHS_MS = 60 * 24 * 60 * 60 * 1000; // 60 days in milliseconds
 
 // Load from localStorage
 const loadHistoryFromStorage = (): ProjectionHistoryEntry[] => {
@@ -21,12 +21,12 @@ const loadHistoryFromStorage = (): ProjectionHistoryEntry[] => {
       const parsed = JSON.parse(stored) as ProjectionHistoryEntry[];
       // Filter out old entries on load
       const now = Date.now();
-      return parsed.filter((entry) => now - entry.projectedAt < TWO_WEEKS_MS);
+      return parsed.filter((entry) => now - entry.projectedAt < TWO_MONTHS_MS);
     }
   } catch (error) {
     console.error(
       "Failed to load projection history from localStorage:",
-      error
+      error,
     );
   }
   return [];
@@ -51,13 +51,13 @@ const projectionHistorySlice = createSlice({
   reducers: {
     addProjectionEntry: (
       state,
-      action: PayloadAction<{ songId: string; songTitle: string }>
+      action: PayloadAction<{ songId: string; songTitle: string }>,
     ) => {
       const now = Date.now();
 
-      // Remove entries older than 2 weeks
+      // Remove entries older than 2 months
       state.history = state.history.filter(
-        (entry) => now - entry.projectedAt < TWO_WEEKS_MS
+        (entry) => now - entry.projectedAt < TWO_MONTHS_MS,
       );
 
       // Add new entry
@@ -85,7 +85,7 @@ const projectionHistorySlice = createSlice({
     removeOldEntries: (state) => {
       const now = Date.now();
       state.history = state.history.filter(
-        (entry) => now - entry.projectedAt < TWO_WEEKS_MS
+        (entry) => now - entry.projectedAt < TWO_MONTHS_MS,
       );
       // Persist to localStorage
       saveHistoryToStorage(state.history);

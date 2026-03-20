@@ -5,6 +5,7 @@ import {
   clearProjectionHistory,
   removeOldEntries,
 } from "@/store/slices/projectionHistorySlice";
+import { DepthSurface } from "@/shared/DepthButton";
 
 interface HistoryPanelProps {
   isDarkMode: boolean;
@@ -19,9 +20,12 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ isDarkMode }) => {
     dispatch(removeOldEntries());
 
     // Clean up every hour
-    const interval = setInterval(() => {
-      dispatch(removeOldEntries());
-    }, 60 * 60 * 1000);
+    const interval = setInterval(
+      () => {
+        dispatch(removeOldEntries());
+      },
+      60 * 60 * 1000,
+    );
 
     return () => clearInterval(interval);
   }, [dispatch]);
@@ -71,11 +75,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ isDarkMode }) => {
       <div className="flex-1 overflow-y-auto no-scrollbar">
         {history.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center gap-2 px-3">
-            <img
-              src="./no_files.svg"
-              alt=""
-              className="w-10 h-10 opacity-35"
-            />
+            <img src="./no_files.svg" alt="" className="w-10 h-10 opacity-35" />
             <p className="text-app-text-muted text-[10px]">No history yet</p>
             <p className="text-app-text-muted text-[10px] opacity-60">
               Projected songs appear here
@@ -86,11 +86,13 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ isDarkMode }) => {
             {history.map((entry) => (
               <div
                 key={entry.id}
-                className="flex items-center justify-between gap-2 px-3 py-2 hover:bg-app-hover/40 transition-colors"
+                className="flex items-center justify-between gap-2 px-3  hover:bg-app-hover/40 transition-colors"
               >
-                <span className="text-ew-xs font-medium text-app-text truncate flex-1 leading-tight">
+                <DepthSurface className="text-ew-xs font-medium text-app-text truncate py-1 px-2  leading-tight">
                   {entry.songTitle}
-                </span>
+                </DepthSurface>
+                {/* dashed line */}
+                <div className="flex-1 border-t border-dashed border-app-border mx-3" />
                 <span className="text-[10px] text-app-text-muted flex-shrink-0 tabular-nums">
                   {formatRelativeTime(entry.projectedAt)}
                 </span>
@@ -105,7 +107,7 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ isDarkMode }) => {
         <span className="text-[10px] text-app-text-muted">
           {history.length} {history.length === 1 ? "entry" : "entries"} ·
           Auto-clears after{" "}
-          <span className="font-semibold text-app-text">2 weeks</span>
+          <span className="font-semibold text-app-text">2 months</span>
         </span>
       </div>
     </div>

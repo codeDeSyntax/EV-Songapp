@@ -7,6 +7,7 @@ interface UIState {
   deleteType: "prelist" | "permanent" | null;
   showSettings: boolean;
   showStatistics: boolean;
+  rightPanelView: "bento" | "settings" | "statistics" | "allSongs";
   isEditingSlide: boolean;
   showAddSlideDialog: boolean;
   showTitleDialog: boolean;
@@ -21,6 +22,7 @@ const initialState: UIState = {
   deleteType: null,
   showSettings: false,
   showStatistics: false,
+  rightPanelView: "bento",
   isEditingSlide: false,
   showAddSlideDialog: false,
   showTitleDialog: false,
@@ -47,10 +49,41 @@ const uiSlice = createSlice({
       state.deleteType = null;
     },
     toggleSettings: (state) => {
-      state.showSettings = !state.showSettings;
+      const nextShowSettings = !state.showSettings;
+      state.showSettings = nextShowSettings;
+      if (nextShowSettings) {
+        state.showStatistics = false;
+        state.rightPanelView = "settings";
+      } else if (state.rightPanelView === "settings") {
+        state.rightPanelView = "bento";
+      }
     },
     toggleStatistics: (state) => {
-      state.showStatistics = !state.showStatistics;
+      const nextShowStatistics = !state.showStatistics;
+      state.showStatistics = nextShowStatistics;
+      if (nextShowStatistics) {
+        state.showSettings = false;
+        state.rightPanelView = "statistics";
+      } else if (state.rightPanelView === "statistics") {
+        state.rightPanelView = "bento";
+      }
+    },
+    toggleAllSongsView: (state) => {
+      if (state.rightPanelView === "allSongs") {
+        state.rightPanelView = "bento";
+      } else {
+        state.rightPanelView = "allSongs";
+      }
+      state.showSettings = false;
+      state.showStatistics = false;
+    },
+    setRightPanelView: (
+      state,
+      action: PayloadAction<"bento" | "settings" | "statistics" | "allSongs">,
+    ) => {
+      state.rightPanelView = action.payload;
+      state.showSettings = action.payload === "settings";
+      state.showStatistics = action.payload === "statistics";
     },
     setIsEditingSlide: (state, action: PayloadAction<boolean>) => {
       state.isEditingSlide = action.payload;
@@ -78,6 +111,8 @@ export const {
   closeDeleteConfirmModal,
   toggleSettings,
   toggleStatistics,
+  toggleAllSongsView,
+  setRightPanelView,
   setIsEditingSlide,
   setShowAddSlideDialog,
   setShowTitleDialog,

@@ -1,6 +1,7 @@
 import React from "react";
 import { Music } from "lucide-react";
 import { BentoGrid } from "./BentoGrid";
+import { Song } from "@/types";
 
 interface ContentAreaProps {
   filteredSongsCount: number;
@@ -14,8 +15,10 @@ interface ContentAreaProps {
   onDeleteSlideComplete: () => void;
   addToast: (
     message: string,
-    type: "success" | "error" | "warning" | "info"
+    type: "success" | "error" | "warning" | "info",
   ) => void;
+  songs: Song[];
+  onSelectSongFromSearch: (song: Song) => void;
 }
 
 export const ContentArea: React.FC<ContentAreaProps> = ({
@@ -29,6 +32,8 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
   deleteSlideRequested,
   onDeleteSlideComplete,
   addToast,
+  songs,
+  onSelectSongFromSearch,
 }) => {
   return (
     <div className="h-[90vh] w-full bg-app-bg">
@@ -42,6 +47,8 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
         deleteSlideRequested={deleteSlideRequested}
         onDeleteSlideComplete={onDeleteSlideComplete}
         addToast={addToast}
+        songs={songs}
+        onSelectSongFromSearch={onSelectSongFromSearch}
       />
     </div>
   );

@@ -28,13 +28,14 @@ import { Tooltip } from "antd";
 import { GamyCard } from "../shared/GamyCard";
 import { DepthButton as DepthIconButton } from "@/shared/DepthButton";
 import { SearchWithDropdown } from "./ActionBar/SearchWithDropdown";
-import { SongsListDropdown } from "./ActionBar/SongsListDropdown";
 import { Song } from "@/types";
 import { useAppSelector, useAppDispatch } from "@/store";
 import {
   openDeleteConfirmModal,
   toggleSettings,
   toggleStatistics,
+  toggleAllSongsView,
+  setRightPanelView,
   setIsEditingSlide,
   setShowAddSlideDialog,
   setShowTitleDialog,
@@ -47,6 +48,7 @@ import { Toaster } from "../shared/Notification";
 import { setSongRepo } from "@/store/slices/songSlice";
 import { setFontFamily } from "@/store/slices/projectionSlice";
 import { addProjectionEntry } from "@/store/slices/projectionHistorySlice";
+import { recordProjection } from "@/store/slices/statisticsSlice";
 import BackupNotification from "./components/BackupNotification";
 
 interface ActionBarProps {
@@ -87,7 +89,6 @@ export const ActionBar: React.FC<ActionBarProps> = ({
   const [selectedFont, setSelectedFont] = useState("Arial");
   const [showFontDropdown, setShowFontDropdown] = useState(false);
   const [showFolderDropdown, setShowFolderDropdown] = useState(false);
-  const [showSongsListDropdown, setShowSongsListDropdown] = useState(false);
   const [fontSearchQuery, setFontSearchQuery] = useState("");
   // BUG 15 fix: track scroll position so we can render only visible font rows
   const [fontListScrollTop, setFontListScrollTop] = useState(0);
@@ -162,16 +163,19 @@ export const ActionBar: React.FC<ActionBarProps> = ({
   const { slides, isSaving, currentSlideId, currentSongId, songTitle } =
     useAppSelector((state) => state.songSlides);
   const songRepo = useAppSelector((state) => state.songs.songRepo);
-  const {
-    showSettings,
-    showStatistics,
-    isEditingSlide,
-    showSongEditor,
-    showNewSongModal,
-  } = useAppSelector((state) => state.ui);
+  const { rightPanelView, isEditingSlide, showSongEditor, showNewSongModal } =
+    useAppSelector((state) => state.ui);
 
   // Get the currently loaded song from the songs list (using songs prop)
   const currentSong = songs.find((song) => song.id === currentSongId);
+
+  const getProjectionStatsSongId = (title: string) => {
+    if (currentSong?.id) return currentSong.id;
+    if (currentSongId) return currentSongId;
+
+    const normalizedTitle = title.trim().toLowerCase().replace(/\s+/g, "-");
+    return `unsaved-${normalizedTitle || "untitled"}`;
+  };
 
   // Get prelist songs and all songs
   const prelistedSongs = songs.filter((song) => song.isPrelisted);
@@ -268,11 +272,24 @@ export const ActionBar: React.FC<ActionBarProps> = ({
 
         await window.api.projectSong(songData);
 
+        const projectedTitle =
+          songTitle || currentSong?.title || "Untitled Song";
+        const projectedAt = Date.now();
+        const projectionSongId = getProjectionStatsSongId(projectedTitle);
+
         // Add to projection history
         dispatch(
           addProjectionEntry({
-            songId: currentSong?.id || `temp-${Date.now()}`,
-            songTitle: songTitle || currentSong?.title || "Untitled Song",
+            songId: projectionSongId,
+            songTitle: projectedTitle,
+          }),
+        );
+
+        dispatch(
+          recordProjection({
+            songId: projectionSongId,
+            songTitle: projectedTitle,
+            projectedAt,
           }),
         );
 
@@ -325,8 +342,8 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           {/* Songs Library Button */}
           <Tooltip title="Browse All Songs" placement="bottom">
             <DepthIconButton
-              onClick={() => setShowSongsListDropdown(!showSongsListDropdown)}
-              active={showSongsListDropdown}
+              onClick={() => dispatch(toggleAllSongsView())}
+              active={rightPanelView === "allSongs"}
               activeClassName="text-white border-blue-500"
               activeSurfaceClassName="bg-gradient-to-br from-blue-500 via-blue-600 to-blue-500"
             >
@@ -436,7 +453,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           <Tooltip title="Settings" placement="bottom">
             <DepthIconButton
               onClick={() => dispatch(toggleSettings())}
-              active={showSettings}
+              active={rightPanelView === "settings"}
             >
               <Settings className="w-3.5 h-3.5" />
             </DepthIconButton>
@@ -445,7 +462,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           <Tooltip title="Statistics" placement="bottom">
             <DepthIconButton
               onClick={() => dispatch(toggleStatistics())}
-              active={showStatistics}
+              active={rightPanelView === "statistics"}
             >
               <BarChart3 className="w-3.5 h-3.5" />
             </DepthIconButton>
@@ -740,7 +757,10 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           songs={songs}
           onPresent={presentSong}
           onDelete={showDeleteConfirmation}
-          onSelectSong={onSelectSongFromSearch}
+          onSelectSong={(song) => {
+            onSelectSongFromSearch(song);
+            dispatch(setRightPanelView("bento"));
+          }}
           isDarkMode={isDarkMode}
         />
 
@@ -762,16 +782,6 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           )}
         </div>
       </div>
-
-      {/* Songs List Dropdown */}
-      {showSongsListDropdown && (
-        <SongsListDropdown
-          songs={songs}
-          isDarkMode={isDarkMode}
-          onSelectSong={onSelectSongFromSearch}
-          onClose={() => setShowSongsListDropdown(false)}
-        />
-      )}
     </div>
   );
 };

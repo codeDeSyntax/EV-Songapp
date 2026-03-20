@@ -3,9 +3,10 @@ import { Switch } from "antd";
 
 interface SystemCardProps {
   isDarkMode: boolean;
+  isCompact?: boolean;
 }
 
-export const SystemCard: React.FC<SystemCardProps> = () => {
+export const SystemCard: React.FC<SystemCardProps> = ({ isCompact = true }) => {
   const [version, setVersion] = useState<string>("...");
   const [openAtLogin, setOpenAtLogin] = useState(false);
   const [savingStartup, setSavingStartup] = useState(false);
@@ -56,7 +57,13 @@ export const SystemCard: React.FC<SystemCardProps> = () => {
   };
 
   return (
-    <div className="flex-shrink-0 flex flex-col rounded-2xl border border-app-border bg-app-surface p-4 gap-5 h-full w-64 no-scrollbar">
+    <div
+      className={`flex flex-col rounded-2xl border border-app-border bg-app-surface gap-5 p-4 no-scrollbar ${
+        isCompact
+          ? "flex-shrink-0 h-full w-64"
+          : "w-full max-w-xl mx-auto h-auto md:p-5"
+      }`}
+    >
       {/* Header */}
       <div>
         <h3 className="text-xs font-medium text-app-text-muted uppercase tracking-wider">

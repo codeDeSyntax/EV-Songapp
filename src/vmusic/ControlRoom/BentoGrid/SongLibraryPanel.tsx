@@ -13,6 +13,7 @@ import { useProjectionState } from "@/hooks/useProjectionState";
 import { Trash2 } from "lucide-react";
 import { encodeSongData } from "../utils/songFileFormat";
 import { NeuralNetworkBackground } from "./NeuralNetworkBackground";
+import { DepthSurface } from "@/shared/DepthButton";
 
 interface SongLibraryPanelProps {
   isDarkMode: boolean;
@@ -450,17 +451,17 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
                     <span className="text-[10px] font-bold text-white leading-tight drop-shadow">
                       {slide.label}
                     </span>
-                    <span
-                      className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide text-white ${
+                    <DepthSurface
+                      className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wide  ${
                         slide.type === "chorus"
-                          ? "bg-blue-500/75"
+                          ? "bg-yellow-500/75 text-black"
                           : slide.type === "bridge"
-                            ? "bg-purple-500/75"
-                            : "bg-black/60"
+                            ? "bg-yellow-500/75 text-black"
+                            : "bg-black/60 text-white"
                       }`}
                     >
                       {slide.type}
-                    </span>
+                    </DepthSurface>
                   </div>
 
                   {/* Divider */}

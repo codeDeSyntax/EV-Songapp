@@ -6,24 +6,34 @@ interface ChorusRepetitionCardProps {
   isDarkMode: boolean;
   repeatChorus: boolean;
   onToggle: (value: boolean) => void;
+  isCompact?: boolean;
 }
 
 export const ChorusRepetitionCard: React.FC<ChorusRepetitionCardProps> = ({
   isDarkMode,
   repeatChorus,
   onToggle,
+  isCompact = true,
 }) => {
   return (
     <div
-      className="rounded-2xl p-4 flex-shrink-0 w-80 flex flex-col no-scrollbar h-full"
-      style={{
-        backgroundColor: isDarkMode
-          ? "rgba(255, 255, 255, 0.05)"
-          : "rgba(0, 0, 0, 0.03)",
-        border: `1px solid ${
-          isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"
-        }`,
-      }}
+      className={`flex flex-col no-scrollbar ${
+        isCompact
+          ? "rounded-2xl p-4 flex-shrink-0 w-80 h-full"
+          : "w-full max-w-xl mx-auto rounded-2xl border border-app-border bg-app-surface p-4 md:p-5"
+      }`}
+      style={
+        isCompact
+          ? {
+              backgroundColor: isDarkMode
+                ? "rgba(255, 255, 255, 0.05)"
+                : "rgba(0, 0, 0, 0.03)",
+              border: `1px solid ${
+                isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"
+              }`,
+            }
+          : undefined
+      }
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">

@@ -104,7 +104,7 @@ const ControlRoom = () => {
         slides,
         true,
         undefined,
-        language
+        language,
       );
       const result = await window.api.saveSong("", title, encodedContent);
 
@@ -199,6 +199,8 @@ const ControlRoom = () => {
             deleteSlideRequested={deleteSlideRequested}
             onDeleteSlideComplete={() => setDeleteSlideRequested(false)}
             addToast={addToast}
+            songs={songs}
+            onSelectSongFromSearch={handleSelectSongFromSearch}
           />
         </GamyCard>
       </div>

@@ -6,12 +6,13 @@ import {
 } from "@/store/slices/projectionSlice";
 import { setRepeatChorusAfterVerse } from "@/store/slices/songSlidesSlice";
 import {
-  DarkModeCard,
   BackgroundOverlayCard,
   ColorGradientCard,
   ChorusRepetitionCard,
   SystemCard,
 } from "./SettingsCards";
+import { Palette, Music, Settings, Palette as PaletteIcon } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface SettingsViewProps {
   isDarkMode: boolean;
@@ -20,7 +21,7 @@ interface SettingsViewProps {
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   isDarkMode,
-  onToggleDarkMode,
+  onToggleDarkMode: _onToggleDarkMode,
 }) => {
   const dispatch = useAppDispatch();
   const overlayOpacity = useAppSelector(
@@ -29,6 +30,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const repeatChorus = useAppSelector(
     (state) => state.songSlides.repeatChorusAfterVerse,
   );
+  const [selectedCategory, setSelectedCategory] =
+    useState<string>("background");
   const [localOpacity, setLocalOpacity] = useState(overlayOpacity * 100);
   const [selectedBgSrc, setSelectedBgSrc] = useState<string>("");
   const [bgType, setBgType] = useState<"solid" | "gradient">("solid");
@@ -133,63 +136,165 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     dispatch(setRepeatChorusProjection(value));
   };
 
+  const categories = [
+    { id: "background", label: "Background", icon: Palette },
+    { id: "colors", label: "Colors", icon: PaletteIcon },
+    { id: "chorus", label: "Chorus", icon: Music },
+    { id: "system", label: "System", icon: Settings },
+  ];
+
   return (
     <div className="absolute inset-0 z-30 overflow-hidden bg-app-surface dark:bg-black">
-      <div className="h-full p-6 flex flex-col overflow-hidden">
-        {/* Settings Container - Horizontal Scrollable */}
-        <div className="flex gap-4 overflow-x-auto overflow-y-hidden no-scrollbar h-full">
-          {/* <DarkModeCard
-            isDarkMode={isDarkMode}
-            onToggleDarkMode={onToggleDarkMode}
-          /> */}
+      <div className="h-full flex">
+        <div className="w-52 border-r border-app-border flex flex-col bg-app-bg dark:bg-black/50">
+          <div className="p-4 border-b border-app-border">
+            <h2 className="text-sm font-semibold text-app-text">Settings</h2>
+            <p className="text-[11px] text-app-text-muted mt-1">
+              Configure projection and app behavior
+            </p>
+          </div>
 
-          <BackgroundOverlayCard
-            isDarkMode={isDarkMode}
-            localOpacity={localOpacity}
-            selectedBgSrc={selectedBgSrc}
-            onOpacityChange={handleOpacityChange}
-          />
+          <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
+            {categories.map((category) => {
+              const Icon = category.icon;
+              const isActive = selectedCategory === category.id;
 
-          <ColorGradientCard
-            isDarkMode={isDarkMode}
-            bgType={bgType}
-            solidColor={solidColor}
-            gradientStart={gradientStart}
-            gradientMiddle={gradientMiddle}
-            gradientEnd={gradientEnd}
-            gradientAngle={gradientAngle}
-            onBgTypeChange={setBgType}
-            onSolidColorChange={(color) => {
-              setGradientPreset(null);
-              setSolidColor(color);
-            }}
-            onGradientStartChange={(color) => {
-              setGradientPreset(null);
-              setGradientStart(color);
-            }}
-            onGradientMiddleChange={(color) => {
-              setGradientPreset(null);
-              setGradientMiddle(color);
-            }}
-            onGradientEndChange={(color) => {
-              setGradientPreset(null);
-              setGradientEnd(color);
-            }}
-            onGradientAngleChange={(angle) => {
-              setGradientPreset(null);
-              setGradientAngle(angle);
-            }}
-            onPresetColorSelect={handlePresetColor}
-            onApplyBackground={handleApplyBackground}
-          />
+              return (
+                <motion.button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    isActive
+                      ? "bg-app-accent text-white shadow-lg"
+                      : "text-app-text hover:bg-app-hover"
+                  }`}
+                  whileHover={{ x: 3 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span>{category.label}</span>
+                </motion.button>
+              );
+            })}
+          </nav>
+        </div>
 
-          <ChorusRepetitionCard
-            isDarkMode={isDarkMode}
-            repeatChorus={repeatChorus}
-            onToggle={handleChorusRepetitionToggle}
-          />
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <motion.div
+            key={selectedCategory}
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.2 }}
+            className="flex-1 overflow-auto p-6 md:p-8"
+          >
+            {selectedCategory === "background" && (
+              <div className="mx-auto w-full max-w-4xl">
+                <div className="rounded-2xl border border-app-border bg-app-bg p-5 md:p-6">
+                  <h3 className="text-lg font-semibold text-app-text">
+                    Background Overlay
+                  </h3>
+                  <p className="text-xs text-app-text-muted mt-1 mb-5">
+                    Adjust background darkness and preview final readability.
+                  </p>
+                  <div className="mx-auto w-full max-w-2xl">
+                    <BackgroundOverlayCard
+                      isDarkMode={isDarkMode}
+                      localOpacity={localOpacity}
+                      selectedBgSrc={selectedBgSrc}
+                      onOpacityChange={handleOpacityChange}
+                      isCompact={false}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
-          <SystemCard isDarkMode={isDarkMode} />
+            {selectedCategory === "colors" && (
+              <div className="mx-auto w-full max-w-4xl">
+                <div className="rounded-2xl border border-app-border bg-app-bg p-5 md:p-6">
+                  <h3 className="text-lg font-semibold text-app-text">
+                    Color & Gradient
+                  </h3>
+                  <p className="text-xs text-app-text-muted mt-1 mb-5">
+                    Pick solid tones or generate smooth gradients for
+                    projection.
+                  </p>
+                  <div className="mx-auto w-full max-w-3xl">
+                    <ColorGradientCard
+                      isDarkMode={isDarkMode}
+                      bgType={bgType}
+                      solidColor={solidColor}
+                      gradientStart={gradientStart}
+                      gradientMiddle={gradientMiddle}
+                      gradientEnd={gradientEnd}
+                      gradientAngle={gradientAngle}
+                      onBgTypeChange={setBgType}
+                      onSolidColorChange={(color) => {
+                        setGradientPreset(null);
+                        setSolidColor(color);
+                      }}
+                      onGradientStartChange={(color) => {
+                        setGradientPreset(null);
+                        setGradientStart(color);
+                      }}
+                      onGradientMiddleChange={(color) => {
+                        setGradientPreset(null);
+                        setGradientMiddle(color);
+                      }}
+                      onGradientEndChange={(color) => {
+                        setGradientPreset(null);
+                        setGradientEnd(color);
+                      }}
+                      onGradientAngleChange={(angle) => {
+                        setGradientPreset(null);
+                        setGradientAngle(angle);
+                      }}
+                      onPresetColorSelect={handlePresetColor}
+                      onApplyBackground={handleApplyBackground}
+                      isCompact={false}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedCategory === "chorus" && (
+              <div className="mx-auto w-full max-w-4xl">
+                <div className="rounded-2xl border border-app-border bg-app-bg p-5 md:p-6">
+                  <h3 className="text-lg font-semibold text-app-text">
+                    Chorus Repetition
+                  </h3>
+                  <p className="text-xs text-app-text-muted mt-1 mb-5">
+                    Control whether chorus appears after each verse.
+                  </p>
+                  <div className="mx-auto w-full max-w-xl">
+                    <ChorusRepetitionCard
+                      isDarkMode={isDarkMode}
+                      repeatChorus={repeatChorus}
+                      onToggle={handleChorusRepetitionToggle}
+                      isCompact={false}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {selectedCategory === "system" && (
+              <div className="mx-auto w-full max-w-4xl">
+                <div className="rounded-2xl border border-app-border bg-app-bg p-5 md:p-6">
+                  <h3 className="text-lg font-semibold text-app-text">
+                    System
+                  </h3>
+                  <p className="text-xs text-app-text-muted mt-1 mb-5">
+                    Configure startup, updates, and shortcut references.
+                  </p>
+                  <div className="mx-auto w-full max-w-xl">
+                    <SystemCard isDarkMode={isDarkMode} isCompact={false} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </motion.div>
         </div>
       </div>
     </div>
