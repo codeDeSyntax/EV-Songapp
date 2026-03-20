@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { X, Maximize2, Minimize2, Monitor, Wifi } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactDOM from "react-dom";
 import { useAppSelector } from "@/store";
 import { selectDisplaySlides } from "@/store/slices/songSlidesSlice";
+import { DepthButton } from "@/shared/DepthButton";
 
 interface SongSection {
   type: string;
@@ -19,13 +21,39 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
   isVisible,
   onClose,
 }) => {
+  const getSafeInitialPosition = () => {
+    const defaultPosition = { x: Math.max(0, window.innerWidth - 350), y: 20 };
+
+    try {
+      const saved = localStorage.getItem("floatingPreviewPosition");
+      if (!saved) return defaultPosition;
+
+      const parsed = JSON.parse(saved);
+      if (
+        !parsed ||
+        typeof parsed.x !== "number" ||
+        typeof parsed.y !== "number" ||
+        Number.isNaN(parsed.x) ||
+        Number.isNaN(parsed.y)
+      ) {
+        return defaultPosition;
+      }
+
+      const maxX = Math.max(0, window.innerWidth - 200);
+      const maxY = Math.max(0, window.innerHeight - 120);
+
+      return {
+        x: Math.max(0, Math.min(parsed.x, maxX)),
+        y: Math.max(0, Math.min(parsed.y, maxY)),
+      };
+    } catch {
+      return defaultPosition;
+    }
+  };
+
   // State for dragging
   const [isDragging, setIsDragging] = useState(false);
-  const [position, setPosition] = useState(() => {
-    // Load saved position from localStorage or use default (better positioned for landscape)
-    const saved = localStorage.getItem("floatingPreviewPosition");
-    return saved ? JSON.parse(saved) : { x: window.innerWidth - 350, y: 20 };
-  });
+  const [position, setPosition] = useState(getSafeInitialPosition);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isMinimized, setIsMinimized] = useState(false);
 
@@ -179,7 +207,7 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
 
   const sectionDisplay = getSectionDisplayText();
 
-  return (
+  const previewNode = (
     <AnimatePresence>
       <motion.div
         ref={previewRef}
@@ -190,48 +218,53 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
           position: "fixed",
           left: position.x,
           top: position.y,
-          zIndex: 9999,
+          zIndex: 2147483000,
           userSelect: "none",
-          width: isMinimized ? "200px" : "200px",
-          minWidth: "200px",
+          width: "200px",
         }}
-        className="bg-black border-4 border-solid shadow-inner  border-app-border rounded  overflow-hidden"
+        className="bg-gradient-to-b from-stone-900/95 to-black border-2 border-stone-700/80 shadow-2xl rounded-xl overflow-hidden backdrop-blur-sm"
       >
-        {/* Minimal Draggable Header */}
         <div
           ref={dragRef}
           onMouseDown={handleMouseDown}
-          className={` border-solid shadow-gray-300 px-2 py-1 flex items-center justify-between cursor-grab active:cursor-grabbing border-b border-gray-900/30 ${
+          className={`px-4 py-3 flex items-center justify-between cursor-grab active:cursor-grabbing relative group ${
             isDragging ? "cursor-grabbing" : ""
           }`}
         >
-          <div className="flex items-center space-x-1">
-            <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-xs text-gray-400 font-medium">Live</span>
-          </div>
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
+          {/* Subtle top gloss */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none"></div>
+
+          {/* Left: Live Indicator */}
+          <div className="flex items-center gap-2 min-w-fit">
+            <div className="w-4 h-4 border-dashed border-2 animate-spin border-yellow-500 rounded-full  shadow-lg shadow-yellow-500/50"></div>
+            <span className="text-base font-[impact] font-bold text-yellow-400 uppercase tracking-widest">
+              Live
+            </span>
           </div>
 
-          <div className="text-lg font-sans font-medium text-white">
-            {sectionDisplay || "No Section"}
+          {/* Center: Section Display */}
+          <div className="flex-1 mx-4 text-center">
+            <div className="text-sm font-semibold text-stone-100 truncate">
+              {sectionDisplay || "Waiting"}
+            </div>
           </div>
 
-          <div className="flex items-center space-x-1">
-            <button
-              // onClick={onClose}
-              className="p-0.5 bg-transparent rounded transition-colors"
-            >
-              <img
-                src="./alert.png"
-                className="w-6 h-6 animate-pulse hover:animate-spin transition-all"
-              />
-            </button>
-          </div>
+          {/* Right: Status Button */}
+          <DepthButton
+            sizeClassName="h-7 w-7 rounded-lg"
+            activeClassName="text-white"
+            inactiveClassName="text-stone-300"
+            inactiveSurfaceClassName="bg-gradient-to-br from-stone-700/60 via-stone-800/60 to-stone-700/60 border border-stone-600/50 group-hover:from-app-accent/40 group-hover:via-app-accent/50 group-hover:to-app-accent/40 group-hover:border-app-accent/70"
+            activeSurfaceClassName="bg-gradient-to-br from-app-accent/80 via-app-accent to-app-accent/80 border border-app-accent"
+          >
+            <Wifi className="w-3.5 h-3.5" />
+          </DepthButton>
         </div>
       </motion.div>
     </AnimatePresence>
   );
+
+  return ReactDOM.createPortal(previewNode, document.body);
 };
 
 export default FloatingProjectionPreview;

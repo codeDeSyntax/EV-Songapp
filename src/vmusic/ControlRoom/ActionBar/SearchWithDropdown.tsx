@@ -3,6 +3,7 @@ import { Search, Radio, Trash2, X } from "lucide-react";
 import { Song } from "@/types";
 import { GamyCard } from "../../shared/GamyCard";
 import { motion, AnimatePresence } from "framer-motion";
+import { DepthSurface } from "@/shared/DepthButton";
 
 interface SearchWithDropdownProps {
   searchQuery: string;
@@ -208,7 +209,7 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
   return (
     <div className="relative flex-1 max-w-md search-dropdown-container">
       {/* Search Input */}
-      <div className="relative">
+      <DepthSurface className="relative rounded-full">
         <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-app-text-muted" />
         <input
           ref={inputRef}
@@ -229,7 +230,7 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
             <X className="w-3.5 h-3.5" />
           </button>
         )}
-      </div>
+      </DepthSurface>
 
       {/* Dropdown Results with Animation */}
       <AnimatePresence>

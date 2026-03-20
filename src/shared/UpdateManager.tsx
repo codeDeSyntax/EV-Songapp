@@ -7,6 +7,8 @@ import {
   ArrowDownToLine,
   CloudDownload,
 } from "lucide-react";
+import { useTheme } from "@/Provider/Theme";
+import { DepthButton } from "./DepthButton";
 
 declare const __APP_VERSION__: string;
 
@@ -19,6 +21,7 @@ type UpdateStatus =
   | "error";
 
 const UpdateManager: React.FC = () => {
+  const { isDarkMode } = useTheme();
   const [updateReady, setUpdateReady] = useState(false);
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>("idle");
@@ -129,7 +132,25 @@ const UpdateManager: React.FC = () => {
         ? "text-green-400"
         : updateStatus === "error"
           ? "text-red-400"
-          : "text-white/70";
+          : isDarkMode
+            ? "text-white/70"
+            : "text-black/70";
+
+  const triggerInactiveTextClass = isDarkMode
+    ? "text-white/70 border-white/25 hover:text-white"
+    : "text-black/70 border-black/30 hover:text-black";
+
+  const triggerActiveTextClass = isDarkMode
+    ? "text-white border-white/35"
+    : "text-black border-black/40";
+
+  const triggerInactiveSurface = isDarkMode
+    ? "bg-gradient-to-br from-white/15 via-white/10 to-white/5 group-hover:from-white/25 group-hover:via-white/15 group-hover:to-white/10"
+    : "bg-gradient-to-br from-black/10 via-black/5 to-black/10 group-hover:from-black/15 group-hover:via-black/10 group-hover:to-black/15";
+
+  const triggerActiveSurface = isDarkMode
+    ? "bg-gradient-to-br from-white/25 via-white/20 to-white/15"
+    : "bg-gradient-to-br from-black/20 via-black/15 to-black/10";
 
   /* ─── Status icon + text for each state ─── */
   const renderStatusRow = () => {
@@ -350,15 +371,17 @@ const UpdateManager: React.FC = () => {
   return (
     <>
       {/* Trigger button — version pill */}
-      <button
+      <DepthButton
         ref={btnRef}
         onClick={handleToggle}
         style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-        className={`relative flex items-center gap-1.5 h-5 px-2 rounded cursor-pointer transition-all border ${
-          showPanel
-            ? "bg-white/15 border-white/25 text-white"
-            : "bg-white/8 border-white/12 text-white/70 hover:bg-white/15 hover:border-white/25 hover:text-white"
-        }`}
+        sizeClassName="h-6 px-2 rounded"
+        className="gap-1.5"
+        active={showPanel}
+        inactiveClassName={triggerInactiveTextClass}
+        activeClassName={triggerActiveTextClass}
+        inactiveSurfaceClassName={triggerInactiveSurface}
+        activeSurfaceClassName={triggerActiveSurface}
         title="Software updates"
       >
         <RefreshCcw
@@ -367,7 +390,7 @@ const UpdateManager: React.FC = () => {
           } ${iconColor}`}
           strokeWidth={2.5}
         />
-        <span className="text-[10px] font-mono font-medium leading-none">
+        <span className="text-[10px] ml-2 font-[impact] font-bold leading-none tracking-widest">
           v{__APP_VERSION__}
         </span>
         {(updateReady ||
@@ -379,7 +402,7 @@ const UpdateManager: React.FC = () => {
             }`}
           />
         )}
-      </button>
+      </DepthButton>
 
       {panelPortal}
     </>

@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { Tooltip } from "antd";
 import { GamyCard } from "../shared/GamyCard";
+import { DepthButton as DepthIconButton } from "@/shared/DepthButton";
 import { SearchWithDropdown } from "./ActionBar/SearchWithDropdown";
 import { SongsListDropdown } from "./ActionBar/SongsListDropdown";
 import { Song } from "@/types";
@@ -323,22 +324,20 @@ export const ActionBar: React.FC<ActionBarProps> = ({
         <div className="flex items-center gap-1.5">
           {/* Songs Library Button */}
           <Tooltip title="Browse All Songs" placement="bottom">
-            <button
+            <DepthIconButton
               onClick={() => setShowSongsListDropdown(!showSongsListDropdown)}
-              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all border border-app-border ${
-                showSongsListDropdown
-                  ? "bg-blue-500 text-white"
-                  : "bg-app-bg text-app-text hover:bg-app-surface-hover"
-              }`}
+              active={showSongsListDropdown}
+              activeClassName="text-white border-blue-500"
+              activeSurfaceClassName="bg-gradient-to-br from-blue-500 via-blue-600 to-blue-500"
             >
               <Music className="w-3.5 h-3.5" />
-            </button>
+            </DepthIconButton>
           </Tooltip>
 
           <div className="w-px h-6 mx-1 bg-app-border"></div>
 
           <Tooltip title="Add Current Song to Prelist" placement="bottom">
-            <button
+            <DepthIconButton
               onClick={() => {
                 if (slides.length === 0) {
                   addToast(
@@ -350,64 +349,51 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                 dispatch(setShowPrelistTitleDialog(true));
               }}
               disabled={slides.length === 0}
-              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-text-muted dark:bg-app-surface hover:bg-app-surface-hover text-white ${
-                slides.length === 0 ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              activeClassName="text-white border-app-text-muted"
+              activeSurfaceClassName="bg-gradient-to-br from-app-text-muted via-app-text-muted/90 to-app-text-muted "
             >
               <BellPlus className="w-3.5 h-3.5" />
-            </button>
+            </DepthIconButton>
           </Tooltip>
 
           <Tooltip title="Edit Current Slide" placement="bottom">
-            <button
+            <DepthIconButton
               onClick={() => dispatch(setIsEditingSlide(true))}
               disabled={currentSlideId === null}
-              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg text-app-text border border-app-border ${
-                currentSlideId !== null
-                  ? "hover:bg-app-surface-hover"
-                  : "opacity-50 cursor-not-allowed"
-              }`}
             >
               <Edit3 className="w-3.5 h-3.5" />
-            </button>
+            </DepthIconButton>
           </Tooltip>
 
           <Tooltip title="Edit Full Song" placement="bottom">
-            <button
+            <DepthIconButton
               onClick={() => dispatch(toggleSongEditor())}
               disabled={slides.length === 0}
-              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all border border-app-border ${
-                showSongEditor
-                  ? "bg-app-accent text-white"
-                  : slides.length > 0
-                    ? "bg-app-bg text-app-text hover:bg-app-surface-hover"
-                    : "bg-app-bg text-app-text opacity-50 cursor-not-allowed"
-              }`}
+              active={showSongEditor}
             >
               <NotebookPen className="w-3.5 h-3.5" />
-            </button>
+            </DepthIconButton>
           </Tooltip>
 
           <Tooltip title="New Song" placement="bottom">
-            <button
+            <DepthIconButton
               onClick={() => dispatch(toggleNewSongModal())}
-              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all border ${
-                showNewSongModal
-                  ? "bg-green-500 text-white border-green-500"
-                  : "bg-app-bg text-app-text border-app-border hover:bg-app-surface-hover"
-              }`}
+              active={showNewSongModal}
+              activeClassName="text-white border-green-500"
+              activeSurfaceClassName="bg-gradient-to-br from-green-500 via-green-600 to-green-500"
             >
               <FilePlus2 className="w-3.5 h-3.5" />
-            </button>
+            </DepthIconButton>
           </Tooltip>
 
           <Tooltip title="Add New Slide" placement="bottom">
-            <button
+            <DepthIconButton
               onClick={() => dispatch(setShowAddSlideDialog(true))}
-              className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-text-muted dark:bg-app-surface text-white hover:bg-app-accent/80 border border-app-border"
+              inactiveClassName="text-app-text border-app-border hover:text-white"
+              inactiveSurfaceClassName="bg-gradient-to-br from-app-bg via-app-surface to-app-bg group-hover:from-app-accent/80 group-hover:via-app-accent group-hover:to-app-accent/80"
             >
               <Plus className="w-3.5 h-3.5" />
-            </button>
+            </DepthIconButton>
           </Tooltip>
 
           <Tooltip
@@ -416,7 +402,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
             }
             placement="bottom"
           >
-            <button
+            <DepthIconButton
               onClick={() => {
                 if (isEditingSlide) {
                   onRequestDelete();
@@ -430,54 +416,39 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                 }
               }}
               disabled={isEditingSlide ? currentSlideId === null : !currentSong}
-              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg text-app-text border border-app-border ${
-                (isEditingSlide ? currentSlideId !== null : currentSong)
-                  ? "hover:bg-app-surface-hover hover:text-red-500"
-                  : "opacity-50 cursor-not-allowed"
-              }`}
+              className="enabled:hover:text-red-500"
             >
               <Trash2 className="w-3.5 h-3.5" />
-            </button>
+            </DepthIconButton>
           </Tooltip>
 
           <Tooltip title="Save Current Song" placement="bottom">
-            <button
+            <DepthIconButton
               onClick={handleSaveClick}
               disabled={isSaving || slides.length === 0}
-              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-text-muted dark:bg-app-surface text-white ${
-                !isSaving && slides.length > 0
-                  ? "hover:bg-app-surface-hover"
-                  : "opacity-50 cursor-not-allowed"
-              }`}
+              inactiveClassName="text-app-text border-app-border hover:text-white"
+              inactiveSurfaceClassName="bg-gradient-to-br from-app-bg via-app-surface to-app-bg group-hover:from-app-accent/80 group-hover:via-app-accent group-hover:to-app-accent/80"
             >
               <Save className="w-3.5 h-3.5" />
-            </button>
+            </DepthIconButton>
           </Tooltip>
 
           <Tooltip title="Settings" placement="bottom">
-            <button
+            <DepthIconButton
               onClick={() => dispatch(toggleSettings())}
-              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all border border-app-border ${
-                showSettings
-                  ? "bg-app-accent text-white"
-                  : "bg-app-bg text-app-text hover:bg-app-surface-hover"
-              }`}
+              active={showSettings}
             >
               <Settings className="w-3.5 h-3.5" />
-            </button>
+            </DepthIconButton>
           </Tooltip>
 
           <Tooltip title="Statistics" placement="bottom">
-            <button
+            <DepthIconButton
               onClick={() => dispatch(toggleStatistics())}
-              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all border border-app-border ${
-                showStatistics
-                  ? "bg-app-accent text-white"
-                  : "bg-app-bg text-app-text hover:bg-app-surface-hover"
-              }`}
+              active={showStatistics}
             >
               <BarChart3 className="w-3.5 h-3.5" />
-            </button>
+            </DepthIconButton>
           </Tooltip>
 
           {isProjectionActive && (
@@ -485,7 +456,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               title="Focus Projection Window (Shift+F)"
               placement="bottom"
             >
-              <button
+              <DepthIconButton
                 onClick={async () => {
                   try {
                     await window.api.focusProjectionWindow();
@@ -493,10 +464,11 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                     addToast("Could not focus projection window", "error");
                   }
                 }}
-                className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg text-app-text hover:bg-blue-600 hover:text-white border border-app-border"
+                className="enabled:hover:text-white"
+                inactiveSurfaceClassName="bg-gradient-to-br from-app-bg via-app-surface to-app-bg group-hover:from-blue-600 group-hover:via-blue-600 group-hover:to-blue-700"
               >
                 <MonitorCheck className="w-3.5 h-3.5" />
-              </button>
+              </DepthIconButton>
             </Tooltip>
           )}
 
@@ -504,47 +476,39 @@ export const ActionBar: React.FC<ActionBarProps> = ({
             title={isProjectionActive ? "Stop Projection" : "Start Projection"}
             placement="bottom"
           >
-            <button
+            <DepthIconButton
               onClick={handleProjectionToggle}
               disabled={!isProjectionActive && slides.length === 0}
-              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all border border-app-border ${
-                isProjectionActive
-                  ? "bg-green-600 text-white hover:bg-green-700"
-                  : slides.length === 0
-                    ? "bg-app-bg text-app-text opacity-50 cursor-not-allowed"
-                    : "bg-app-bg text-app-text hover:bg-app-surface-hover"
-              }`}
+              active={isProjectionActive}
+              activeClassName="text-white border-yellow-600"
+              activeSurfaceClassName="bg-gradient-to-br from-yellow-600 via-yellow-600 to-yellow-700"
             >
               {isProjectionActive ? (
                 <MonitorStop className="w-3.5 h-3.5" />
               ) : (
                 <Monitor className="w-3.5 h-3.5" />
               )}
-            </button>
+            </DepthIconButton>
           </Tooltip>
 
           <div className="w-px h-6 mx-1 bg-app-border"></div>
 
           <Tooltip title="Refresh Song List" placement="bottom">
-            <button
-              onClick={loadSongs}
-              className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg hover:bg-app-surface-hover text-app-text border border-app-border"
-            >
+            <DepthIconButton onClick={loadSongs}>
               <RefreshCw className="w-3.5 h-3.5" />
-            </button>
+            </DepthIconButton>
           </Tooltip>
 
           <div className="relative" ref={folderDropdownRef}>
             <Tooltip title="Songs Directory" placement="bottom">
-              <button
+              <DepthIconButton
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowFolderDropdown(!showFolderDropdown);
                 }}
-                className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg hover:bg-app-surface-hover text-app-text border border-app-border"
               >
                 <Folder className="w-3.5 h-3.5" />
-              </button>
+              </DepthIconButton>
             </Tooltip>
 
             {showFolderDropdown && (
@@ -603,16 +567,18 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           {/* Font Family Selector */}
           <div className="relative" ref={fontDropdownRef}>
             <Tooltip title="Select Font Family" placement="bottom">
-              <button
+              <DepthIconButton
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowFontDropdown(!showFontDropdown);
                 }}
-                className="flex items-center gap-1.5 px-2.5 h-7 rounded-3xl transition-all bg-app-bg hover:bg-app-surface-hover text-app-text text-ew-xs border border-app-border"
+                active={showFontDropdown}
+                sizeClassName="h-7 px-2.5"
+                className="gap-1.5 rounded-full"
               >
                 <span className="font-medium">{selectedFont}</span>
                 <ChevronDown className="w-3 h-3" />
-              </button>
+              </DepthIconButton>
             </Tooltip>
 
             {showFontDropdown && (
@@ -625,7 +591,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                     value={fontSearchQuery}
                     onChange={(e) => setFontSearchQuery(e.target.value)}
                     placeholder="Search fonts..."
-                    className="w-full px-2 py-1 text-ew-xs bg-app-surface text-app-text border border-app-border border-none rounded focus:outline-none focus:ring-1 focus:ring-app-accent"
+                    className="w-full px-2 py-1.5 text-ew-xs bg-app-bg text-app-text placeholder-app-text-muted border border-app-border rounded-md focus:outline-none focus:ring-2 focus:ring-app-accent/50 shadow-inner"
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>
@@ -737,31 +703,21 @@ export const ActionBar: React.FC<ActionBarProps> = ({
 
           {/* PDF Export */}
           <Tooltip title="Print Prelist to PDF" placement="bottom">
-            <button
+            <DepthIconButton
               onClick={handlePrintPrelistToPDF}
               disabled={prelistedSongs.length === 0}
-              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg text-app-text border border-app-border ${
-                prelistedSongs.length > 0
-                  ? "hover:bg-app-surface-hover"
-                  : "opacity-50 cursor-not-allowed"
-              }`}
             >
               <Sheet className="w-3.5 h-3.5" />
-            </button>
+            </DepthIconButton>
           </Tooltip>
 
           <Tooltip title="Print All Songs to PDF" placement="bottom">
-            <button
+            <DepthIconButton
               onClick={handlePrintAllSongsToPDF}
               disabled={allSongs.length === 0}
-              className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg text-app-text border border-app-border ${
-                allSongs.length > 0
-                  ? "hover:bg-app-surface-hover"
-                  : "opacity-50 cursor-not-allowed"
-              }`}
             >
               <Printer className="w-3.5 h-3.5" />
-            </button>
+            </DepthIconButton>
           </Tooltip>
 
           {/* <Tooltip title="Underline Text" placement="bottom">
@@ -793,17 +749,15 @@ export const ActionBar: React.FC<ActionBarProps> = ({
           <BackupNotification />
           {isProjectionActive && (
             <Tooltip title="Present Song Live" placement="bottom">
-              <button
+              <DepthIconButton
                 onClick={() => selectedSong && presentSong(selectedSong)}
                 disabled={!selectedSong}
-                className={`flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-red text-white ${
-                  selectedSong
-                    ? "hover:bg-app-red-hover"
-                    : "opacity-50 cursor-not-allowed"
-                }`}
+                active
+                activeClassName="text-white border-yellow"
+                activeSurfaceClassName="bg-gradient-to-br from-yellow-500 via-yellow-800 to-yellow-500"
               >
                 <Radio className="w-3.5 h-3.5" />
-              </button>
+              </DepthIconButton>
             </Tooltip>
           )}
         </div>

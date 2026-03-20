@@ -4,6 +4,8 @@ import { Provider } from "react-redux";
 import App from "./App";
 import { store } from "./store";
 import { ThemeProvider } from "./Provider/Theme";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
+import "antd/dist/reset.css";
 
 import "./index.css";
 
@@ -13,12 +15,14 @@ import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <Provider store={store}>
-      <ThemeProvider>
-        <App />
-      </ThemeProvider>
-    </Provider>
-  </React.StrictMode>
+    <AppErrorBoundary>
+      <Provider store={store}>
+        <ThemeProvider>
+          <App />
+        </ThemeProvider>
+      </Provider>
+    </AppErrorBoundary>
+  </React.StrictMode>,
 );
 
 postMessage({ payload: "removeLoading" }, "*");

@@ -337,6 +337,9 @@ function createSplashWindow() {
 }
 
 async function createMainWindow() {
+  let loadRetryCount = 0;
+  const maxLoadRetries = 2;
+
   // Create window with default positioning first
   let windowOptions = {
     title: "Main window",
@@ -412,8 +415,55 @@ async function createMainWindow() {
     mainWin.loadFile(indexHtml);
   }
 
+  mainWin.webContents.on(
+    "did-fail-load",
+    (_event, errorCode, errorDescription, _validatedURL, isMainFrame) => {
+      if (!isMainFrame) return;
+
+      logSystemError("Main window failed to load", {
+        errorCode,
+        errorDescription,
+        retry: loadRetryCount,
+      });
+
+      if (loadRetryCount >= maxLoadRetries) {
+        return;
+      }
+
+      loadRetryCount += 1;
+      setTimeout(() => {
+        if (!mainWin || mainWin.isDestroyed()) return;
+        if (VITE_DEV_SERVER_URL) {
+          mainWin.loadURL(VITE_DEV_SERVER_URL);
+        } else {
+          mainWin.loadFile(indexHtml);
+        }
+      }, 800);
+    },
+  );
+
+  mainWin.webContents.on("render-process-gone", (_event, details) => {
+    logSystemError("Main renderer process exited", details);
+
+    if (!mainWin || mainWin.isDestroyed()) return;
+
+    setTimeout(() => {
+      if (!mainWin || mainWin.isDestroyed()) return;
+      mainWin.webContents.reloadIgnoringCache();
+    }, 500);
+  });
+
+  mainWin.on("unresponsive", () => {
+    logSystemError("Main window became unresponsive");
+  });
+
+  mainWin.on("responsive", () => {
+    logSystemInfo("Main window recovered responsiveness");
+  });
+
   // Close splash and show main window once renderer is ready
   mainWin.webContents.once("did-finish-load", () => {
+    loadRetryCount = 0;
     setTimeout(() => {
       if (splashWin && !splashWin.isDestroyed()) {
         splashWin.close();
