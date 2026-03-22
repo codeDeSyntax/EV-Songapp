@@ -100,7 +100,7 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
                     addToast={addToast}
                   />
                 </div>
-                <div className="col-span-2 min-h-[100%] overflow-hidden">
+                <div className="col-span-2 min-h-[100%] overflow-hidden ">
                   <BackgroundSelectorPanel isDarkMode={isDarkMode} />
                 </div>
                 <div className="col-span-2 min-h-[100%] overflow-hidden">

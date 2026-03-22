@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { FolderUp, Menu, Image, Video, Check, X } from "lucide-react";
 import { DepthSurface } from "@/shared/DepthButton";
 
@@ -35,6 +36,8 @@ export const BackgroundSelectorPanel: React.FC<
   const [isLoading, setIsLoading] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [mediaType, setMediaType] = useState<MediaType>("images");
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const menuTriggerRef = useRef<HTMLDivElement | null>(null);
 
   // Default public videos
   const defaultVideos: Background[] = [
@@ -133,6 +136,37 @@ export const BackgroundSelectorPanel: React.FC<
       }
     }
   }, [backgrounds]);
+
+  const updateMenuPosition = useCallback(() => {
+    if (!menuTriggerRef.current) return;
+
+    const rect = menuTriggerRef.current.getBoundingClientRect();
+    const menuWidth = 188;
+    const margin = 8;
+
+    const left = Math.min(
+      Math.max(margin, rect.right - menuWidth),
+      window.innerWidth - menuWidth - margin,
+    );
+    const top = Math.min(rect.bottom + 6, window.innerHeight - 140 - margin);
+
+    setMenuPosition({ top, left });
+  }, []);
+
+  useEffect(() => {
+    if (!showMenu) return;
+
+    updateMenuPosition();
+    const handleReposition = () => updateMenuPosition();
+
+    window.addEventListener("resize", handleReposition);
+    window.addEventListener("scroll", handleReposition, true);
+
+    return () => {
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition, true);
+    };
+  }, [showMenu, updateMenuPosition]);
 
   const handleSelectBackground = (
     background: Background,
@@ -312,6 +346,7 @@ export const BackgroundSelectorPanel: React.FC<
           {/* Actions menu */}
           <div className="relative">
             <div
+              ref={menuTriggerRef}
               onClick={() => setShowMenu(!showMenu)}
               title="Menu"
               className="cursor-pointer p-1.5 rounded-md text-app-text-muted hover:text-app-text hover:bg-app-surface-hover transition-colors"
@@ -319,37 +354,45 @@ export const BackgroundSelectorPanel: React.FC<
               <Menu className="w-4 h-4" />
             </div>
 
-            {showMenu && (
-              <div className="menu-container absolute top-full right-0 mt-1.5 z-[9999] min-w-[172px]">
-                <div className="p-1.5 rounded-xl shadow-xl border bg-app-bg border-app-border">
-                  <div
-                    onClick={() => {
-                      handleUploadDirectory();
-                      setShowMenu(false);
-                    }}
-                    className="cursor-pointer flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[11px] text-app-text hover:bg-app-surface-hover transition-colors"
+            {showMenu &&
+              createPortal(
+                <div
+                  className="menu-container fixed z-[99999] min-w-[172px]"
+                  style={{ top: menuPosition.top, left: menuPosition.left }}
+                >
+                  <DepthSurface
+                    className="p-1.5 rounded-xl shadow-xl"
+                    surfaceClassName="bg-gradient-to-br from-app-bg via-app-surface to-app-bg border border-app-border"
                   >
-                    <FolderUp className="w-3.5 h-3.5 flex-shrink-0" />
-                    Choose Directory
-                  </div>
-                  <div className="h-px my-1 bg-app-border/60" />
-                  <div
-                    onClick={handleRemoveBackground}
-                    className="cursor-pointer flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[11px] text-orange-500 hover:bg-orange-500/10 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5 flex-shrink-0" />
-                    Remove Background
-                  </div>
-                  <div
-                    onClick={handleClearAll}
-                    className="cursor-pointer flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[11px] text-red-500 hover:bg-red-500/10 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5 flex-shrink-0" />
-                    Clear All
-                  </div>
-                </div>
-              </div>
-            )}
+                    <div
+                      onClick={() => {
+                        handleUploadDirectory();
+                        setShowMenu(false);
+                      }}
+                      className="cursor-pointer flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[11px] text-app-text hover:bg-app-surface-hover transition-colors"
+                    >
+                      <FolderUp className="w-3.5 h-3.5 flex-shrink-0" />
+                      Choose Directory
+                    </div>
+                    <div className="h-px my-1 bg-app-border/60" />
+                    <div
+                      onClick={handleRemoveBackground}
+                      className="cursor-pointer flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[11px] text-orange-500 hover:bg-orange-500/10 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5 flex-shrink-0" />
+                      Remove Background
+                    </div>
+                    <div
+                      onClick={handleClearAll}
+                      className="cursor-pointer flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[11px] text-red-500 hover:bg-red-500/10 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5 flex-shrink-0" />
+                      Clear All
+                    </div>
+                  </DepthSurface>
+                </div>,
+                document.body,
+              )}
           </div>
         </div>
       </div>
