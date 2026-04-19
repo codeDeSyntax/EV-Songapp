@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { ChevronLeft, Plus, Minus, Square, X, Music, Book } from "lucide-react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Minus, Square, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAppSelector, useAppDispatch } from "@/store";
 import {
@@ -8,7 +8,6 @@ import {
   maximizeApp,
   closeApp,
 } from "@/store/slices/appSlice";
-import { strandPresets } from "@/vmusic/ControlRoom/components/SettingsCards/colorStrandPresets";
 import { decodeSongData } from "@/vmusic/ControlRoom/utils/songFileFormat";
 import { InstrumentCluster } from "@/vmusic/components/InstrumentCluster";
 import CreamMeshBackground from "@/vmusic/components/CreamMeshBackground";
@@ -93,7 +92,6 @@ const verses = [
 const WorkspaceSelector = () => {
   const [isHovered, setIsHovered] = useState<string | null>(null);
   const [imagesLoaded, setImagesLoaded] = useState(false);
-  const [randomSong, setRandomSong] = useState<Song | null>(null);
   const [randomVerse, setRandomVerse] = useState("");
 
   const dispatch = useAppDispatch();
@@ -137,7 +135,6 @@ const WorkspaceSelector = () => {
         extractedVerse = verses[Math.floor(Math.random() * verses.length)];
       }
 
-      setRandomSong(newSong);
       setRandomVerse(extractedVerse.trim());
     } else {
       // Set initial verse even if no songs
@@ -156,7 +153,6 @@ const WorkspaceSelector = () => {
           extractedVerse = verses[Math.floor(Math.random() * verses.length)];
         }
 
-        setRandomSong(newSong);
         setRandomVerse(extractedVerse.trim());
       }, 60000); // Changed to 1 minute (60,000 milliseconds)
 
@@ -190,38 +186,19 @@ const WorkspaceSelector = () => {
     dispatch(setCurrentScreen("Songs"));
   }, [dispatch]);
 
-  // Use will-change to optimize GPU rendering
-  const willChangeStyle = { willChange: "transform, opacity" };
-
-  // Colors for country gospel theme
-  const colors = {
-    hdColor: "bg-[#694a3f]",
-    hdButton: "bg-[#c77c5d]",
-    accent: "bg-[#8f6b5e]",
-  };
-
-  // Choose a gradient for theme (could be dynamic based on theme, here using Holy Gold)
-  const themeGradient =
-    strandPresets.find((p) => p.name === "Holy Gold")?.gradient ||
-    strandPresets[0].gradient;
-
-  // Custom brown art pattern for backgrounds
-  const brownArtPattern = `
-  repeating-linear-gradient(135deg, #f3e8d0 0px, #f3e8d0 12px, #c8b08e 12px, #c8b08e 24px),
-  linear-gradient(120deg, #d2b48c 0%, #bfa27a 100%),
-  radial-gradient(circle at 20% 80%, #8b5c2a 0%, transparent 60%),
-  radial-gradient(circle at 80% 20%, #e6c29c 0%, transparent 70%)
-`;
+  const navigateToGuide = useCallback(() => {
+    dispatch(setCurrentScreen("userguide"));
+  }, [dispatch]);
 
   return (
-    <div className="w-screen h-full overflow-hidden bg-gradient-to-br from-[#faeed1] via-[#f3e8d0] to-[#ede0c7] relative font-[garamond]">
+    <div className="w-screen h-full overflow-hidden relative font-[garamond] bg-[#f6ecdb]">
       {/* Cream mesh/grid SVG background */}
       <CreamMeshBackground />
       {/* Mesh/blurred cream accents */}
       <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute left-1/4 top-1/4 w-40 h-40 bg-gradient-to-br from-[#faeed1]/40 to-[#ede0c7]/20 rounded-full blur-2xl animate-pulse"></div>
+        <div className="absolute left-1/4 top-1/4 w-44 h-44 bg-gradient-to-br from-[#faeed1]/35 to-[#ede0c7]/10 rounded-full blur-3xl animate-pulse"></div>
         <div
-          className="absolute right-1/4 bottom-1/4 w-56 h-56 bg-gradient-to-br from-[#f3e8d0]/30 to-[#faeed1]/10 rounded-full blur-2xl animate-pulse"
+          className="absolute right-1/4 bottom-1/4 w-64 h-64 bg-gradient-to-br from-[#f3e8d0]/28 to-[#faeed1]/8 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "1s" }}
         ></div>
       </div>
@@ -260,68 +237,56 @@ const WorkspaceSelector = () => {
       )}
 
       {/* Main content container */}
-      <div className="relative z-10 h-full flex items-center justify-center">
-        <div className="max-w-5xl mx-auto px-6 lg:px-8">
-          <div className="flex w-full flex-col items-center justify-center text-center ">
-            {/* Centerpiece: Musical Instrument Cluster */}
-            <div className="relative w-full flex items-center justify-center">
+      <div className="relative z-10 h-full flex items-center justify-center px-5 py-10">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease: "easeOut" }}
+          className="w-full max-w-5xl"
+        >
+          <div className="flex flex-col items-center justify-center text-center gap-1 lg:gap-2">
+            <div className="relative w-full flex items-center justify-center -my-2 lg:-my-4">
               <InstrumentCluster />
             </div>
-            {/* Headline and description */}
-            <div className="max-w-3xl">
-              <div className="space-y-2">
-                <p className="text-lg lg:text-xl text-[#9a674a] leading-relaxed">
-                  Welcome to{" "}
-                  <span className="font-bold text-[#c77c5d]">Zion Music</span>
-                </p>
-                <p className="text-sm lg:text-base text-[#8c6e63] font-sans italic">
-                  Let me listen to what kind of music you're playing on your
-                  radio. Let me see what kind of pictures you got in your house.
-                  I'll tell you what you're made out of.
-                </p>
-              </div>
-              {/* Feature badges */}
-              <div className="flex flex-wrap justify-center gap-2">
-                <div className="inline-flex items-center gap-2 bg-[#faeed1]/60 backdrop-blur border border-[#9a674a]/30 rounded-full px-2.5 py-1">
-                  <span className="text-xs text-[#9a674a]">
-                    Live Projection
-                  </span>
-                </div>
-                <div className="inline-flex items-center gap-2 bg-[#faeed1]/60 backdrop-blur border border-[#9a674a]/30 rounded-full px-2.5 py-1">
-                  <span className="text-xs text-[#9a674a]">Song Library</span>
-                </div>
-                <div className="inline-flex items-center gap-2 bg-[#faeed1]/60 backdrop-blur border border-[#9a674a]/30 rounded-full px-2.5 py-1">
-                  <span className="text-xs text-[#9a674a]">
-                    Easy Presentation
-                  </span>
-                </div>
-              </div>
-              {/* CTA Button */}
-              <div className="space-y-2">
-                <button
-                  onClick={navigateToSongs}
-                  className="group relative cursor-pointer inline-flex items-center gap-2 bg-gradient-to-r from-[#c77c5d] to-[#9a674a] hover:from-[#9a674a] hover:to-[#c77c5d] text-white font-medium py-2.5 px-5 rounded-full shadow-lg transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl overflow-hidden"
+
+            <div className="max-w-3xl mt-1 space-y-2">
+              <p className="text-2xl lg:text-4xl font-semibold tracking-tight text-[#6a4636] leading-tight">
+                Welcome to <span className="text-[#c77c5d]">Zion Music</span>
+              </p>
+              <p className="text-base lg:text-lg text-[#8c6e63] font-sans italic leading-8 font-medium max-w-2xl mx-auto">
+                Let me listen to what kind of music you're playing on your
+                radio. Let me see what kind of pictures you got in your house.
+                I'll tell you what you're made out of.
+              </p>
+              <p className="text-sm lg:text-base text-[#9a674a] font-sans font-semibold leading-7">
+                (56-0728 Making The Valley Full Of Ditches)
+              </p>
+            </div>
+
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <button
+                onClick={navigateToSongs}
+                className="group relative cursor-pointer inline-flex items-center gap-2 bg-gradient-to-r from-[#c77c5d] to-[#9a674a] hover:from-[#9a674a] hover:to-[#c77c5d] text-white font-medium py-2.5 px-5 rounded-full shadow-lg transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl overflow-hidden"
+              >
+                <span className="relative z-10 text-sm">Get started</span>
+                <svg
+                  className="relative z-10 w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform duration-300"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  <span className="relative z-10 text-sm">Get started</span>
-                  <svg
-                    className="relative z-10 w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform duration-300"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 7l5 5m0 0l-5 5m5-5H6"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out"></div>
-                </button>
-              </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 7l5 5m0 0l-5 5m5-5H6"
+                  />
+                </svg>
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out"></div>
+              </button>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

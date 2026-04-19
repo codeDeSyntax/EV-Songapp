@@ -508,8 +508,16 @@ async function createMainWindow() {
       mainWin?.maximize();
     }
   });
+  ipcMain.handle("is-maximized-app", () => mainWin?.isMaximized() ?? false);
   ipcMain.on("closeApp", () => {
     mainWin?.close();
+  });
+
+  mainWin.on("maximize", () => {
+    mainWin?.webContents.send("main-window-maximized-changed", true);
+  });
+  mainWin.on("unmaximize", () => {
+    mainWin?.webContents.send("main-window-maximized-changed", false);
   });
 
   // Handle main window close event to cleanup all child windows

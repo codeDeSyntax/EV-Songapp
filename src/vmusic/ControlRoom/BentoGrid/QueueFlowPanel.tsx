@@ -14,8 +14,10 @@ import {
   ChevronsRight,
   ListOrdered,
   RotateCcw,
+  Trash2,
 } from "lucide-react";
 import { DepthButton, DepthSurface } from "@/shared/DepthButton";
+import { openDeleteConfirmModal } from "@/store/slices/uiSlice";
 
 interface QueueFlowPanelProps {
   isDarkMode: boolean;
@@ -243,7 +245,7 @@ export const QueueFlowPanel: React.FC<QueueFlowPanelProps> = ({
           sizeClassName="h-6 px-2 rounded-full"
           className="text-[10px]"
         >
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1 font-medium">
             <ChevronsLeft className="w-3 h-3" />
             Prev
           </span>
@@ -256,7 +258,7 @@ export const QueueFlowPanel: React.FC<QueueFlowPanelProps> = ({
           sizeClassName="h-6 px-2 rounded-full"
           className="text-[10px]"
         >
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1 font-medium">
             Next
             <ChevronsRight className="w-3 h-3" />
           </span>
@@ -269,7 +271,7 @@ export const QueueFlowPanel: React.FC<QueueFlowPanelProps> = ({
           sizeClassName="h-6 px-2 rounded-full"
           className="text-[10px]"
         >
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1 font-medium">
             <ListOrdered className="w-3 h-3" />
             Jump
           </span>
@@ -282,7 +284,7 @@ export const QueueFlowPanel: React.FC<QueueFlowPanelProps> = ({
           sizeClassName="h-6 px-2 rounded-full"
           className="text-[10px]"
         >
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1 font-medium">
             <RotateCcw className="w-3 h-3" />
             Reset
           </span>
@@ -319,13 +321,13 @@ export const QueueFlowPanel: React.FC<QueueFlowPanelProps> = ({
                         <DepthSurface
                           className={`text-[11px] truncate py-1 px-4 ${
                             isDone
-                            ? "line-through text-app-text-muted"
-                            : "text-app-text"
-                            }`}
+                              ? "line-through text-app-text-muted"
+                              : "text-app-text"
+                          }`}
                         >
                           {song.title}
                         </DepthSurface>
-                            <div className="flex-1 border-t border-dashed border-app-accent mx-1" />
+                        <div className="flex-1 border-t border-dashed border-app-accent mx-1" />
                       </div>
                     </button>
 
@@ -360,6 +362,22 @@ export const QueueFlowPanel: React.FC<QueueFlowPanelProps> = ({
                         title={isDone ? "Mark undone" : "Mark done"}
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
+                      </DepthButton>
+                      <DepthButton
+                        type="button"
+                        onClick={() =>
+                          dispatch(
+                            openDeleteConfirmModal({
+                              song,
+                              type: "prelist",
+                            }),
+                          )
+                        }
+                        sizeClassName="w-5 h-5 rounded-full"
+                        className="text-app-text-muted hover:text-red-500"
+                        title="Remove from prelist"
+                      >
+                        <Trash2 className="w-3 h-3" />
                       </DepthButton>
                     </div>
                   </div>

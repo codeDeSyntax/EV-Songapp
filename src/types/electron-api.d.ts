@@ -32,6 +32,7 @@ interface ElectronAPI {
   minimizeApp: () => void;
   minimizeProjection: () => void;
   maximizeApp: () => void;
+  isAppWindowMaximized: () => Promise<boolean>;
   closeApp: () => void;
   selectDirectory: () => Promise<string>;
   getDefaultSongsDirectory: () => Promise<string>;
@@ -51,6 +52,9 @@ interface ElectronAPI {
   closeProjectionWindow: () => Promise<boolean>;
   onProjectionStateChanged: (
     callback: (isActive: boolean) => void,
+  ) => () => void;
+  onWindowMaximizedChanged: (
+    callback: (isMaximized: boolean) => void,
   ) => () => void;
   onDisplaySong: (callback: (songData: any) => void) => () => void;
   onDisplayInfo: (callback: (info: DisplayInfo) => void) => () => void;

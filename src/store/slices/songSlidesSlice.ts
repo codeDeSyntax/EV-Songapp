@@ -36,9 +36,12 @@ const songSlidesSlice = createSlice({
         action.payload,
         state.repeatChorusAfterVerse,
       );
+      state.currentDisplayIndex = 0;
       // Auto-select first slide if slides exist
-      if (action.payload.length > 0 && !state.currentSlideId) {
+      if (action.payload.length > 0) {
         state.currentSlideId = action.payload[0].id;
+      } else {
+        state.currentSlideId = null;
       }
       // Auto-generate title from first few words when new slides are pasted
       if (action.payload.length > 0) {
@@ -61,27 +64,11 @@ const songSlidesSlice = createSlice({
       state.currentSongId = action.payload;
     },
     setCurrentSlide: (state, action: PayloadAction<string>) => {
-      const wasAtDisplayIndex = state.currentDisplayIndex;
       state.currentSlideId = action.payload;
 
-      // Only update display index if we're actually changing slides
-      // Check if current display slide already matches this original ID
+      // Find the matching display position every time so currentSlideId and
+      // currentDisplayIndex never drift apart when chorus repeats are present.
       const displaySlides = state.displaySlides;
-      const currentDisplaySlide = displaySlides[wasAtDisplayIndex];
-      if (currentDisplaySlide) {
-        const currentOriginalId = currentDisplaySlide.id.includes(
-          "-repeat-after-v",
-        )
-          ? currentDisplaySlide.id.split("-repeat-after-v")[0]
-          : currentDisplaySlide.id;
-
-        // If we're already at a slide with this original ID, don't change display index
-        if (currentOriginalId === action.payload) {
-          return;
-        }
-      }
-
-      // Find the new slide position
       const displayIndex = displaySlides.findIndex(
         (s) => s.id === action.payload,
       );

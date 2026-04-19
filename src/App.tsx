@@ -5,6 +5,7 @@ import WorkspaceSelector from "./vmusic/Welcome";
 import UserGuidePage from "./vmusic/Userguide";
 import SongPresentationDisplay from "./vmusic/components/SongPresentationDisplay/SongPresentationDisplay";
 import FloatingProjectionPreview from "./components/FloatingProjectionPreview";
+import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import Update from "./vmusic/update";
 import { useAppSelector, useAppDispatch } from "./store";
 import { setCurrentScreen } from "./store/slices/appSlice";
@@ -36,7 +37,11 @@ const App = () => {
     currentRoute === "#/song-presentation-display" ||
     currentRoute === "#song-presentation-display"
   ) {
-    return <SongPresentationDisplay />;
+    return (
+      <AppErrorBoundary>
+        <SongPresentationDisplay />
+      </AppErrorBoundary>
+    );
   }
 
   // set up key combinations to navigate between screens

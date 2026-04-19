@@ -253,32 +253,14 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
         </div>
       </div>
 
-      <div className="p-1.5 space-y-1.5 border-b border-app-border">
-        <DepthSurface className="rounded-md px-2 py-1.5">
-          <div className="flex flex-col gap-1 text-[10px]">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-app-text-muted">Projection</span>
-              <span className="font-semibold text-app-text">
-                {isProjectionActive ? "Live" : "Off"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-app-text-muted">Background</span>
-              <span className="font-semibold text-app-text">
-                {backgroundLabel}
-              </span>
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-app-text-muted">Queue Left</span>
-              <span className="font-semibold text-app-text">
-                {queueState.remainingCount}
-              </span>
-            </div>
-          </div>
+      <div className="p-1.5 border-b border-app-border">
+        <DepthSurface className="rounded-md p-1.5">
+          <img
+            src="./quick.svg"
+            alt="Quick actions"
+            className="w-full h-auto max-h-24 object-contain"
+          />
         </DepthSurface>
-        <p className="text-[10px] text-app-text-muted px-1 truncate">
-          {statusText}
-        </p>
       </div>
 
       <div className="flex-1 p-1.5 grid grid-cols-2 gap-1.5 auto-rows-min overflow-y-auto no-scrollbar">

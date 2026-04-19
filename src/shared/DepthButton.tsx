@@ -45,6 +45,7 @@ export const DepthButton = React.forwardRef<
         {...restButtonProps}
         ref={ref}
         onClick={handleClick}
+        style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
         className={`relative flex items-center justify-center ${sizeClassName} overflow-hidden border transition-all duration-200 outline-none group ${
           disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
         } ${active ? activeClassName : inactiveClassName} ${className}`}
@@ -92,6 +93,7 @@ export const DepthSurface: React.FC<DepthSurfaceProps> = ({
     <div
       {...divProps}
       onClick={handleClick}
+      style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
       className={`relative overflow-hidden rounded ${className} ${onClick ? "cursor-pointer" : ""}`}
     >
       <span className={`absolute inset-0 ${surfaceClassName}`} />

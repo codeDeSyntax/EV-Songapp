@@ -39,6 +39,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
     goToNext,
     goToPrevious,
     handleSongData,
+    setCurrentIndex,
   } = useProjectionData();
 
   // Keyboard navigation: arrows, 'c' for chorus, 1-9 for verses
@@ -56,11 +57,11 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
       } else if (e.key.toLowerCase() === "c") {
         // Find first chorus slide
         const chorusIdx = slides.findIndex(
-          (slide) => slide.type.toLowerCase() === "chorus"
+          (slide) => slide.type.toLowerCase() === "chorus",
         );
         if (chorusIdx !== -1) {
           window.dispatchEvent(
-            new CustomEvent("projectionGoto", { detail: { index: chorusIdx } })
+            new CustomEvent("projectionGoto", { detail: { index: chorusIdx } }),
           );
         }
       } else if (/^[1-9]$/.test(e.key)) {
@@ -68,11 +69,11 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
         const verseNum = parseInt(e.key, 10);
         const verseIdx = slides.findIndex(
           (slide) =>
-            slide.type.toLowerCase() === "verse" && slide.number === verseNum
+            slide.type.toLowerCase() === "verse" && slide.number === verseNum,
         );
         if (verseIdx !== -1) {
           window.dispatchEvent(
-            new CustomEvent("projectionGoto", { detail: { index: verseIdx } })
+            new CustomEvent("projectionGoto", { detail: { index: verseIdx } }),
           );
         }
       }
@@ -82,7 +83,6 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
   }, [slides, goToNext, goToPrevious]);
 
   // Listen for projectionGoto event to set slide
-  const { setCurrentIndex } = useProjectionData();
   useEffect(() => {
     const handler = (e: Event) => {
       const idx = (e as CustomEvent).detail?.index;
@@ -110,7 +110,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
 
   // Calculate total number of verses
   const totalVerses = slides.filter(
-    (slide) => slide.type && slide.type.toLowerCase() === "verse"
+    (slide) => slide.type && slide.type.toLowerCase() === "verse",
   ).length;
 
   // Find current verse number (if this slide is a verse)
@@ -181,14 +181,23 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="absolute inset-0 flex items-center justify-center bg-app-surface dark:bg-black"
+          transition={{ duration: 0.25 }}
+          className="absolute inset-0 flex items-center justify-center bg-black text-white"
         >
-          <img
-            src="./nosong.png"
-            alt="No slide to display"
-            className="max-w-md opacity-50"
-          />
+          <div className="max-w-xl text-center px-8 py-10 rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm">
+            <img
+              src="./nosong.png"
+              alt="No slide to display"
+              className="mx-auto max-w-40 opacity-60 mb-5"
+            />
+            <h2 className="text-2xl font-semibold tracking-tight">
+              No slide available
+            </h2>
+            <p className="mt-3 text-sm text-white/75 leading-6">
+              The presentation recovered without active slide data. Load a song,
+              or restore the last projected song from the app.
+            </p>
+          </div>
         </motion.div>
       )}
     </div>

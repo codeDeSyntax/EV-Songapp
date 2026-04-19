@@ -16,7 +16,6 @@ import {
   setIsEditingSlide,
   setShowAddSlideDialog,
   setShowTitleDialog,
-  setShowPrelistTitleDialog,
 } from "@/store/slices/uiSlice";
 import { parseLyrics, SongSlide } from "../utils/lyricsParser";
 import { TitleInputDialog } from "../components/TitleInputDialog";
@@ -69,12 +68,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   } = useAppSelector((state) => state.songSlides);
   const displaySlides = useAppSelector(selectDisplaySlides); // Display slides with chorus repetition
   const songs = useAppSelector((state) => state.songs.songs);
-  const {
-    isEditingSlide,
-    showAddSlideDialog,
-    showTitleDialog,
-    showPrelistTitleDialog,
-  } = useAppSelector((state) => state.ui);
+  const { isEditingSlide, showAddSlideDialog, showTitleDialog } =
+    useAppSelector((state) => state.ui);
   const [selectedBgSrc, setSelectedBgSrc] = useState<string>("");
   const [previewBgSrc, setPreviewBgSrc] = useState<string>("");
   const [fontFamily, setFontFamily] = useState<string>(() => {
@@ -604,59 +599,6 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     }
   };
 
-  // Handle save to prelist
-  const handleSaveToPrelist = async (title: string, lang: string) => {
-    setLanguage(lang);
-    const validation = validateSongForSave(title, slides);
-    if (!validation.valid) {
-      onSaveError(validation.error || "Invalid song data");
-      return;
-    }
-
-    try {
-      const encodedContent = encodeSongData(
-        title,
-        slides,
-        true,
-        undefined,
-        lang,
-      );
-      const result = await window.api.saveSong("", title, encodedContent);
-
-      if (currentSongId) {
-        const updatedSong: Song = {
-          id: currentSongId,
-          title: result.sanitizedTitle || title,
-          path: result.filePath || "",
-          content: encodedContent,
-          categories: [],
-          dateModified: new Date().toISOString(),
-          size: encodedContent.length,
-          isPrelisted: true,
-          language: lang || "English",
-          metadata: {
-            created: new Date().toISOString(),
-            modified: new Date().toISOString(),
-            isPrelisted: true,
-            language: lang || "English",
-          },
-        };
-        dispatch(updateSong(updatedSong));
-      }
-
-      addToast(`"${title}" added to prelist! 🎵`, "success");
-      dispatch(setShowPrelistTitleDialog(false));
-      loadSongs();
-
-      window.dispatchEvent(
-        new CustomEvent("queueflow:action", { detail: { type: "refresh" } }),
-      );
-    } catch (error) {
-      console.error("Error adding to prelist:", error);
-      addToast("Failed to add to prelist. Please try again.", "error");
-    }
-  };
-
   // Focus on click to enable paste (only when not editing or adding)
   const handleClick = (e: React.MouseEvent) => {
     // Don't handle clicks when in edit or add mode
@@ -781,15 +723,6 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         isDarkMode={isDarkMode}
         onClose={() => dispatch(setShowTitleDialog(false))}
         onSave={handleSaveSong}
-      />
-
-      <TitleInputDialog
-        isOpen={showPrelistTitleDialog}
-        initialTitle={songTitle}
-        initialLanguage={currentSong?.language || language}
-        isDarkMode={isDarkMode}
-        onClose={() => dispatch(setShowPrelistTitleDialog(false))}
-        onSave={handleSaveToPrelist}
       />
 
       <DeleteConfirmModal addToast={addToast} loadSongs={loadSongs} />

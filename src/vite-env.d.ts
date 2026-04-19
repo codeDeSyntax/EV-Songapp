@@ -10,6 +10,7 @@ interface Window {
     minimizeApp: () => void;
     minimizeProjection: () => void;
     maximizeApp: () => void;
+    isAppWindowMaximized: () => Promise<boolean>;
     closeApp: () => void;
     selectDirectory: () => void;
     getSystemFonts: () => Promise<string[]>;
@@ -41,6 +42,9 @@ interface Window {
     focusProjectionWindow: () => Promise<{ success: boolean; reason?: string }>;
     onProjectionStateChanged: (
       callback: (isActive: boolean) => void,
+    ) => () => void;
+    onWindowMaximizedChanged: (
+      callback: (isMaximized: boolean) => void,
     ) => () => void;
     onDisplaySong: (callback: (songData: Song) => void) => void;
     onDisplayInfo: (callback: (info: any) => void) => void;

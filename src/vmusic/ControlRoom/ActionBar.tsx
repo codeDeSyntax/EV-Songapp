@@ -39,16 +39,16 @@ import {
   setIsEditingSlide,
   setShowAddSlideDialog,
   setShowTitleDialog,
-  setShowPrelistTitleDialog,
   toggleSongEditor,
   toggleNewSongModal,
 } from "@/store/slices/uiSlice";
 import { useToast } from "./hooks/useToast";
 import { Toaster } from "../shared/Notification";
-import { setSongRepo } from "@/store/slices/songSlice";
+import { setSongRepo, updateSong } from "@/store/slices/songSlice";
 import { setFontFamily } from "@/store/slices/projectionSlice";
 import { addProjectionEntry } from "@/store/slices/projectionHistorySlice";
 import { recordProjection } from "@/store/slices/statisticsSlice";
+import { encodeSongData, validateSongForSave } from "./utils/songFileFormat";
 import BackupNotification from "./components/BackupNotification";
 
 interface ActionBarProps {
@@ -246,6 +246,78 @@ export const ActionBar: React.FC<ActionBarProps> = ({
     dispatch(setShowTitleDialog(true));
   };
 
+  const handleSaveToPrelist = async () => {
+    const currentSong = currentSongId
+      ? songs.find((song) => song.id === currentSongId)
+      : selectedSong
+        ? songs.find((song) => song.id === selectedSong.id)
+        : null;
+
+    const title = songTitle || currentSong?.title || selectedSong?.title || "";
+    const language =
+      currentSong?.language || selectedSong?.language || "English";
+
+    if (slides.length === 0) {
+      addToast("No slides to add to prelist. Paste lyrics first.", "warning");
+      return;
+    }
+
+    if (!title.trim()) {
+      addToast("Select a song before adding it to prelist.", "warning");
+      return;
+    }
+
+    const validation = validateSongForSave(title, slides);
+    if (!validation.valid) {
+      addToast(validation.error || "Invalid song data", "error");
+      return;
+    }
+
+    try {
+      const now = new Date().toISOString();
+      const createdAt: string = currentSong?.metadata?.created ?? now;
+      const encodedContent = encodeSongData(
+        title,
+        slides,
+        true,
+        undefined,
+        language,
+      );
+      const result = await window.api.saveSong("", title, encodedContent);
+
+      if (currentSongId || currentSong?.id) {
+        const updatedSong: Song = {
+          id: currentSongId || currentSong!.id,
+          title: result.sanitizedTitle || title,
+          path: result.filePath || currentSong?.path || "",
+          content: encodedContent,
+          categories: currentSong?.categories || [],
+          dateModified: new Date().toISOString(),
+          size: encodedContent.length,
+          isPrelisted: true,
+          language,
+          metadata: {
+            created: createdAt,
+            modified: now,
+            isPrelisted: true,
+            language,
+          },
+        };
+        dispatch(updateSong(updatedSong));
+        dispatch({ type: "songs/setSelectedSong", payload: updatedSong });
+      }
+
+      addToast(`"${title}" added to prelist! 🎵`, "success");
+      loadSongs();
+      window.dispatchEvent(
+        new CustomEvent("queueflow:action", { detail: { type: "refresh" } }),
+      );
+    } catch (error) {
+      console.error("Error adding to prelist:", error);
+      addToast("Failed to add to prelist. Please try again.", "error");
+    }
+  };
+
   const handleProjectionToggle = async () => {
     try {
       if (isProjectionActive) {
@@ -347,7 +419,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               activeClassName="text-white border-blue-500"
               activeSurfaceClassName="bg-gradient-to-br from-blue-500 via-blue-600 to-blue-500"
             >
-              <Music className="w-3.5 h-3.5" />
+              <Music className="w-4 h-4" />
             </DepthIconButton>
           </Tooltip>
 
@@ -355,21 +427,12 @@ export const ActionBar: React.FC<ActionBarProps> = ({
 
           <Tooltip title="Add Current Song to Prelist" placement="bottom">
             <DepthIconButton
-              onClick={() => {
-                if (slides.length === 0) {
-                  addToast(
-                    "No slides to add to prelist. Paste lyrics first.",
-                    "warning",
-                  );
-                  return;
-                }
-                dispatch(setShowPrelistTitleDialog(true));
-              }}
+              onClick={handleSaveToPrelist}
               disabled={slides.length === 0}
-              activeClassName="text-white border-app-text-muted"
-              activeSurfaceClassName="bg-gradient-to-br from-app-text-muted via-app-text-muted/90 to-app-text-muted "
+              activeClassName="text-white border-emerald-500"
+              activeSurfaceClassName="bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-500"
             >
-              <BellPlus className="w-3.5 h-3.5" />
+              <BellPlus className="w-4 h-4" />
             </DepthIconButton>
           </Tooltip>
 
@@ -378,7 +441,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               onClick={() => dispatch(setIsEditingSlide(true))}
               disabled={currentSlideId === null}
             >
-              <Edit3 className="w-3.5 h-3.5" />
+              <Edit3 className="w-4 h-4" />
             </DepthIconButton>
           </Tooltip>
 
@@ -388,7 +451,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               disabled={slides.length === 0}
               active={showSongEditor}
             >
-              <NotebookPen className="w-3.5 h-3.5" />
+              <NotebookPen className="w-4 h-4" />
             </DepthIconButton>
           </Tooltip>
 
@@ -399,7 +462,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               activeClassName="text-white border-green-500"
               activeSurfaceClassName="bg-gradient-to-br from-green-500 via-green-600 to-green-500"
             >
-              <FilePlus2 className="w-3.5 h-3.5" />
+              <FilePlus2 className="w-4 h-4" />
             </DepthIconButton>
           </Tooltip>
 
@@ -409,7 +472,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               inactiveClassName="text-app-text border-app-border hover:text-white"
               inactiveSurfaceClassName="bg-gradient-to-br from-app-bg via-app-surface to-app-bg group-hover:from-app-accent/80 group-hover:via-app-accent group-hover:to-app-accent/80"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
             </DepthIconButton>
           </Tooltip>
 
@@ -435,7 +498,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               disabled={isEditingSlide ? currentSlideId === null : !currentSong}
               className="enabled:hover:text-red-500"
             >
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-4 h-4" />
             </DepthIconButton>
           </Tooltip>
 
@@ -446,7 +509,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               inactiveClassName="text-app-text border-app-border hover:text-white"
               inactiveSurfaceClassName="bg-gradient-to-br from-app-bg via-app-surface to-app-bg group-hover:from-app-accent/80 group-hover:via-app-accent group-hover:to-app-accent/80"
             >
-              <Save className="w-3.5 h-3.5" />
+              <Save className="w-4 h-4" />
             </DepthIconButton>
           </Tooltip>
 
@@ -455,7 +518,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               onClick={() => dispatch(toggleSettings())}
               active={rightPanelView === "settings"}
             >
-              <Settings className="w-3.5 h-3.5" />
+              <Settings className="w-4 h-4" />
             </DepthIconButton>
           </Tooltip>
 
@@ -464,7 +527,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               onClick={() => dispatch(toggleStatistics())}
               active={rightPanelView === "statistics"}
             >
-              <BarChart3 className="w-3.5 h-3.5" />
+              <BarChart3 className="w-4 h-4" />
             </DepthIconButton>
           </Tooltip>
 
@@ -484,7 +547,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                 className="enabled:hover:text-white"
                 inactiveSurfaceClassName="bg-gradient-to-br from-app-bg via-app-surface to-app-bg group-hover:from-blue-600 group-hover:via-blue-600 group-hover:to-blue-700"
               >
-                <MonitorCheck className="w-3.5 h-3.5" />
+                <MonitorCheck className="w-4 h-4" />
               </DepthIconButton>
             </Tooltip>
           )}
@@ -501,9 +564,9 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               activeSurfaceClassName="bg-gradient-to-br from-yellow-600 via-yellow-600 to-yellow-700"
             >
               {isProjectionActive ? (
-                <MonitorStop className="w-3.5 h-3.5" />
+                <MonitorStop className="w-4 h-4" />
               ) : (
-                <Monitor className="w-3.5 h-3.5" />
+                <Monitor className="w-4 h-4" />
               )}
             </DepthIconButton>
           </Tooltip>
@@ -512,7 +575,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
 
           <Tooltip title="Refresh Song List" placement="bottom">
             <DepthIconButton onClick={loadSongs}>
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-4 h-4" />
             </DepthIconButton>
           </Tooltip>
 
@@ -524,7 +587,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                   setShowFolderDropdown(!showFolderDropdown);
                 }}
               >
-                <Folder className="w-3.5 h-3.5" />
+                <Folder className="w-4 h-4" />
               </DepthIconButton>
             </Tooltip>
 
@@ -551,7 +614,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                       }}
                       className="w-full  text-left text-ew-xs text-app-text bg-transparent transition-colors flex items-center gap-2"
                     >
-                      <Folder className="w-3.5 h-3.5" />
+                      <Folder className="w-4 h-4" />
                       Choose Directory
                     </button>
                   </GamyCard>
@@ -570,7 +633,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                       }}
                       className="w-full  text-left text-ew-xs text-red-500 hover:text-red-600 bg-transparent transition-colors flex items-center gap-2"
                     >
-                      <X className="w-3.5 h-3.5" />
+                      <X className="w-4 h-4" />
                       Clear Directory
                     </button>
                   </GamyCard>
@@ -724,7 +787,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               onClick={handlePrintPrelistToPDF}
               disabled={prelistedSongs.length === 0}
             >
-              <Sheet className="w-3.5 h-3.5" />
+              <Sheet className="w-4 h-4" />
             </DepthIconButton>
           </Tooltip>
 
@@ -733,19 +796,19 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               onClick={handlePrintAllSongsToPDF}
               disabled={allSongs.length === 0}
             >
-              <Printer className="w-3.5 h-3.5" />
+              <Printer className="w-4 h-4" />
             </DepthIconButton>
           </Tooltip>
 
           {/* <Tooltip title="Underline Text" placement="bottom">
             <button className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg hover:bg-app-surface-hover text-app-text border border-app-border">
-              <Underline className="w-3.5 h-3.5" />
+              <Underline className="w-4 h-4" />
             </button>
           </Tooltip>
 
           <Tooltip title="Strikethrough Text" placement="bottom">
             <button className="flex items-center justify-center w-7 h-7 rounded-3xl transition-all bg-app-bg hover:bg-app-surface-hover text-app-text border border-app-border">
-              <Strikethrough className="w-3.5 h-3.5" />
+              <Strikethrough className="w-4 h-4" />
             </button>
           </Tooltip> */}
         </div>
@@ -776,7 +839,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                 activeClassName="text-white border-yellow"
                 activeSurfaceClassName="bg-gradient-to-br from-yellow-500 via-yellow-800 to-yellow-500"
               >
-                <Radio className="w-3.5 h-3.5" />
+                <Radio className="w-4 h-4" />
               </DepthIconButton>
             </Tooltip>
           )}

@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld("ipcRenderer", {
 
 contextBridge.exposeInMainWorld("api", {
   maximizeApp: () => ipcRenderer.send("maximizeApp"),
+  isAppWindowMaximized: () => ipcRenderer.invoke("is-maximized-app"),
   minimizeApp: () => {
     console.log("Minimize action triggered");
     ipcRenderer.send("minimizeApp");
@@ -64,6 +65,18 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.on("projection-state-changed", listener);
     return () => {
       ipcRenderer.removeListener("projection-state-changed", listener);
+    };
+  },
+  onWindowMaximizedChanged: (callback: (isMaximized: boolean) => void) => {
+    const listener = (
+      _event: Electron.IpcRendererEvent,
+      isMaximized: boolean,
+    ) => {
+      callback(isMaximized);
+    };
+    ipcRenderer.on("main-window-maximized-changed", listener);
+    return () => {
+      ipcRenderer.removeListener("main-window-maximized-changed", listener);
     };
   },
   onDisplaySong: (callback: (songData: any) => void) => {

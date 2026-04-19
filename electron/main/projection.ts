@@ -20,6 +20,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 let songPresentationWin: BrowserWindow | null = null;
 let isSongPresentationMinimized = false;
 let isProjectionActive = false;
+let projectionRecoveryAttempted = false;
 
 // Export functions to access projection state
 export function getSongPresentationWindow() {
@@ -79,6 +80,7 @@ async function loadDisplayPreferences() {
 
 // Main projection window creation function
 export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
+  projectionRecoveryAttempted = false;
   const displays = screen.getAllDisplays();
   console.log("🖥️ Song Presentation - All displays detected:", displays.length);
 
@@ -273,6 +275,60 @@ export async function createSongPresentationWindow(mainWin?: BrowserWindow) {
       console.log("Projection window restored - projection state: true");
       mainWin?.webContents.send("projection-state-changed", true);
     }
+  });
+
+  const recoverProjectionWindow = (reason: string, details?: any) => {
+    console.error(`[projection] ${reason}`, details ?? "");
+
+    if (projectionRecoveryAttempted) {
+      return;
+    }
+
+    projectionRecoveryAttempted = true;
+
+    const existingWindow = songPresentationWin;
+    if (existingWindow && !existingWindow.isDestroyed()) {
+      try {
+        existingWindow.destroy();
+      } catch (error) {
+        console.error(
+          "[projection] Failed to destroy crashed projection window",
+          error,
+        );
+      }
+    }
+
+    songPresentationWin = null;
+
+    setTimeout(() => {
+      if (!isProjectionActive) return;
+      void createSongPresentationWindow(mainWin);
+    }, 250);
+  };
+
+  songPresentationWin.webContents.on(
+    "render-process-gone",
+    (_event, details) => {
+      recoverProjectionWindow("Projection renderer exited", details);
+    },
+  );
+
+  songPresentationWin.webContents.on(
+    "did-fail-load",
+    (_event, errorCode, errorDescription, validatedURL, isMainFrame) => {
+      if (errorCode === -3) return; // ignore aborted loads during normal navigation
+
+      recoverProjectionWindow("Projection failed to load", {
+        errorCode,
+        errorDescription,
+        validatedURL,
+        isMainFrame,
+      });
+    },
+  );
+
+  songPresentationWin.webContents.on("unresponsive", () => {
+    recoverProjectionWindow("Projection window became unresponsive");
   });
 
   return songPresentationWin;

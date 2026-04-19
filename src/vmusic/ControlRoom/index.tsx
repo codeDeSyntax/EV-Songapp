@@ -7,9 +7,6 @@ import {
   setCurrentSongId,
   setCurrentSlide,
 } from "@/store/slices/songSlidesSlice";
-import { updateSong } from "@/store/slices/songSlice";
-import { parseLyrics } from "./utils/lyricsParser";
-import { encodeSongData, validateSongForSave } from "./utils/songFileFormat";
 import { Song } from "@/types";
 import TitleBar from "../../shared/TitleBar";
 import DeletePopup from "./components/DeletePopup";
@@ -17,7 +14,6 @@ import { useProjectionState } from "@/hooks/useProjectionState";
 import { GamyCard } from "../shared/GamyCard";
 import { ActionBar } from "./ActionBar";
 import { ContentArea } from "./ContentArea";
-import { TitleInputDialog } from "./components/TitleInputDialog";
 import { useTheme } from "@/Provider/Theme";
 import { useToast } from "./hooks/useToast";
 import { Toaster } from "../shared/Notification";
@@ -49,9 +45,8 @@ const ControlRoom = () => {
   const { isActive: isProjectionActive } = useProjectionState();
   const { toasts, addToast, dismissToast } = useToast();
   const songRepo = useAppSelector((state) => state.songs.songRepo);
-  const { slides, songTitle } = useAppSelector((state) => state.songSlides);
+  const { slides } = useAppSelector((state) => state.songSlides);
   const [deleteSlideRequested, setDeleteSlideRequested] = useState(false);
-  const [showPrelistTitleDialog, setShowPrelistTitleDialog] = useState(false);
 
   // Save handlers
   const handleSaveSuccess = (message: string) => {
@@ -79,55 +74,6 @@ const ControlRoom = () => {
     // Ensure selectedSong in Redux is updated (for TitleBar language display)
     dispatch({ type: "songs/setSelectedSong", payload: song });
     addToast(`Loaded "${song.title}" with ${slides.length} slides`, "success");
-  };
-
-  const handleAddToPrelist = async () => {
-    if (slides.length === 0) {
-      addToast("No slides to add to prelist. Paste lyrics first.", "warning");
-      return;
-    }
-
-    // No need to check songRepo - we auto-use app data directory
-    setShowPrelistTitleDialog(true);
-  };
-
-  const saveToPrelist = async (title: string, language: string) => {
-    const validation = validateSongForSave(title, slides);
-    if (!validation.valid) {
-      addToast(validation.error || "Invalid song data", "error");
-      return;
-    }
-
-    try {
-      const encodedContent = encodeSongData(
-        title,
-        slides,
-        true,
-        undefined,
-        language,
-      );
-      const result = await window.api.saveSong("", title, encodedContent);
-
-      const newSong: Song = {
-        id: Date.now().toString(),
-        title: result.sanitizedTitle || title,
-        path: result.filePath || "",
-        content: encodedContent,
-        categories: [],
-        dateModified: new Date().toISOString(),
-        size: encodedContent.length,
-        isPrelisted: true,
-        language: language,
-      };
-
-      dispatch(updateSong(newSong));
-      addToast(`"${title}" added to prelist! 🎵`, "success");
-      setShowPrelistTitleDialog(false);
-      loadSongs();
-    } catch (error) {
-      console.error("Error adding to prelist:", error);
-      addToast("Failed to add to prelist. Please try again.", "error");
-    }
   };
 
   // Load songs on mount
@@ -217,15 +163,6 @@ const ControlRoom = () => {
           deleteSong={deleteSelectedSong}
         />
       )}
-
-      {/* Prelist Title Dialog */}
-      <TitleInputDialog
-        isOpen={showPrelistTitleDialog}
-        initialTitle={songTitle || ""}
-        isDarkMode={isDarkMode}
-        onClose={() => setShowPrelistTitleDialog(false)}
-        onSave={saveToPrelist}
-      />
 
       {/* Toast Notifications */}
       <Toaster
