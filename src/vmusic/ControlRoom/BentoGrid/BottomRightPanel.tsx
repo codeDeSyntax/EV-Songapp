@@ -13,18 +13,21 @@ export const BottomRightPanel: React.FC<BottomRightPanelProps> = ({
   const projection = useAppSelector((state) => state.projection);
   const [currentBg, setCurrentBg] = useState<string>("");
 
-  // Load current background from localStorage (same as PreviewPanel)
+  // Load current background from localStorage on mount and sync on storage events
   useEffect(() => {
-    const updateBg = () => {
-      const savedBg = localStorage.getItem("bmusicpresentationbg");
-      if (savedBg) {
-        setCurrentBg(savedBg);
+    const savedBg = localStorage.getItem("bmusicpresentationbg");
+    if (savedBg) {
+      setCurrentBg(savedBg);
+    }
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "bmusicpresentationbg" && e.newValue) {
+        setCurrentBg(e.newValue);
       }
     };
 
-    updateBg();
-    const interval = setInterval(updateBg, 500);
-    return () => clearInterval(interval);
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   // Determine background type from current background

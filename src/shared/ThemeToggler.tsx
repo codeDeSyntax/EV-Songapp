@@ -7,20 +7,20 @@ import { DepthButton } from "./DepthButton";
 
 export const ThemeToggle: React.FC = () => {
   const { isDarkMode, toggleDarkMode } = useTheme();
-
-  const inactiveTextClass = isDarkMode
-    ? "text-white/80 hover:text-white"
-    : "text-black/80 hover:text-black";
+  const sw = isDarkMode ? 3.5 : 2.5;
 
   return (
-    <DepthButton
+    <button
       onClick={toggleDarkMode}
-      sizeClassName="w-6 h-6 rounded-full"
-      inactiveClassName={inactiveTextClass}
-      inactiveSurfaceClassName="bg-gradient-to-br from-white/20 via-white/15 to-white/10 group-hover:from-white/30 group-hover:via-white/20 group-hover:to-white/15"
+      className="relative hover:z-10 w-7 h-7 flex items-center justify-center rounded-full transition-colors hover:bg-[var(--tb-hover-bg)]"
+      style={{ color: 'var(--tb-icon)' }}
       title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
     >
-      {isDarkMode ? <Sunrise className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-    </DepthButton>
+      {isDarkMode ? (
+        <Sunrise size={28} className="w-[28px] h-[28px]" strokeWidth={sw} />
+      ) : (
+        <Moon size={28} className="w-[28px] h-[28px]" strokeWidth={sw} />
+      )}
+    </button>
   );
 };

@@ -213,11 +213,11 @@ export default function BackupNotification() {
         ref={btnRef}
         onClick={() => setOpen((v) => !v)}
         title="Drive Backup"
-        className="relative h-7 w-7 flex items-center justify-center rounded-full hover:bg-app-surface-hover transition-colors"
+        className="relative hover:z-10 w-7 h-7 flex items-center justify-center rounded-full hover:bg-[var(--tb-hover-bg)] transition-colors"
       >
-        <GoogleDriveIcon size={15} />
+        <GoogleDriveIcon size={26} />
         {badgeCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[14px] h-[14px] px-0.5 bg-[#ea4335] text-white text-[8px] font-bold rounded-full flex items-center justify-center leading-none">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[12px] h-[12px] px-0.5 bg-[#ea4335] text-white text-[7px] font-bold rounded-full flex items-center justify-center leading-none">
             {badgeCount > 99 ? "99+" : badgeCount}
           </span>
         )}

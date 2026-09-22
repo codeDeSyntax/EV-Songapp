@@ -136,21 +136,14 @@ const UpdateManager: React.FC = () => {
             ? "text-white/70"
             : "text-black/70";
 
-  const triggerInactiveTextClass = isDarkMode
-    ? "text-white/70 border-white/25 hover:text-white"
-    : "text-black/70 border-black/30 hover:text-black";
+  const triggerInactiveTextClass =
+    "border-0 bg-transparent hover:bg-[var(--tb-hover-bg)]";
 
-  const triggerActiveTextClass = isDarkMode
-    ? "text-white border-white/35"
-    : "text-black border-black/40";
+  const triggerActiveTextClass = "border-0 bg-transparent";
 
-  const triggerInactiveSurface = isDarkMode
-    ? "bg-gradient-to-br from-white/15 via-white/10 to-white/5 group-hover:from-white/25 group-hover:via-white/15 group-hover:to-white/10"
-    : "bg-gradient-to-br from-black/10 via-black/5 to-black/10 group-hover:from-black/15 group-hover:via-black/10 group-hover:to-black/15";
+  const triggerInactiveSurface = "bg-transparent";
 
-  const triggerActiveSurface = isDarkMode
-    ? "bg-gradient-to-br from-white/25 via-white/20 to-white/15"
-    : "bg-gradient-to-br from-black/20 via-black/15 to-black/10";
+  const triggerActiveSurface = "bg-transparent";
 
   /* ─── Status icon + text for each state ─── */
   const renderStatusRow = () => {
@@ -390,7 +383,10 @@ const UpdateManager: React.FC = () => {
           } ${iconColor}`}
           strokeWidth={2.5}
         />
-        <span className="text-[14px] ml-2 text-white font- leading-none ">
+        <span
+          className="text-[12px] ml-1.5 font-medium leading-none"
+          style={{ color: "var(--tb-text-muted)" }}
+        >
           v{__APP_VERSION__}
         </span>
         {(updateReady ||

@@ -11,8 +11,6 @@ import { Song } from "@/types";
 import TitleBar from "../../shared/TitleBar";
 import DeletePopup from "./components/DeletePopup";
 import { useProjectionState } from "@/hooks/useProjectionState";
-import { GamyCard } from "../shared/GamyCard";
-import { ActionBar } from "./ActionBar";
 import { ContentArea } from "./ContentArea";
 import { useTheme } from "@/Provider/Theme";
 import { useToast } from "./hooks/useToast";
@@ -106,49 +104,38 @@ const ControlRoom = () => {
 
   return (
     <div className="w-screen h-screen flex flex-col overflow-hidden bg-app-bg">
-      <TitleBar />
+      <TitleBar
+        isDarkMode={isDarkMode}
+        selectedSong={selectedSong}
+        searchQuery={searchQuery}
+        isProjectionActive={isProjectionActive}
+        songs={songs}
+        showDeleteConfirmation={showDeleteConfirmation}
+        loadSongs={loadSongs}
+        changeDirectory={changeDirectory}
+        updateSearchQuery={updateSearchQuery}
+        presentSong={presentSong}
+        addToast={addToast}
+        onRequestDelete={handleRequestDelete}
+        onSelectSongFromSearch={handleSelectSongFromSearch}
+      />
 
       {/* Main Content Area */}
-      <div className="flex-1 pt-8 flex flex-col bg-app-bg">
-        <GamyCard
+      <div className="flex-1 pt-9 flex flex-col bg-app-bg overflow-hidden">
+        <ContentArea
+          filteredSongsCount={filteredSongs.length}
           isDarkMode={isDarkMode}
-          transparent={true}
-          className="flex-1 py-0 bg-app-bg"
-          style={{
-            border: "none",
-            borderRadius: 0,
-          }}
-        >
-          <ActionBar
-            isDarkMode={isDarkMode}
-            selectedSong={selectedSong}
-            searchQuery={searchQuery}
-            isProjectionActive={isProjectionActive}
-            songs={songs}
-            showDeleteConfirmation={showDeleteConfirmation}
-            loadSongs={loadSongs}
-            changeDirectory={changeDirectory}
-            updateSearchQuery={updateSearchQuery}
-            presentSong={presentSong}
-            addToast={addToast}
-            onRequestDelete={handleRequestDelete}
-            onSelectSongFromSearch={handleSelectSongFromSearch}
-          />
-          <ContentArea
-            filteredSongsCount={filteredSongs.length}
-            isDarkMode={isDarkMode}
-            toggleDarkMode={toggleDarkMode}
-            onSaveSuccess={handleSaveSuccess}
-            onSaveError={handleSaveError}
-            loadSongs={loadSongs}
-            onRequestDelete={handleRequestDelete}
-            deleteSlideRequested={deleteSlideRequested}
-            onDeleteSlideComplete={() => setDeleteSlideRequested(false)}
-            addToast={addToast}
-            songs={songs}
-            onSelectSongFromSearch={handleSelectSongFromSearch}
-          />
-        </GamyCard>
+          toggleDarkMode={toggleDarkMode}
+          onSaveSuccess={handleSaveSuccess}
+          onSaveError={handleSaveError}
+          loadSongs={loadSongs}
+          onRequestDelete={handleRequestDelete}
+          deleteSlideRequested={deleteSlideRequested}
+          onDeleteSlideComplete={() => setDeleteSlideRequested(false)}
+          addToast={addToast}
+          songs={songs}
+          onSelectSongFromSearch={handleSelectSongFromSearch}
+        />
       </div>
 
       {/* Delete Popup */}

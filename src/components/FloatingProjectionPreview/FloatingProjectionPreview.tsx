@@ -252,10 +252,10 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
           {/* Right: Status Button */}
           <DepthButton
             sizeClassName="h-7 w-7 rounded-lg"
-            activeClassName="text-white"
-            inactiveClassName="text-stone-300"
-            inactiveSurfaceClassName="bg-gradient-to-br from-stone-700/60 via-stone-800/60 to-stone-700/60 border border-stone-600/50 group-hover:from-app-accent/40 group-hover:via-app-accent/50 group-hover:to-app-accent/40 group-hover:border-app-accent/70"
-            activeSurfaceClassName="bg-gradient-to-br from-app-accent/80 via-app-accent to-app-accent/80 border border-app-accent"
+            activeClassName="text-white bg-app-accent border-app-accent"
+            inactiveClassName="text-stone-300 hover:text-white"
+            inactiveSurfaceClassName="bg-stone-800/80 border border-stone-600/50 hover:bg-stone-700/80"
+            activeSurfaceClassName="bg-app-accent border border-app-accent"
           >
             <Wifi className="w-3.5 h-3.5" />
           </DepthButton>

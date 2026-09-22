@@ -166,16 +166,16 @@ export const AllSongsView: React.FC<AllSongsViewProps> = ({
             </motion.span>
           </div>
 
-          <DepthButton className="flex- w-60  relative rounded-full p-5">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-app-text-muted" />
+          <DepthSurface className="relative w-60 rounded-full px-3 py-1 flex items-center">
+            <Search className="w-3.5 h-3.5 text-app-text-muted flex-shrink-0 mr-1.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search songs..."
-              className="w-full h-8 pl-8 pr-3 text-xs bg-transparent border-none border-app-border rounded-md text-app-text placeholder-app-text-muted focus:outline-none "
+              className="w-full text-xs bg-transparent border-none text-app-text placeholder-app-text-muted focus:outline-none"
             />
-          </DepthButton>
+          </DepthSurface>
 
           <select
             value={languageFilter}

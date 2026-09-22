@@ -1,16 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Minus, Square, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAppSelector, useAppDispatch } from "@/store";
-import {
-  setCurrentScreen,
-  minimizeApp,
-  maximizeApp,
-  closeApp,
-} from "@/store/slices/appSlice";
+import { setCurrentScreen } from "@/store/slices/appSlice";
 import { decodeSongData } from "@/vmusic/ControlRoom/utils/songFileFormat";
 import { InstrumentCluster } from "@/vmusic/components/InstrumentCluster";
-import CreamMeshBackground from "@/vmusic/components/CreamMeshBackground";
+import HomeBackgroundPattern from "@/vmusic/components/HomeBackgroundPattern";
 
 // Define types in a separate file and import them to reduce parsing time
 interface Song {
@@ -26,57 +20,10 @@ const preloadImages = () => {
   const imagesToPreload = ["./wood6.jpg", "./grandp1.png", "./wheat1.png"];
   imagesToPreload.forEach((src) => {
     const img = new Image();
-    img.src = src;
   });
 };
 
-// Button component for window controls
-interface WindowControlButtonProps {
-  type: "close" | "minimize" | "maximize";
-  onClick: () => void;
-  isHovered: string | null;
-  setIsHovered: (type: string | null) => void;
-}
-
-const WindowControlButton: React.FC<WindowControlButtonProps> = ({
-  type,
-  onClick,
-  isHovered,
-  setIsHovered,
-}) => {
-  const colors = {
-    close: {
-      bg: "bg-[#FF5F57]",
-      hover: "hover:bg-red-600",
-      icon: <X className="absolute text-white w-3 h-3" />,
-    },
-    minimize: {
-      bg: "bg-[#FFBD2E]",
-      hover: "hover:bg-yellow-600",
-      icon: <Minus className="absolute text-white w-3 h-3" />,
-    },
-    maximize: {
-      bg: "bg-[#28CA41]",
-      hover: "hover:bg-green-600",
-      icon: <Square className="absolute text-white w-3 h-3" />,
-    },
-  };
-
-  const { bg, hover, icon } = colors[type];
-
-  return (
-    <div
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(type)}
-      onMouseLeave={() => setIsHovered(null)}
-      className={`w-4 h-4 rounded-full ${bg} ${hover} hover:cursor-pointer flex items-center justify-center relative`}
-    >
-      {isHovered === type && icon}
-    </div>
-  );
-};
-
-// Array of country gospel verses - moved outside component to prevent recreation
+// Array of gospel verses
 const verses = [
   "Amazing grace! How sweet the sound, That saved a wretch like me!",
   "I once was lost, but now am found, Was blind, but now I see.",
@@ -90,7 +37,6 @@ const verses = [
 ];
 
 const WorkspaceSelector = () => {
-  const [isHovered, setIsHovered] = useState<string | null>(null);
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [randomVerse, setRandomVerse] = useState("");
 
@@ -168,19 +114,6 @@ const WorkspaceSelector = () => {
     }
   }, [songs]); // Removed verses from dependency array
 
-  // Memoize event handlers to prevent unnecessary re-renders
-  const handleMinimize = useCallback(() => {
-    dispatch(minimizeApp());
-  }, [dispatch]);
-
-  const handleMaximize = useCallback(() => {
-    dispatch(maximizeApp());
-  }, [dispatch]);
-
-  const handleClose = useCallback(() => {
-    dispatch(closeApp());
-  }, [dispatch]);
-
   // Navigate to screens with memoized callbacks
   const navigateToSongs = useCallback(() => {
     dispatch(setCurrentScreen("Songs"));
@@ -191,46 +124,14 @@ const WorkspaceSelector = () => {
   }, [dispatch]);
 
   return (
-    <div className="w-screen h-full overflow-hidden relative font-[garamond] bg-[#f6ecdb]">
-      {/* Cream mesh/grid SVG background */}
-      <CreamMeshBackground />
-      {/* Mesh/blurred cream accents */}
-      <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute left-1/4 top-1/4 w-44 h-44 bg-gradient-to-br from-[#faeed1]/35 to-[#ede0c7]/10 rounded-full blur-3xl animate-pulse"></div>
-        <div
-          className="absolute right-1/4 bottom-1/4 w-64 h-64 bg-gradient-to-br from-[#f3e8d0]/28 to-[#faeed1]/8 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
-      </div>
-
-      {/* Window controls - top left */}
-      <div className="absolute top-4 left-4 z-50">
-        <div className="flex items-center space-x-2">
-          <WindowControlButton
-            type="close"
-            onClick={handleClose}
-            isHovered={isHovered}
-            setIsHovered={setIsHovered}
-          />
-          <WindowControlButton
-            type="minimize"
-            onClick={handleMinimize}
-            isHovered={isHovered}
-            setIsHovered={setIsHovered}
-          />
-          <WindowControlButton
-            type="maximize"
-            onClick={handleMaximize}
-            isHovered={isHovered}
-            setIsHovered={setIsHovered}
-          />
-        </div>
-      </div>
+    <div className="w-screen h-full overflow-hidden relative bg-app-bg text-app-text">
+      {/* Modern soundwave & geometric matrix background */}
+      <HomeBackgroundPattern />
 
       {/* Loading indicator */}
       {!imagesLoaded && (
-        <div className="absolute inset-0 bg-[#9a674a]/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="text-[#faeed1] font-[garamond] text-lg animate-pulse">
+        <div className="absolute inset-0 bg-app-bg/85 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="text-app-text text-base animate-pulse">
             Loading...
           </div>
         </div>
@@ -249,28 +150,25 @@ const WorkspaceSelector = () => {
               <InstrumentCluster />
             </div>
 
-            <div className="max-w-3xl mt-1 space-y-2">
-              <p className="text-2xl lg:text-4xl font-semibold tracking-tight text-[#6a4636] leading-tight">
-                Welcome to <span className="text-[#c77c5d]">Zion Music</span>
-              </p>
-              <p className="text-base lg:text-lg text-[#8c6e63] font-sans italic leading-8 font-medium max-w-2xl mx-auto">
-                Let me listen to what kind of music you're playing on your
+            <div className="max-w-2xl mt-2 space-y-3">
+              <h1 className="text-3xl lg:text-5xl font-bold tracking-tight text-app-text leading-tight">
+                Welcome to <span className="text-app-accent font-extrabold">Zion Music</span>
+              </h1>
+              <p className="text-base lg:text-lg text-app-text-muted italic leading-relaxed font-normal max-w-xl mx-auto px-4">
+                "Let me listen to what kind of music you're playing on your
                 radio. Let me see what kind of pictures you got in your house.
-                I'll tell you what you're made out of.
-              </p>
-              <p className="text-sm lg:text-base text-[#9a674a] font-sans font-semibold leading-7">
-                (56-0728 Making The Valley Full Of Ditches)
+                I'll tell you what you're made out of."
               </p>
             </div>
 
-            <div className="mt-4 flex items-center justify-center gap-3">
+            <div className="mt-6 flex items-center justify-center gap-3">
               <button
                 onClick={navigateToSongs}
-                className="group relative cursor-pointer inline-flex items-center gap-2 bg-gradient-to-r from-[#c77c5d] to-[#9a674a] hover:from-[#9a674a] hover:to-[#c77c5d] text-white font-medium py-2.5 px-5 rounded-full shadow-lg transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl overflow-hidden"
+                className="group relative cursor-pointer inline-flex items-center gap-2.5 bg-app-accent hover:bg-app-accent/90 text-white font-medium py-2.5 px-7 rounded-full shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] border border-black/10 dark:border-white/10"
               >
-                <span className="relative z-10 text-sm">Get started</span>
+                <span className="relative z-10 text-sm font-semibold tracking-wide">Open Workspace</span>
                 <svg
-                  className="relative z-10 w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform duration-300"
+                  className="relative z-10 w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -282,7 +180,13 @@ const WorkspaceSelector = () => {
                     d="M13 7l5 5m0 0l-5 5m5-5H6"
                   />
                 </svg>
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out"></div>
+              </button>
+
+              <button
+                onClick={navigateToGuide}
+                className="cursor-pointer inline-flex items-center gap-1.5 bg-app-surface/60 hover:bg-app-surface text-app-text font-medium py-2.5 px-5 rounded-full shadow-sm hover:shadow transition-all duration-200 border border-app-border text-sm"
+              >
+                <span>User Guide</span>
               </button>
             </div>
           </div>

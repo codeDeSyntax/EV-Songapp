@@ -19,6 +19,24 @@
   --app-text: #1c1c1c;
   --app-text-muted: #303030;
   --app-accent: #707070;
+
+  /* Titlebar – light mode: transparent / flush with app bg */
+  --tb-bg: #a0a0a0;
+  --tb-border: rgba(0, 0, 0, 0.18);
+  --tb-text: #1a1a1a;
+  --tb-text-muted: rgba(0, 0, 0, 0.55);
+  --tb-hover-bg: rgba(255, 255, 255, 0.55);
+  --tb-active-bg: rgba(255, 255, 255, 0.75);
+  --tb-separator: rgba(0, 0, 0, 0.15);
+  --tb-btn-border: rgba(0, 0, 0, 0.15);
+  --tb-input-bg: rgba(0, 0, 0, 0.06);
+  --tb-icon: rgba(0, 0, 0, 0.62);
+  --tb-dropdown-bg: #ffffff;
+  --tb-dropdown-border: #d0d0d0;
+  --tb-dropdown-hover-bg: rgba(0, 0, 0, 0.08);
+  --tb-dropdown-hover-text: #1a1a1a;
+  --tb-dropdown-active-bg: rgba(0, 0, 0, 0.14);
+  --tb-dropdown-active-text: #1a1a1a;
 }
 
 .dark {
@@ -30,12 +48,38 @@
   --app-text: #e5e5e5;
   --app-text-muted: #a3a3a3;
   --app-accent: #404040;
+
+  /* Titlebar – dark mode: transparent / flush with app bg */
+  --tb-bg: #1c1c1c;
+  --tb-border: rgba(255, 255, 255, 0.09);
+  --tb-text: #f3f4f6;
+  --tb-text-muted: rgba(255, 255, 255, 0.55);
+  --tb-hover-bg: rgba(255, 255, 255, 0.09);
+  --tb-active-bg: rgba(255, 255, 255, 0.14);
+  --tb-separator: rgba(255, 255, 255, 0.18);
+  --tb-btn-border: rgba(255, 255, 255, 0.15);
+  --tb-input-bg: rgba(255, 255, 255, 0.05);
+  --tb-icon: rgba(255, 255, 255, 0.82);
+  --tb-dropdown-bg: #242424;
+  --tb-dropdown-border: #383838;
+  --tb-dropdown-hover-bg: rgba(255, 255, 255, 0.10);
+  --tb-dropdown-hover-text: #f3f4f6;
+  --tb-dropdown-active-bg: rgba(255, 255, 255, 0.18);
+  --tb-dropdown-active-text: #ffffff;
 }
 
 *,
 ::before,
 ::after {
   box-sizing: border-box;
+}
+
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: none !important;
+  -webkit-focus-ring-color: transparent !important;
 }
 
 html,

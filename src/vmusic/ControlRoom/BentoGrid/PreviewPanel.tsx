@@ -215,24 +215,35 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     }
   }, [songTitle]);
 
-  // Keyboard navigation for slides
+  // Stable refs for keyboard navigation to avoid re-attaching listeners on every slide step
+  const displaySlidesRef = useRef(displaySlides);
+  displaySlidesRef.current = displaySlides;
+  const currentDisplayIndexRef = useRef(currentDisplayIndex);
+  currentDisplayIndexRef.current = currentDisplayIndex;
+  const isEditingSlideRef = useRef(isEditingSlide);
+  isEditingSlideRef.current = isEditingSlide;
+  const handleProjectCurrentSongRef = useRef<() => void>(() => {});
+
+  // Keyboard navigation for slides (mounted once)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only handle if not in an input/textarea and not editing
       if (
         document.activeElement?.tagName.toLowerCase() === "input" ||
         document.activeElement?.tagName.toLowerCase() === "textarea" ||
-        isEditingSlide
+        isEditingSlideRef.current
       ) {
         return;
       }
 
-      if (displaySlides.length === 0) return;
+      const slides = displaySlidesRef.current;
+      if (slides.length === 0) return;
+      const currentIndex = currentDisplayIndexRef.current;
 
       // Handle Space bar for projection
       if (e.key === " ") {
         e.preventDefault();
-        handleProjectCurrentSong();
+        handleProjectCurrentSongRef.current();
         return;
       }
 
@@ -245,20 +256,20 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
       if (e.key === "ArrowRight") {
         e.preventDefault();
-        const nextIndex = currentDisplayIndex + 1;
-        if (nextIndex < displaySlides.length) {
+        const nextIndex = currentIndex + 1;
+        if (nextIndex < slides.length) {
           dispatch(setCurrentDisplayIndex(nextIndex));
         }
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
-        const prevIndex = currentDisplayIndex - 1;
+        const prevIndex = currentIndex - 1;
         if (prevIndex >= 0) {
           dispatch(setCurrentDisplayIndex(prevIndex));
         }
       } else if (e.key.toLowerCase() === "c") {
         // Jump to first chorus
         e.preventDefault();
-        const chorusIndex = displaySlides.findIndex(
+        const chorusIndex = slides.findIndex(
           (slide) => slide.type.toLowerCase() === "chorus",
         );
         if (chorusIndex !== -1) {
@@ -268,7 +279,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         // Jump to specific verse (1-9)
         e.preventDefault();
         const verseNum = parseInt(e.key, 10);
-        const verseIndex = displaySlides.findIndex(
+        const verseIndex = slides.findIndex(
           (slide) =>
             slide.type.toLowerCase() === "verse" && slide.number === verseNum,
         );
@@ -280,34 +291,30 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    displaySlides,
-    currentDisplayIndex,
-    isEditingSlide,
-    dispatch,
-    songTitle,
-    addToast,
-  ]);
+  }, [dispatch]);
 
   // ── System-wide global shortcuts (Ctrl+Shift+Right/Left/Space, Shift+F) ────
   useEffect(() => {
     if (!window.api?.onGlobalShortcut) return;
     const unsub = window.api.onGlobalShortcut((action) => {
-      if (displaySlides.length === 0) return;
+      const slides = displaySlidesRef.current;
+      if (slides.length === 0) return;
+      const currentIndex = currentDisplayIndexRef.current;
+
       if (action === "NEXT_SLIDE") {
-        const next = currentDisplayIndex + 1;
-        if (next < displaySlides.length) dispatch(setCurrentDisplayIndex(next));
+        const next = currentIndex + 1;
+        if (next < slides.length) dispatch(setCurrentDisplayIndex(next));
       } else if (action === "PREV_SLIDE") {
-        const prev = currentDisplayIndex - 1;
+        const prev = currentIndex - 1;
         if (prev >= 0) dispatch(setCurrentDisplayIndex(prev));
       } else if (action === "PROJECT_CURRENT") {
-        handleProjectCurrentSong();
+        handleProjectCurrentSongRef.current();
       } else if (action === "FOCUS_PROJECTION") {
         window.api.focusProjectionWindow?.();
       }
     });
     return unsub;
-  }, [displaySlides, currentDisplayIndex, dispatch]);
+  }, [dispatch]);
 
   // ── Tray actions (e.g. "Start Projection" tapped from system tray) ──────────
   useEffect(() => {
@@ -434,6 +441,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       addToast("Failed to project song", "error");
     }
   };
+  handleProjectCurrentSongRef.current = handleProjectCurrentSong;
 
   // Handle delete slide request
   useEffect(() => {

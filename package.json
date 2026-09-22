@@ -19,14 +19,12 @@
     "preview": "vite preview",
     "release": "node scripts/release.mjs",
     "pree2e": "vite build --mode=test",
-    "e2e": "playwright test",
-    "package": "electron-packager . songscast --platform=win32 --arch=x64  --icon=J:\\electron\\songsapp\\public\\evsongsicon.ico --out=release/ --overwrite --asar"
+    "e2e": "playwright test"
   },
   "dependencies": {
     "electron-updater": "^6.1.8"
   },
   "devDependencies": {
-    "@ant-design/icons": "^6.1.0",
     "@fontsource/raleway": "^5.2.8",
     "@reactour/tour": "^3.8.0",
     "@reduxjs/toolkit": "^2.8.2",
@@ -39,10 +37,8 @@
     "autoprefixer": "^10.4.18",
     "electron": "^29.1.1",
     "electron-builder": "^24.13.3",
-    "electron-packager": "^17.1.2",
     "framer-motion": "^11.5.4",
     "lucide-react": "^0.441.0",
-    "pdfjs-dist": "^4.10.38",
     "postcss": "^8.4.35",
     "postcss-import": "^16.0.1",
     "react": "^19.2.1",

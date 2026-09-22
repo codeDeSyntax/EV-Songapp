@@ -56,12 +56,9 @@ export const useSongOperations = () => {
       if (song) {
         localStorage.setItem("selectedSong", JSON.stringify(song));
         window.api.projectSong(song);
-        window.api.onDisplaySong((selectedSong) => {
-          console.log(`songData: ${selectedSong.title}`);
-        });
       }
     },
-    [dispatch]
+    [],
   );
 
   const presentSelectedSong = useCallback(() => {

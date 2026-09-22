@@ -254,7 +254,7 @@ function rebuildTrayMenu() {
   if (!tray || tray.isDestroyed()) return;
   const isActive = getIsProjectionActive();
   const menu = Menu.buildFromTemplate([
-    { label: `East Voice  v${app.getVersion()}`, enabled: false },
+    { label: `Song Cast  v${app.getVersion()}`, enabled: false },
     { type: "separator" },
     {
       label: "Show Control Room",
@@ -303,7 +303,7 @@ function rebuildTrayMenu() {
       },
     },
     { type: "separator" },
-    { label: "Quit East Voice", click: () => app.quit() },
+    { label: "Quit Song Cast", click: () => app.quit() },
   ]);
   tray.setContextMenu(menu);
 }
@@ -315,10 +315,12 @@ const projectionHtml = path.join(RENDERER_DIST, "projection.html");
 function createSplashWindow() {
   splashWin = new BrowserWindow({
     width: 380,
-    height: 280,
+    height: 220,
     frame: false,
-    transparent: false,
-    backgroundColor: "#faeed1",
+    transparent: true,
+    hasShadow: false,
+    thickFrame: false,
+    backgroundColor: "#00000000",
     resizable: false,
     center: true,
     skipTaskbar: true,
@@ -673,7 +675,7 @@ app.whenReady().then(() => {
   try {
     const trayIconPath = path.join(process.env.VITE_PUBLIC, "evsongsicon.png");
     tray = new Tray(nativeImage.createFromPath(trayIconPath));
-    tray.setToolTip("East Voice — Song Projector");
+    tray.setToolTip("Song Cast — Song Projector");
     rebuildTrayMenu();
     tray.on("double-click", () => {
       if (mainWin && !mainWin.isDestroyed()) {

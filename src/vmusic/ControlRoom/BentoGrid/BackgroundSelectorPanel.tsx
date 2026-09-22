@@ -362,7 +362,7 @@ export const BackgroundSelectorPanel: React.FC<
                 >
                   <DepthSurface
                     className="p-1.5 rounded-xl shadow-xl"
-                    surfaceClassName="bg-gradient-to-br from-app-bg via-app-surface to-app-bg border border-app-border"
+                    surfaceClassName="bg-app-bg border border-app-border"
                   >
                     <div
                       onClick={() => {

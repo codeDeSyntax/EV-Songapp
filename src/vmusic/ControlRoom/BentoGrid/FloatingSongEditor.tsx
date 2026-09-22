@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { X, Save, FileEdit } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/store";
 import { setSlides, setSongTitle } from "@/store/slices/songSlidesSlice";
-import { toggleSongEditor } from "@/store/slices/uiSlice";
+import { toggleSongEditor, closeSongEditor } from "@/store/slices/uiSlice";
 import { parseLyrics } from "../utils/lyricsParser";
 import { encodeSongData } from "../utils/songFileFormat";
 import { formatSlidesForSave } from "../utils/songFormatter";
@@ -35,13 +35,34 @@ export const FloatingSongEditor: React.FC<FloatingSongEditorProps> = ({
 
   const dragStart = useRef({ mouseX: 0, mouseY: 0, panelX: 0, panelY: 0 });
   const initialized = useRef(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (isDragging) return;
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        dispatch(closeSongEditor());
+      }
+    };
+
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", handleOutsideClick);
+    }, 50);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [dispatch, isDragging]);
 
   // Center on first render
   useEffect(() => {
     if (!initialized.current) {
+      const editorHeight = Math.min(740, window.innerHeight - 50);
       setPosition({
-        x: Math.max(20, window.innerWidth / 2 - 174),
-        y: Math.max(20, window.innerHeight / 2 - 320),
+        x: Math.max(20, Math.round((window.innerWidth - 348) / 2)),
+        y: Math.max(20, Math.round((window.innerHeight - editorHeight) / 2)),
       });
       initialized.current = true;
     }
@@ -147,12 +168,14 @@ export const FloatingSongEditor: React.FC<FloatingSongEditorProps> = ({
 
   return (
     <div
+      ref={panelRef}
       className="fixed z-[9999] bg-white dark:bg-app-surface flex flex-col  overflow-hidden border-solid border-8 border-app-surface dark:border-app-surface-hover p-2"
       style={{
         left: position.x,
         top: position.y,
         width: 348,
-        height: 600,
+        height: Math.min(740, window.innerHeight - 50),
+        maxHeight: "calc(100vh - 40px)",
         userSelect: isDragging ? "none" : "auto",
         boxShadow: "0 12px 48px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08)",
       }}
@@ -193,15 +216,18 @@ export const FloatingSongEditor: React.FC<FloatingSongEditorProps> = ({
       </div>
 
       {/* Editable title */}
-      <div className="px-3 py-1.5 border-b border-app-border/40 bg-app-bg/30 flex-shrink-0">
-        <input
-          type="text"
-          value={editedTitle}
-          onChange={(e) => setEditedTitle(e.target.value)}
-          placeholder="Song title…"
-          spellCheck={false}
-          className="w-full bg-transparent text-[12.5px] font-semibold text-app-text border-none focus:outline-none placeholder:text-app-text-muted/60"
-        />
+      <div className="px-3 py-2 border-b border-app-border/40 bg-app-bg/30 flex-shrink-0">
+        <div className="relative flex items-center">
+          <FileEdit className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-app-text-muted pointer-events-none" />
+          <input
+            type="text"
+            value={editedTitle}
+            onChange={(e) => setEditedTitle(e.target.value)}
+            placeholder="Song title…"
+            spellCheck={false}
+            className="w-full h-8 pl-8 pr-3 rounded-full text-[12px] font-medium bg-black/[0.04] dark:bg-white/[0.05] hover:bg-black/[0.06] dark:hover:bg-white/[0.08] focus:bg-black/[0.07] dark:focus:bg-white/[0.09] text-app-text placeholder:text-app-text-muted/60 border border-black/[0.08] dark:border-white/[0.08] focus:border-app-accent/50 focus:outline-none transition-all duration-150"
+          />
+        </div>
       </div>
 
       {/* Lyrics textarea */}

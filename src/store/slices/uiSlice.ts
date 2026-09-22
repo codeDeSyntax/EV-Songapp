@@ -103,6 +103,12 @@ const uiSlice = createSlice({
     toggleNewSongModal: (state) => {
       state.showNewSongModal = !state.showNewSongModal;
     },
+    closeSongEditor: (state) => {
+      state.showSongEditor = false;
+    },
+    closeNewSongModal: (state) => {
+      state.showNewSongModal = false;
+    },
   },
 });
 
@@ -119,6 +125,8 @@ export const {
   setShowPrelistTitleDialog,
   toggleSongEditor,
   toggleNewSongModal,
+  closeSongEditor,
+  closeNewSongModal,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

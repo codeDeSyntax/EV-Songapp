@@ -46,40 +46,48 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
     }
   }, []);
 
-  // Filter songs based on search query (only after Enter is pressed)
-  let filteredSongs = searchQuery.trim()
-    ? songs.filter((song) => {
-        const lowerQuery = searchQuery.toLowerCase();
-        const titleMatch = song.title.toLowerCase().includes(lowerQuery);
+  // Filter songs based on search query (memoized to prevent heavy re-filtering on every render)
+  const filteredSongs = React.useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const lowerQuery = searchQuery.toLowerCase();
 
-        // Search in decoded slides content if available
-        const contentMatch =
-          song.slides && song.slides.length > 0
-            ? song.slides.some((slide) =>
-                slide.content.toLowerCase().includes(lowerQuery)
-              )
-            : song.content.toLowerCase().includes(lowerQuery);
+    let results = songs.filter((song) => {
+      const titleMatch = song.title.toLowerCase().includes(lowerQuery);
+      if (titleMatch) return true;
 
-        return titleMatch || contentMatch;
-      })
-    : [];
+      // Search in decoded slides content if available (skip raw base64 content)
+      return song.slides && song.slides.length > 0
+        ? song.slides.some((slide) =>
+            slide.content.toLowerCase().includes(lowerQuery),
+          )
+        : false;
+    });
 
-  // Apply letter filter if set
-  if (letterFilter) {
-    filteredSongs = filteredSongs.filter((song) =>
-      song.title.toLowerCase().startsWith(letterFilter.toLowerCase())
-    );
-  }
+    if (letterFilter) {
+      const lowerLetter = letterFilter.toLowerCase();
+      results = results.filter((song) =>
+        song.title.toLowerCase().startsWith(lowerLetter),
+      );
+    }
+
+    return results;
+  }, [searchQuery, songs, letterFilter]);
+
+  // Cap displayed dropdown items to 50 for smooth animations and instant rendering
+  const displayedSongs = React.useMemo(
+    () => filteredSongs.slice(0, 50),
+    [filteredSongs],
+  );
 
   // Reset selected index when filtered songs change
   useEffect(() => {
-    if (filteredSongs.length > 0) {
+    if (displayedSongs.length > 0) {
       setSelectedIndex(0);
       setShowDropdown(true);
     } else {
       setShowDropdown(false);
     }
-  }, [filteredSongs.length]);
+  }, [displayedSongs.length]);
 
   // Global keyboard handler for alphabet filtering when dropdown is open
   useEffect(() => {
@@ -207,30 +215,36 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
   };
 
   return (
-    <div className="relative flex-1 max-w-md search-dropdown-container">
+    <div className="relative w-full search-dropdown-container">
       {/* Search Input */}
-      <DepthSurface className="relative rounded-full">
-        <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-app-text-muted" />
+      <div className="relative flex items-center w-full group">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black/40 dark:text-white/40 group-focus-within:text-black/70 dark:group-focus-within:text-white/70 transition-colors pointer-events-none" />
         <input
           ref={inputRef}
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Search songs... (Press Enter)"
-          className="w-full pl-8 pr-8 py-1.5 rounded-3xl border-none border-app-border focus:outline-none focus:ring-1 focus:ring-app-surface-hover text-ew-xs bg-white/20 dark:bg-app-bg text-app-text placeholder:text-app-text-muted"
+          placeholder="Search songs…"
+          className="w-full h-7 pl-8 pr-14 rounded-full text-[11.5px] font-normal border border-transparent bg-black/[0.05] hover:bg-black/[0.08] focus:bg-black/[0.09] dark:bg-white/[0.05] dark:hover:bg-white/[0.08] dark:focus:bg-white/[0.10] text-gray-900 dark:text-gray-100 placeholder:text-black/40 dark:placeholder:text-white/35 focus:outline-none focus:border-black/[0.22] dark:focus:border-white/[0.20] transition-all duration-150"
+          style={{ outline: "none", caretColor: "var(--app-text)" }}
           spellCheck={false}
           autoFocus={!!searchTerm}
         />
-        {searchTerm && (
+        {searchTerm ? (
           <button
             onClick={handleClearSearch}
-            className="absolute right-2.5 top-1/2 transform -translate-y-1/2 text-app-text-muted hover:text-app-text"
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full flex items-center justify-center text-black/40 dark:text-white/40 hover:text-black/80 dark:hover:text-white hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+            title="Clear search"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-3 h-3" />
           </button>
+        ) : (
+          <kbd className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[9px] font-mono tracking-tight px-1.5 py-0.5 rounded-full border border-black/10 dark:border-white/10 text-black/40 dark:text-white/35 bg-black/[0.04] dark:bg-white/[0.05] select-none leading-none">
+            ↵ Enter
+          </kbd>
         )}
-      </DepthSurface>
+      </div>
 
       {/* Dropdown Results with Animation */}
       <AnimatePresence>
@@ -241,7 +255,7 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute top-full w-[80%] left-0 right-0 mt-1 z-[9999] max-h-[80vh] min-h-[60vh] overflow-y-auto no-scrollbar bg-white dark:bg-app-bg border border-app-border rounded-lg  p-1"
+            className="absolute top-full w-[380px] max-w-[80vw] left-0 -translate-x-1/2 mt-1 z-[9999] max-h-[80vh] min-h-[60vh] overflow-hidden bg-white dark:bg-app-bg border border-app-border rounded-xl shadow-2xl p-1.5"
           >
             <GamyCard
               isDarkMode={isDarkMode}
@@ -284,14 +298,17 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
               ) : (
                 <div className="flex justify-between gap-2 h-full no-scrollbar">
                   {/* Song List - Left Column */}
-                  <div className="w-[50%] h-full overflow-y-auto no-scrollbar">
+                  <div className="w-[42%] h-full overflow-y-auto no-scrollbar flex-shrink-0">
                     <div className="space-y-1">
-                      {filteredSongs.map((song, index) => (
+                      {displayedSongs.map((song, index) => (
                         <motion.div
                           key={song.path}
                           initial={{ opacity: 0, x: -5 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.02, duration: 0.2 }}
+                          transition={{
+                            delay: Math.min(index * 0.015, 0.15),
+                            duration: 0.15,
+                          }}
                           onClick={() => {
                             if (onSelectSong) {
                               onSelectSong(song);
@@ -332,7 +349,7 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
                     </div>
                   </div>
                   {/* Lyrics Preview - Right Column */}
-                  <div className="flex- w-[50%] h-full overflow-y-auto ">
+                  <div className="w-[58%] h-full overflow-y-auto overflow-x-auto no-scrollbar flex-1">
                     <GamyCard
                       isDarkMode={isDarkMode}
                       className="h-full p-3 app "
@@ -345,10 +362,10 @@ export const SearchWithDropdown: React.FC<SearchWithDropdownProps> = ({
                           animate={{ opacity: 1 }}
                           transition={{ duration: 0.2 }}
                         >
-                          <h3 className="text-ew-sm font-semibold text-app-text-muted mb-2">
+                          <h3 className="text-ew-sm font-semibold text-app-text-muted mb-2 truncate">
                             {filteredSongs[selectedIndex].title}
                           </h3>
-                          <div className="text-ew-xs text-app-text whitespace-pre-wrap leading-relaxed">
+                          <div className="text-ew-xs text-app-text whitespace-pre leading-relaxed">
                             {filteredSongs[selectedIndex].slides &&
                             filteredSongs[selectedIndex].slides!.length > 0
                               ? filteredSongs[selectedIndex]

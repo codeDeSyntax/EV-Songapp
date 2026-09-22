@@ -417,7 +417,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               onClick={() => dispatch(toggleAllSongsView())}
               active={rightPanelView === "allSongs"}
               activeClassName="text-white border-blue-500"
-              activeSurfaceClassName="bg-gradient-to-br from-blue-500 via-blue-600 to-blue-500"
+              activeSurfaceClassName="bg-blue-600 hover:bg-blue-700"
             >
               <Music className="w-4 h-4" />
             </DepthIconButton>
@@ -430,7 +430,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               onClick={handleSaveToPrelist}
               disabled={slides.length === 0}
               activeClassName="text-white border-emerald-500"
-              activeSurfaceClassName="bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-500"
+              activeSurfaceClassName="bg-emerald-600 hover:bg-emerald-700"
             >
               <BellPlus className="w-4 h-4" />
             </DepthIconButton>
@@ -460,7 +460,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               onClick={() => dispatch(toggleNewSongModal())}
               active={showNewSongModal}
               activeClassName="text-white border-green-500"
-              activeSurfaceClassName="bg-gradient-to-br from-green-500 via-green-600 to-green-500"
+              activeSurfaceClassName="bg-green-600 hover:bg-green-700"
             >
               <FilePlus2 className="w-4 h-4" />
             </DepthIconButton>
@@ -470,7 +470,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
             <DepthIconButton
               onClick={() => dispatch(setShowAddSlideDialog(true))}
               inactiveClassName="text-app-text border-app-border hover:text-white"
-              inactiveSurfaceClassName="bg-gradient-to-br from-app-bg via-app-surface to-app-bg group-hover:from-app-accent/80 group-hover:via-app-accent group-hover:to-app-accent/80"
+              inactiveSurfaceClassName="bg-app-surface hover:bg-app-accent"
             >
               <Plus className="w-4 h-4" />
             </DepthIconButton>
@@ -507,7 +507,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               onClick={handleSaveClick}
               disabled={isSaving || slides.length === 0}
               inactiveClassName="text-app-text border-app-border hover:text-white"
-              inactiveSurfaceClassName="bg-gradient-to-br from-app-bg via-app-surface to-app-bg group-hover:from-app-accent/80 group-hover:via-app-accent group-hover:to-app-accent/80"
+              inactiveSurfaceClassName="bg-app-surface hover:bg-app-accent"
             >
               <Save className="w-4 h-4" />
             </DepthIconButton>
@@ -545,7 +545,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                   }
                 }}
                 className="enabled:hover:text-white"
-                inactiveSurfaceClassName="bg-gradient-to-br from-app-bg via-app-surface to-app-bg group-hover:from-blue-600 group-hover:via-blue-600 group-hover:to-blue-700"
+                inactiveSurfaceClassName="bg-app-surface hover:bg-blue-600"
               >
                 <MonitorCheck className="w-4 h-4" />
               </DepthIconButton>
@@ -561,7 +561,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
               disabled={!isProjectionActive && slides.length === 0}
               active={isProjectionActive}
               activeClassName="text-white border-yellow-600"
-              activeSurfaceClassName="bg-gradient-to-br from-yellow-600 via-yellow-600 to-yellow-700"
+              activeSurfaceClassName="bg-yellow-600 hover:bg-yellow-700"
             >
               {isProjectionActive ? (
                 <MonitorStop className="w-4 h-4" />
@@ -837,7 +837,7 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                 disabled={!selectedSong}
                 active
                 activeClassName="text-white border-yellow"
-                activeSurfaceClassName="bg-gradient-to-br from-yellow-500 via-yellow-800 to-yellow-500"
+                activeSurfaceClassName="bg-yellow-600 hover:bg-yellow-700"
               >
                 <Radio className="w-4 h-4" />
               </DepthIconButton>

@@ -1,9 +1,8 @@
 import React from "react";
 import { SongLibraryPanel } from "./SongLibraryPanel";
 import { PreviewPanel } from "./PreviewPanel";
-import { BackgroundSelectorPanel } from "./BackgroundSelectorPanel";
+import { CombinedActionsCard } from "./CombinedActionsCard";
 import { PrelistPanel } from "./PrelistPanel";
-import { QuickActionsCard } from "./QuickActionsCard";
 import { FloatingSongEditor } from "./FloatingSongEditor";
 import { FloatingNewSongModal } from "./FloatingNewSongModal";
 import { useAppDispatch, useAppSelector } from "@/store";
@@ -85,7 +84,7 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
             />
           ) : (
             <div className="h-full gap-2 flex flex-col overflow-hidden ">
-              <div className="h-[53vh] grid grid-cols-12 gap-2 overflow-hidden">
+              <div className="h-[57vh] grid grid-cols-12 gap-2 overflow-hidden">
                 <div className="col-span-8 min-h-[100%]">
                   <PreviewPanel
                     isDarkMode={isDarkMode}
@@ -100,15 +99,18 @@ export const BentoGrid: React.FC<BentoGridProps> = ({
                     addToast={addToast}
                   />
                 </div>
-                <div className="col-span-2 min-h-[100%] overflow-hidden ">
-                  <BackgroundSelectorPanel isDarkMode={isDarkMode} />
-                </div>
-                <div className="col-span-2 min-h-[100%] overflow-hidden">
-                  <QuickActionsCard isDarkMode={isDarkMode} />
+                <div className="col-span-4 min-h-[100%] overflow-hidden">
+                  <CombinedActionsCard
+                    isDarkMode={isDarkMode}
+                    songs={songs}
+                    loadSongs={loadSongs}
+                    onRequestDelete={onRequestDelete}
+                    addToast={addToast}
+                  />
                 </div>
               </div>
 
-              <div className="h-[35vh] grid grid-cols-1 gap-2 overflow-hidden">
+              <div className="h-[37vh] grid grid-cols-1 gap-2 overflow-hidden">
                 <PrelistPanel isDarkMode={isDarkMode} />
               </div>
             </div>

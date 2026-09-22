@@ -78,12 +78,25 @@ export const NeuralNetworkBackground: React.FC<
     let lastFrameTime = 0;
     const TARGET_FPS = 30; // background effect doesn't need 60fps
     const FRAME_INTERVAL = 1000 / TARGET_FPS;
+    let isPaused = document.hidden;
+
+    const handleVisibilityChange = () => {
+      isPaused = document.hidden;
+      if (!isPaused) {
+        lastFrameTime = performance.now();
+        animationFrame = requestAnimationFrame(animate);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     const animate = (timestamp: number = 0) => {
-      animationFrame = requestAnimationFrame(animate);
+      if (isPaused) return;
 
       // Skip frame if not enough time has elapsed (throttle to ~30fps)
-      if (timestamp - lastFrameTime < FRAME_INTERVAL) return;
+      if (timestamp - lastFrameTime < FRAME_INTERVAL) {
+        animationFrame = requestAnimationFrame(animate);
+        return;
+      }
       lastFrameTime = timestamp;
 
       // Gentle fade for ethereal trail effect matching app background
@@ -128,10 +141,10 @@ export const NeuralNetworkBackground: React.FC<
 
               // Blend colors for connections
               const blendedColor =
-                particle.hue < 0.5 ? colors.primary : colors.secondary;
+                i % 2 === 0 ? colors.primary : colors.secondary;
 
               ctx.strokeStyle = `rgba(${blendedColor}, ${connectionOpacity})`;
-              ctx.lineWidth = 1; // Increased from 0.8
+              ctx.lineWidth = 0.8; // Slightly thicker
               ctx.beginPath();
               ctx.moveTo(particle.x, particle.y);
               ctx.lineTo(otherParticle.x, otherParticle.y);
@@ -140,32 +153,34 @@ export const NeuralNetworkBackground: React.FC<
           }
         });
 
-        // Draw particle with soft heavenly glow
-        const gradient = ctx.createRadialGradient(
+        // Soft outer glow - spiritual aura
+        const glowGradient = ctx.createRadialGradient(
           particle.x,
           particle.y,
           0,
           particle.x,
           particle.y,
-          particle.radius * 4,
+          particle.radius * 3.5, // Larger glow
         );
-        gradient.addColorStop(
+        glowGradient.addColorStop(
           0,
-          `rgba(${particleColor}, ${particle.opacity * pulse * 0.9})`, // Increased visibility
+          `rgba(${particleColor}, ${particle.opacity * pulse * 0.6})`,
         );
-        gradient.addColorStop(
-          0.3,
-          `rgba(${particleColor}, ${particle.opacity * pulse * 0.7})`, // Increased from 0.6
+        glowGradient.addColorStop(
+          0.5,
+          `rgba(${particleColor}, ${particle.opacity * pulse * 0.25})`,
         );
-        gradient.addColorStop(
-          0.7,
-          `rgba(${particleColor}, ${particle.opacity * pulse * 0.3})`, // Increased from 0.2
-        );
-        gradient.addColorStop(1, `rgba(${particleColor}, 0)`);
+        glowGradient.addColorStop(1, "rgba(0, 0, 0, 0)");
 
-        ctx.fillStyle = gradient;
+        ctx.fillStyle = glowGradient;
         ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.radius * 4, 0, Math.PI * 2);
+        ctx.arc(
+          particle.x,
+          particle.y,
+          particle.radius * 3.5,
+          0,
+          Math.PI * 2,
+        );
         ctx.fill();
 
         // Bright core particle
@@ -182,6 +197,7 @@ export const NeuralNetworkBackground: React.FC<
     animate();
 
     return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("resize", resizeCanvas);
       cancelAnimationFrame(animationFrame);
     };

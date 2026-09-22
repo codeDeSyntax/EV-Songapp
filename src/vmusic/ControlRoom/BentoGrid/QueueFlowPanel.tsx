@@ -304,6 +304,12 @@ export const QueueFlowPanel: React.FC<QueueFlowPanelProps> = ({
               const isActive = selectedSong?.id === song.id;
               const isDone = doneSongIds.includes(song.id);
 
+              const actionBtnBg = isActive
+                ? "bg-app-accent/25 border-app-accent hover:bg-app-accent/40"
+                : isDone
+                ? "bg-black/5 dark:bg-black/20 border-app-border hover:bg-black/10 dark:hover:bg-black/30"
+                : "bg-white/70 dark:bg-black/30 border-app-border hover:bg-white/90 dark:hover:bg-black/50";
+
               return (
                 <div key={song.id} className={`group rounded-lg px-2  `}>
                   <div className="flex items-center gap-2">
@@ -314,20 +320,26 @@ export const QueueFlowPanel: React.FC<QueueFlowPanelProps> = ({
                       title={song.title}
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <DepthSurface className="text-[9px] px-1.5 py-0.5 rounded-full text-app-text-muted tabular-nums leading-none">
+                        <DepthSurface
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded-md text-app-text-muted tabular-nums leading-none border border-app-border bg-black/10 dark:bg-black/40"
+                          surfaceClassName=""
+                        >
                           {index + 1}
                         </DepthSurface>
                         {/* dashed line */}
                         <DepthSurface
-                          className={`text-[11px] truncate py-1 px-4 ${
-                            isDone
-                              ? "line-through text-app-text-muted"
-                              : "text-app-text"
+                          className={`text-[11px] font-medium truncate py-1 px-3.5 rounded-lg border transition-all ${
+                            isActive
+                              ? "border-app-accent bg-app-accent/25 text-app-text font-semibold shadow-sm"
+                              : isDone
+                              ? "border-app-border bg-black/5 dark:bg-black/20 line-through text-app-text-muted"
+                              : "border-app-border bg-white/70 dark:bg-black/30 text-app-text hover:bg-white/90 dark:hover:bg-black/50"
                           }`}
+                          surfaceClassName=""
                         >
                           {song.title}
                         </DepthSurface>
-                        <div className="flex-1 border-t border-dashed border-app-accent mx-1" />
+                        <div className="flex-1 border-t border-dashed border-black/30 dark:border-white/25 mx-2" />
                       </div>
                     </button>
 
@@ -337,7 +349,9 @@ export const QueueFlowPanel: React.FC<QueueFlowPanelProps> = ({
                         onClick={() => moveItem(index, -1)}
                         disabled={index === 0}
                         sizeClassName="w-5 h-5 rounded-full"
-                        className="text-app-text-muted"
+                        inactiveSurfaceClassName={actionBtnBg}
+                        inactiveClassName=""
+                        className="text-app-text-muted hover:text-app-text"
                         title="Move up"
                       >
                         <ArrowUp className="w-3 h-3" />
@@ -347,7 +361,9 @@ export const QueueFlowPanel: React.FC<QueueFlowPanelProps> = ({
                         onClick={() => moveItem(index, 1)}
                         disabled={index === queueSongs.length - 1}
                         sizeClassName="w-5 h-5 rounded-full"
-                        className="text-app-text-muted"
+                        inactiveSurfaceClassName={actionBtnBg}
+                        inactiveClassName=""
+                        className="text-app-text-muted hover:text-app-text"
                         title="Move down"
                       >
                         <ArrowDown className="w-3 h-3" />
@@ -356,8 +372,12 @@ export const QueueFlowPanel: React.FC<QueueFlowPanelProps> = ({
                         type="button"
                         onClick={() => toggleDone(song.id)}
                         sizeClassName="w-5 h-5 rounded-full"
+                        inactiveSurfaceClassName={actionBtnBg}
+                        inactiveClassName=""
                         className={
-                          isDone ? "text-emerald-500" : "text-app-text-muted"
+                          isDone
+                            ? "text-emerald-500 hover:text-emerald-400"
+                            : "text-app-text-muted hover:text-emerald-500"
                         }
                         title={isDone ? "Mark undone" : "Mark done"}
                       >
@@ -374,6 +394,8 @@ export const QueueFlowPanel: React.FC<QueueFlowPanelProps> = ({
                           )
                         }
                         sizeClassName="w-5 h-5 rounded-full"
+                        inactiveSurfaceClassName={actionBtnBg}
+                        inactiveClassName=""
                         className="text-app-text-muted hover:text-red-500"
                         title="Remove from prelist"
                       >

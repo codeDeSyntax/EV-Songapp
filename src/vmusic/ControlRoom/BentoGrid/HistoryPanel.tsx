@@ -88,11 +88,14 @@ export const HistoryPanel: React.FC<HistoryPanelProps> = ({ isDarkMode }) => {
                 key={entry.id}
                 className="flex items-center justify-between gap-2 px-3  hover:bg-app-hover/40 transition-colors"
               >
-                <DepthSurface className="text-ew-xs font-medium text-app-text truncate py-1 px-2  leading-tight">
+                <DepthSurface
+                  className="text-ew-xs font-medium text-app-text truncate py-1 px-2.5 rounded-md border border-app-border bg-white/70 dark:bg-black/30 leading-tight"
+                  surfaceClassName=""
+                >
                   {entry.songTitle}
                 </DepthSurface>
                 {/* dashed line */}
-                <div className="flex-1 border-t border-dashed border-app-border mx-3" />
+                <div className="flex-1 border-t border-dashed border-black/30 dark:border-white/25 mx-3" />
                 <span className="text-[10px] text-app-text-muted flex-shrink-0 tabular-nums">
                   {formatRelativeTime(entry.projectedAt)}
                 </span>

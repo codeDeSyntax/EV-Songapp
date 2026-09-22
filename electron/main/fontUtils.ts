@@ -53,11 +53,18 @@ async function getFontsFromFiles(): Promise<string[]> {
   return Array.from(fontFamilies).sort();
 }
 
+// In-memory cache for system fonts to avoid repeated synchronous child process execution
+let cachedSystemFonts: string[] | null = null;
+
 /**
  * Get system fonts from the operating system
  * Supports Windows, macOS, and Linux
  */
 export async function getSystemFonts(): Promise<string[]> {
+  if (cachedSystemFonts && cachedSystemFonts.length > 0) {
+    return cachedSystemFonts;
+  }
+
   try {
     let fonts: string[] = [];
 
@@ -214,6 +221,7 @@ export async function getSystemFonts(): Promise<string[]> {
 
     // Merge and deduplicate
     fonts = [...new Set([...fonts, ...commonFonts])].sort();
+    cachedSystemFonts = fonts;
 
     return fonts;
   } catch (error) {

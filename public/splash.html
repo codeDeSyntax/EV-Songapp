@@ -3,7 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>East Voice</title>
+    <title>Song Cast</title>
+    <script>
+      // Immediate theme preference detection
+      (function () {
+        try {
+          var stored = localStorage.getItem("songsDarkMode");
+          var isDark = true;
+          if (stored !== null) {
+            isDark = stored === "true";
+          } else if (window.matchMedia) {
+            isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          }
+          if (!isDark) {
+            document.documentElement.classList.add("light");
+          }
+        } catch (e) {
+          // Default to sleek dark
+        }
+      })();
+    </script>
     <style>
       @font-face {
         font-family: "Raleway";
@@ -23,13 +42,59 @@
         box-sizing: border-box;
       }
 
+      :root {
+        /* Default Dark Mode Theme */
+        --splash-bg: #1c1c1c;
+        --splash-bg-grad: radial-gradient(circle at 50% 36%, #252528 0%, #1c1c1e 58%, #131314 100%);
+        --splash-border: rgba(255, 255, 255, 0.08);
+        --splash-text: #f3f4f6;
+        --splash-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8), 0 0 16px rgba(255, 255, 255, 0.08);
+        --splash-sub: rgba(255, 255, 255, 0.45);
+        --splash-divider: rgba(255, 255, 255, 0.18);
+        --splash-glow: rgba(255, 255, 255, 0.08);
+        --splash-shadow: rgba(0, 0, 0, 0.6);
+        --particle-color: rgba(255, 255, 255, 0.08);
+        --tile-border: rgba(255, 255, 255, 0.1);
+        --tile-shadow: rgba(0, 0, 0, 0.4);
+        --tile-overlay: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, rgba(0, 0, 0, 0.35) 100%);
+        --loader-track: rgba(255, 255, 255, 0.1);
+        --loader-track-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+        --loader-bar: linear-gradient(90deg, #71717a 0%, #d4d4d8 42%, #ffffff 50%, #d4d4d8 58%, #71717a 100%);
+        --loader-glow: 0 0 8px rgba(255, 255, 255, 0.35), 0 0 2px rgba(255, 255, 255, 0.7);
+      }
+
+      html.light {
+        /* Light Mode Theme */
+        --splash-bg: #a0a0a0;
+        --splash-bg-grad: radial-gradient(circle at 50% 36%, #adadad 0%, #9e9e9e 58%, #8e8e8e 100%);
+        --splash-border: rgba(0, 0, 0, 0.16);
+        --splash-text: #1c1c1c;
+        --splash-text-shadow: 0 1px 2px rgba(255, 255, 255, 0.25);
+        --splash-sub: rgba(28, 28, 28, 0.65);
+        --splash-divider: rgba(0, 0, 0, 0.22);
+        --splash-glow: rgba(0, 0, 0, 0.06);
+        --splash-shadow: rgba(0, 0, 0, 0.25);
+        --particle-color: rgba(0, 0, 0, 0.07);
+        --tile-border: rgba(0, 0, 0, 0.14);
+        --tile-shadow: rgba(0, 0, 0, 0.18);
+        --tile-overlay: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(0, 0, 0, 0.08) 100%);
+        --loader-track: rgba(0, 0, 0, 0.14);
+        --loader-track-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        --loader-bar: linear-gradient(90deg, #52525b 0%, #27272a 42%, #18181b 50%, #27272a 58%, #52525b 100%);
+        --loader-glow: 0 0 6px rgba(0, 0, 0, 0.22);
+      }
+
+      html,
       body {
-        background: linear-gradient(
-          135deg,
-          #fdf4d0 0%,
-          #faeed1 50%,
-          #f3e8d0 100%
-        );
+        margin: 0;
+        padding: 0;
+        border: 0 !important;
+        outline: 0 !important;
+        box-shadow: none !important;
+      }
+
+      body {
+        background: var(--splash-bg-grad);
         width: 100vw;
         height: 100vh;
         display: flex;
@@ -40,6 +105,7 @@
         overflow: hidden;
         user-select: none;
         -webkit-app-region: drag;
+        box-sizing: border-box;
       }
 
       /* Floating dust particles */
@@ -50,48 +116,32 @@
         animation: floatUp linear infinite;
       }
 
-      /* Main content – appears after tiles fade out */
+      /* Main content – perfectly centered in card */
       .content {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 10px;
+        justify-content: center;
+        text-align: center;
+        gap: 8px;
         opacity: 0;
-        transform: translateY(10px);
-        animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 2.2s forwards;
+        transform: translateY(6px);
+        animation: fadeUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
         position: relative;
         z-index: 10;
+        margin-top: -10px; /* balances the bottom progress track */
       }
 
-      /* Tambourine glow halo */
-      .img-wrap {
-        position: relative;
-        width: 125px;
-        height: 125px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .img-wrap::before {
-        content: "";
-        position: absolute;
-        inset: -20px;
-        border-radius: 50%;
-        background: radial-gradient(
-          circle,
-          rgba(183, 121, 60, 0.3) 0%,
-          transparent 65%
-        );
-        animation: pulse 2.6s ease-in-out infinite;
-      }
-
-      .img-wrap img {
-        width: 116px;
-        height: 116px;
-        object-fit: contain;
-        filter: drop-shadow(0 6px 18px rgba(154, 103, 74, 0.52));
-        animation: sway 3.2s ease-in-out infinite;
+      .app-name {
+        color: var(--splash-text);
+        font-family: "Raleway", "Segoe UI", system-ui, sans-serif;
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: 0.28em;
+        text-transform: uppercase;
+        text-shadow: var(--splash-text-shadow);
+        text-align: center;
+        padding-left: 0.28em; /* optical center with letter-spacing */
       }
 
       /* Thin decorative line */
@@ -101,57 +151,50 @@
         background: linear-gradient(
           90deg,
           transparent,
-          rgba(154, 103, 74, 0.5),
+          var(--splash-divider),
           transparent
         );
         margin: 2px 0;
       }
 
-      .app-name {
-        color: #4a2c12;
+      .app-sub {
+        color: var(--splash-sub);
         font-family: "Raleway", "Segoe UI", system-ui, sans-serif;
-        font-size: 22px;
-        font-weight: 600;
-        letter-spacing: 0.22em;
+        font-size: 9px;
+        font-weight: 400;
+        letter-spacing: 0.44em;
         text-transform: uppercase;
-        text-shadow:
-          0 1px 0 rgba(255, 255, 255, 0.6),
-          0 2px 8px rgba(90, 52, 24, 0.12);
+        text-align: center;
+        padding-left: 0.44em; /* optical center with letter-spacing */
       }
 
-      .app-sub {
-        color: rgba(120, 70, 35, 0.6);
-        font-family: "Raleway", "Segoe UI", system-ui, sans-serif;
-        font-size: 8.5px;
-        font-weight: 300;
-        letter-spacing: 0.42em;
-        text-transform: uppercase;
-        margin-top: -1px;
-      }
+      /* Splash Loader - Progress track & bar */
       .progress-track {
         position: absolute;
         bottom: 22px;
         left: 50%;
         transform: translateX(-50%);
-        width: 120px;
-        height: 2px;
-        background: rgba(154, 103, 74, 0.15);
+        width: 140px;
+        height: 2.5px;
+        background: var(--loader-track);
+        box-shadow: var(--loader-track-shadow);
         border-radius: 2px;
         overflow: hidden;
         opacity: 0;
-        animation: fadeIn 0.4s ease 0.3s forwards;
+        animation: fadeIn 0.4s ease 0.25s forwards;
         z-index: 20;
       }
 
       .progress-bar {
         height: 100%;
         width: 0%;
-        background: linear-gradient(90deg, #c8874a, #e8b47a, #c8874a);
+        background: var(--loader-bar);
         background-size: 200% 100%;
         border-radius: 2px;
+        box-shadow: var(--loader-glow);
         animation:
-          load 1.9s cubic-bezier(0.4, 0, 0.2, 1) 0.65s forwards,
-          shimmer 1.5s linear 0.65s infinite;
+          load 1.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards,
+          shimmer 1.5s linear 0.3s infinite;
       }
 
       @keyframes fadeUp {
@@ -191,28 +234,6 @@
         }
       }
 
-      @keyframes pulse {
-        0%,
-        100% {
-          opacity: 0.5;
-          transform: scale(1);
-        }
-        50% {
-          opacity: 1;
-          transform: scale(1.1);
-        }
-      }
-
-      @keyframes sway {
-        0%,
-        100% {
-          transform: rotate(-5deg);
-        }
-        50% {
-          transform: rotate(5deg);
-        }
-      }
-
       @keyframes floatUp {
         0% {
           transform: translateY(110vh) rotate(0deg);
@@ -229,31 +250,14 @@
           opacity: 0;
         }
       }
-
-      @keyframes tileShimmer {
-        0% {
-          left: -100%;
-          opacity: 0;
-        }
-        40% {
-          opacity: 1;
-        }
-        60% {
-          opacity: 1;
-        }
-        100% {
-          left: 100%;
-          opacity: 0;
-        }
-      }
     </style>
   </head>
   <body>
     <script>
-      // --- Floating particles (behind tiles) ---
-      for (var i = 0; i < 14; i++) {
+      // --- Floating ambient particles ---
+      for (var i = 0; i < 16; i++) {
         var p = document.createElement("div");
-        var size = Math.random() * 5 + 2;
+        var size = Math.random() * 4 + 2;
         p.className = "particle";
         p.style.cssText =
           "width:" +
@@ -262,9 +266,7 @@
           "height:" +
           size +
           "px;" +
-          "background:rgba(154,103,74," +
-          (0.1 + Math.random() * 0.14) +
-          ");" +
+          "background:var(--particle-color);" +
           "left:" +
           Math.random() * 100 +
           "%;" +
@@ -279,142 +281,20 @@
         document.body.appendChild(p);
       }
 
-      // --- Tile grid assembly (tambourine mosaic) ---
-      var tilesWrap = document.createElement("div");
-      tilesWrap.style.cssText =
-        "position:absolute;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none;overflow:hidden;";
-      document.body.appendChild(tilesWrap);
-
-      var ROWS = 5,
-        COLS = 7;
-      var W = 380,
-        H = 280;
-      var tiles = [];
-      var total = ROWS * COLS;
-      var perEdge = Math.floor(total / 4);
-
-      for (var r = 0; r < ROWS; r++) {
-        for (var c = 0; c < COLS; c++) {
-          var idx = r * COLS + c;
-          var sx, sy;
-          if (idx < perEdge) {
-            sx = (Math.random() - 0.5) * W * 0.7;
-            sy = -H * 1.9;
-          } else if (idx < perEdge * 2) {
-            sx = W * 1.9;
-            sy = (Math.random() - 0.5) * H * 0.7;
-          } else if (idx < perEdge * 3) {
-            sx = (Math.random() - 0.5) * W * 0.7;
-            sy = H * 1.9;
-          } else {
-            sx = -W * 1.9;
-            sy = (Math.random() - 0.5) * H * 0.7;
-          }
-
-          var rot = (Math.random() - 0.5) * 800;
-          var sc = 0.04 + Math.random() * 0.14;
-          var dl = (idx * 0.022).toFixed(3);
-          var tw = (100 / COLS).toFixed(4);
-          var th = (100 / ROWS).toFixed(4);
-          var bpx = (-(c / COLS) * 100).toFixed(2);
-          var bpy = (-(r / ROWS) * 100).toFixed(2);
-
-          var tile = document.createElement("div");
-          tile.style.cssText =
-            "position:absolute;" +
-            "left:" +
-            (c * parseFloat(tw)).toFixed(3) +
-            "%;" +
-            "top:" +
-            (r * parseFloat(th)).toFixed(3) +
-            "%;" +
-            "width:" +
-            tw +
-            "%;" +
-            "height:" +
-            th +
-            "%;" +
-            "background-image:url(./tambourine2.png);" +
-            "background-position:" +
-            bpx +
-            "% " +
-            bpy +
-            "%;" +
-            "background-size:" +
-            COLS * 100 +
-            "% " +
-            ROWS * 100 +
-            "%;" +
-            "background-repeat:no-repeat;" +
-            "border:0.5px solid rgba(200,140,80,0.18);" +
-            "box-shadow:0 2px 8px rgba(100,50,10,0.25);" +
-            "transform:translate(" +
-            sx.toFixed(1) +
-            "px," +
-            sy.toFixed(1) +
-            "px) rotate(" +
-            rot.toFixed(1) +
-            "deg) scale(" +
-            sc.toFixed(3) +
-            ");" +
-            "opacity:0;" +
-            "transition:transform 1.45s cubic-bezier(0.175,0.885,0.32,1.275) " +
-            dl +
-            "s," +
-            "opacity 0.35s ease " +
-            dl +
-            "s," +
-            "filter 1.45s ease " +
-            dl +
-            "s;" +
-            "filter:blur(3px) brightness(0.6);" +
-            "overflow:hidden;";
-
-          var ov = document.createElement("div");
-          ov.style.cssText =
-            "position:absolute;inset:0;background:linear-gradient(135deg,rgba(139,69,19,0.09) 0%,rgba(160,82,45,0.14) 100%);pointer-events:none;mix-blend-mode:multiply;";
-          tile.appendChild(ov);
-
-          var sh = document.createElement("div");
-          sh.style.cssText =
-            "position:absolute;top:0;left:-100%;width:100%;height:100%;" +
-            "background:linear-gradient(90deg,transparent,rgba(255,255,255,0.55) 50%,transparent);" +
-            "pointer-events:none;z-index:10;" +
-            "animation:tileShimmer 2.2s ease-in-out infinite;" +
-            "animation-delay:" +
-            (parseFloat(dl) + 1.6).toFixed(2) +
-            "s;";
-          tile.appendChild(sh);
-
-          tiles.push(tile);
-          tilesWrap.appendChild(tile);
-        }
-      }
-
-      // Trigger assembly on next paint
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          tiles.forEach(function (t) {
-            t.style.transform = "translate(0,0) rotate(0deg) scale(1)";
-            t.style.opacity = "1";
-            t.style.filter = "blur(0px) brightness(1)";
-          });
-        });
+      // Allow clicking anywhere or pressing Escape/Space to dismiss early
+      window.addEventListener("click", function () {
+        window.close();
       });
-
-      // Fade tiles out after assembly completes, revealing cream bg + content
-      setTimeout(function () {
-        tilesWrap.style.transition = "opacity 0.75s ease";
-        tilesWrap.style.opacity = "0";
-      }, 1850);
+      window.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" || e.key === " ") {
+          window.close();
+        }
+      });
     </script>
 
     <div class="content">
-      <div class="img-wrap">
-        <img src="./tambourine2.png" alt="East Voice" />
-      </div>
+      <div class="app-name">Song Cast</div>
       <div class="divider"></div>
-      <div class="app-name">East Voice</div>
       <div class="app-sub">Song Presentation</div>
     </div>
     <div class="progress-track">

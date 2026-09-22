@@ -36,7 +36,7 @@ export const ContentArea: React.FC<ContentAreaProps> = ({
   onSelectSongFromSearch,
 }) => {
   return (
-    <div className="h-[90vh] w-full bg-app-bg">
+    <div className="h-[95vh] w-full bg-app-bg">
       <BentoGrid
         isDarkMode={isDarkMode}
         toggleDarkMode={toggleDarkMode}

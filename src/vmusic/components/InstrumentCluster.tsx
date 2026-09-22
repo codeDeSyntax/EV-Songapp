@@ -22,8 +22,8 @@ export const InstrumentCluster: React.FC = () => {
           key={images[current]}
           src={images[current]}
           alt="Instrument"
-          className="object-contain max-h-96 max-w-[96%] rounded-xl mx-auto"
-          style={{ display: "block" }}
+          className="object-contain max-h-96 max-w-[96%] rounded-xl mx-auto grayscale filter"
+          style={{ display: "block", filter: "grayscale(100%)" }}
           initial={{ x: direction > 0 ? 240 : -240, opacity: 0, scale: 0.98 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: direction > 0 ? -240 : 240, opacity: 0, scale: 0.98 }}

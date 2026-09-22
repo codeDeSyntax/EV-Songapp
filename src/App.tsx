@@ -81,10 +81,7 @@ const App = () => {
   }, []);
 
   return (
-    <div
-      className={`flex flex-col h-screen w-screen thin-scrollbar no-scrollbar bg-white dark:bg-ltgray `}
-      style={{ fontFamily: "Palatino" }}
-    >
+    <div className="flex flex-col h-screen w-screen thin-scrollbar no-scrollbar bg-app-bg text-app-text">
       {/* Auto-updater — renders a modal when a new version is available */}
       <Update />
 
