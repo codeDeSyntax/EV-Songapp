@@ -244,8 +244,11 @@ export const SlideContent: React.FC<SlideContentProps> = ({
     if (normalizedType === "verse") {
       if (isFinalVerse) {
         return {
-          icon: <Flag className="w-7 h-7 md:w-8 md:h-8 text-rose-500 fill-rose-500 flex-shrink-0" />,
-          dotColor: "w-3 h-3 md:w-3.5 md:h-3.5 bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,1)] animate-pulse",
+          icon: (
+            <Flag className="w-7 h-7 md:w-8 md:h-8 text-rose-500 fill-rose-500 flex-shrink-0" />
+          ),
+          dotColor:
+            "w-3 h-3 md:w-3.5 md:h-3.5 bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,1)] animate-pulse",
           badge: "LAST",
           badgeColor: "bg-rose-600 text-white font-black",
           label:
@@ -255,8 +258,11 @@ export const SlideContent: React.FC<SlideContentProps> = ({
         };
       }
       return {
-        icon: <BookOpen className="w-7 h-7 md:w-8 md:h-8 text-sky-400 flex-shrink-0" />,
-        dotColor: "w-3 h-3 md:w-3.5 md:h-3.5 bg-sky-400 shadow-[0_0_12px_rgba(56,189,248,1)]",
+        icon: (
+          <BookOpen className="w-7 h-7 md:w-8 md:h-8 text-sky-400 flex-shrink-0" />
+        ),
+        dotColor:
+          "w-3 h-3 md:w-3.5 md:h-3.5 bg-sky-400 shadow-[0_0_12px_rgba(56,189,248,1)]",
         badge: null,
         badgeColor: "",
         label:
@@ -268,28 +274,43 @@ export const SlideContent: React.FC<SlideContentProps> = ({
 
     if (normalizedType === "chorus") {
       return {
-        icon: <Music className="w-7 h-7 md:w-8 md:h-8 text-emerald-400 flex-shrink-0" />,
-        dotColor: "w-3 h-3 md:w-3.5 md:h-3.5 bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,1)]",
+        icon: (
+          <Music className="w-7 h-7 md:w-8 md:h-8 text-emerald-400 flex-shrink-0" />
+        ),
+        dotColor:
+          "w-3 h-3 md:w-3.5 md:h-3.5 bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,1)]",
         badge: "CHORUS",
         badgeColor: "bg-emerald-600 text-white font-bold",
-        label: sectionNumber && sectionNumber > 1 ? `Chorus ${sectionNumber}` : "Chorus",
+        label:
+          sectionNumber && sectionNumber > 1
+            ? `Chorus ${sectionNumber}`
+            : "Chorus",
       };
     }
 
     if (normalizedType === "bridge") {
       return {
-        icon: <Layers className="w-7 h-7 md:w-8 md:h-8 text-purple-400 flex-shrink-0" />,
-        dotColor: "w-3 h-3 md:w-3.5 md:h-3.5 bg-purple-400 shadow-[0_0_12px_rgba(192,132,252,1)]",
+        icon: (
+          <Layers className="w-7 h-7 md:w-8 md:h-8 text-purple-400 flex-shrink-0" />
+        ),
+        dotColor:
+          "w-3 h-3 md:w-3.5 md:h-3.5 bg-purple-400 shadow-[0_0_12px_rgba(192,132,252,1)]",
         badge: "BRIDGE",
         badgeColor: "bg-purple-600 text-white font-bold",
-        label: sectionNumber && sectionNumber > 1 ? `Bridge ${sectionNumber}` : "Bridge",
+        label:
+          sectionNumber && sectionNumber > 1
+            ? `Bridge ${sectionNumber}`
+            : "Bridge",
       };
     }
 
     if (normalizedType.includes("pre") || normalizedType === "pre-chorus") {
       return {
-        icon: <Sparkles className="w-7 h-7 md:w-8 md:h-8 text-amber-400 flex-shrink-0" />,
-        dotColor: "w-3 h-3 md:w-3.5 md:h-3.5 bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,1)]",
+        icon: (
+          <Sparkles className="w-7 h-7 md:w-8 md:h-8 text-amber-400 flex-shrink-0" />
+        ),
+        dotColor:
+          "w-3 h-3 md:w-3.5 md:h-3.5 bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,1)]",
         badge: "PRE-CHORUS",
         badgeColor: "bg-amber-600 text-white font-bold",
         label: "Pre-Chorus",
@@ -297,13 +318,19 @@ export const SlideContent: React.FC<SlideContentProps> = ({
     }
 
     // Default for any other section (Intro, Outro, Tag, etc.)
-    const capitalizedType = sectionType.charAt(0).toUpperCase() + sectionType.slice(1);
+    const capitalizedType =
+      sectionType.charAt(0).toUpperCase() + sectionType.slice(1);
     return {
-      icon: <Sparkles className="w-7 h-7 md:w-8 md:h-8 text-indigo-400 flex-shrink-0" />,
-      dotColor: "w-3 h-3 md:w-3.5 md:h-3.5 bg-indigo-400 shadow-[0_0_12px_rgba(129,140,248,1)]",
+      icon: (
+        <Sparkles className="w-7 h-7 md:w-8 md:h-8 text-indigo-400 flex-shrink-0" />
+      ),
+      dotColor:
+        "w-3 h-3 md:w-3.5 md:h-3.5 bg-indigo-400 shadow-[0_0_12px_rgba(129,140,248,1)]",
       badge: null,
       badgeColor: "",
-      label: sectionNumber ? `${capitalizedType} ${sectionNumber}` : capitalizedType,
+      label: sectionNumber
+        ? `${capitalizedType} ${sectionNumber}`
+        : capitalizedType,
     };
   }, [sectionType, sectionNumber, isLastVerse, totalVerses, showVerseFraction]);
 
@@ -406,7 +433,9 @@ export const SlideContent: React.FC<SlideContentProps> = ({
 
               {/* Status badge pill if applicable (e.g. LAST, CHORUS, BRIDGE) */}
               {sectionStatus.badge && (
-                <span className={`px-2.5 py-1 rounded-md text-xs md:text-sm uppercase tracking-wider ${sectionStatus.badgeColor} shadow-sm`}>
+                <span
+                  className={`px-2.5 py-1 rounded-md text-xs md:text-sm uppercase tracking-wider ${sectionStatus.badgeColor} shadow-sm`}
+                >
                   {sectionStatus.badge}
                 </span>
               )}

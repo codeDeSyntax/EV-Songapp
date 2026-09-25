@@ -24,6 +24,8 @@ import {
   Menu,
   Check,
   X,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { DepthSurface } from "@/shared/DepthButton";
@@ -82,7 +84,9 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
   const dispatch = useAppDispatch();
 
   // Tab switcher state - Quick Actions shows first by default
-  const [activeTab, setActiveTab] = useState<"quickActions" | "backgrounds">("quickActions");
+  const [activeTab, setActiveTab] = useState<"quickActions" | "backgrounds">(
+    "quickActions",
+  );
 
   // Redux state
   const {
@@ -99,14 +103,21 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
   // Quick Actions local state
   const [queueState, setQueueState] = useState<QueueState>(initialQueueState);
   const [isProjectionActive, setIsProjectionActive] = useState(false);
+  const [isProjectionTextHidden, setIsProjectionTextHidden] = useState(false);
   const [statusText, setStatusText] = useState("Ready");
 
   // Background Selector local state
   const [backgrounds, setBackgrounds] = useState<Background[]>([]);
-  const [selectedBackground, setSelectedBackground] = useState<Background | null>(null);
-  const [pendingBackground, setPendingBackground] = useState<Background | null>(null);
+  const [selectedBackground, setSelectedBackground] =
+    useState<Background | null>(null);
+  const [pendingBackground, setPendingBackground] = useState<Background | null>(
+    null,
+  );
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [confirmationPosition, setConfirmationPosition] = useState({ x: 0, y: 0 });
+  const [confirmationPosition, setConfirmationPosition] = useState({
+    x: 0,
+    y: 0,
+  });
   const [customImagesPath, setCustomImagesPath] = useState(
     localStorage.getItem("vmusicImageDirectory") || "",
   );
@@ -154,13 +165,19 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
       setQueueState(customEvent.detail);
     };
 
-    window.addEventListener("queueflow:state", handleQueueState as EventListener);
+    window.addEventListener(
+      "queueflow:state",
+      handleQueueState as EventListener,
+    );
     window.dispatchEvent(
       new CustomEvent("queueflow:action", { detail: { type: "refresh" } }),
     );
 
     return () => {
-      window.removeEventListener("queueflow:state", handleQueueState as EventListener);
+      window.removeEventListener(
+        "queueflow:state",
+        handleQueueState as EventListener,
+      );
     };
   }, []);
 
@@ -177,13 +194,16 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
     syncProjectionState();
     const cleanup = window.api.onProjectionStateChanged((active) => {
       setIsProjectionActive(active);
+      if (!active) setIsProjectionTextHidden(false);
     });
 
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === "bmusicpresentationbg") {
         const val = event.newValue || "";
         const savedBg = backgrounds.find(
-          (bg) => bg.src === val || bg.src === val.replace(/^solid:/, "").replace(/^gradient:/, "")
+          (bg) =>
+            bg.src === val ||
+            bg.src === val.replace(/^solid:/, "").replace(/^gradient:/, ""),
         );
         setSelectedBackground(savedBg || null);
       }
@@ -421,7 +441,13 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
     try {
       const now = new Date().toISOString();
       const createdAt: string = currentSong?.metadata?.created ?? now;
-      const encodedContent = encodeSongData(title, slides, true, undefined, language);
+      const encodedContent = encodeSongData(
+        title,
+        slides,
+        true,
+        undefined,
+        language,
+      );
       const result = await window.api.saveSong("", title, encodedContent);
 
       if (currentSongId || currentSong?.id) {
@@ -448,7 +474,9 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
 
       addToast(`"${title}" added to prelist! 🎵`, "success");
       loadSongs();
-      window.dispatchEvent(new CustomEvent("queueflow:action", { detail: { type: "refresh" } }));
+      window.dispatchEvent(
+        new CustomEvent("queueflow:action", { detail: { type: "refresh" } }),
+      );
       setStatusText("Added to prelist");
     } catch {
       addToast("Failed to add to prelist. Please try again.", "error");
@@ -458,7 +486,9 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
 
   const handleEditSlide = () => {
     dispatch(setIsEditingSlide(!isEditingSlide));
-    setStatusText(isEditingSlide ? "Slide editor closed" : "Slide editor opened");
+    setStatusText(
+      isEditingSlide ? "Slide editor closed" : "Slide editor opened",
+    );
   };
 
   const handleOpenEditor = () => {
@@ -482,7 +512,12 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
       addToast("Prelist PDF generated successfully!", "success");
       setStatusText("Prelist PDF exported");
     } catch (error) {
-      addToast(error instanceof Error ? error.message : "Failed to generate prelist PDF", "error");
+      addToast(
+        error instanceof Error
+          ? error.message
+          : "Failed to generate prelist PDF",
+        "error",
+      );
     }
   };
 
@@ -497,7 +532,12 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
       addToast("Songs database PDF generated successfully!", "success");
       setStatusText("All songs PDF exported");
     } catch (error) {
-      addToast(error instanceof Error ? error.message : "Failed to generate database PDF", "error");
+      addToast(
+        error instanceof Error
+          ? error.message
+          : "Failed to generate database PDF",
+        "error",
+      );
     }
   };
 
@@ -505,7 +545,9 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
     if (isEditingSlide) {
       onRequestDelete();
     } else if (currentSong) {
-      dispatch(openDeleteConfirmModal({ song: currentSong, type: "permanent" }));
+      dispatch(
+        openDeleteConfirmModal({ song: currentSong, type: "permanent" }),
+      );
     } else {
       addToast("No song selected to delete", "info");
     }
@@ -538,7 +580,8 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
 
       await window.api.projectSong(projectData);
 
-      const currentSlide = displaySlides[currentDisplayIndex] || displaySlides[0];
+      const currentSlide =
+        displaySlides[currentDisplayIndex] || displaySlides[0];
       if (currentSlide) {
         await window.api.sendToSongProjection({
           type: "SLIDE_UPDATE",
@@ -571,7 +614,9 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
   const handleFocusProjector = async () => {
     try {
       const result = await window.api.focusProjectionWindow();
-      setStatusText(result.success ? "Projection focused" : "Focus unavailable");
+      setStatusText(
+        result.success ? "Projection focused" : "Focus unavailable",
+      );
     } catch {
       setStatusText("Focus unavailable");
     }
@@ -623,6 +668,38 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
     }
     applyBackground(previous);
     setStatusText("Background restored");
+  };
+
+  const handleToggleProjectionText = async () => {
+    if (!isProjectionActive) {
+      addToast("Start projection before hiding or showing text", "warning");
+      return;
+    }
+
+    try {
+      const command = isProjectionTextHidden ? "show-text" : "hide-text";
+      const result = await window.api.sendToSongProjection({
+        type: "PROJECTION_TEXT_VISIBILITY",
+        command,
+      });
+
+      if (result?.success !== false) {
+        const nextHidden = !isProjectionTextHidden;
+        setIsProjectionTextHidden(nextHidden);
+        setStatusText(
+          nextHidden ? "Projection text hidden" : "Projection text shown",
+        );
+        addToast(
+          nextHidden ? "Projection text hidden" : "Projection text shown",
+          "success",
+        );
+      } else {
+        addToast(result.error || "Projection text update failed", "error");
+      }
+    } catch {
+      setStatusText("Projection text update failed");
+      addToast("Projection text update failed", "error");
+    }
   };
 
   return (
@@ -812,7 +889,9 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
                 </span>
               </div>
               <span className="text-[9.5px] text-app-text-muted block leading-tight truncate">
-                {isProjectionActive ? "Stop audience projection" : "Launch projector window"}
+                {isProjectionActive
+                  ? "Stop audience projection"
+                  : "Launch projector window"}
               </span>
             </div>
           </button>
@@ -836,7 +915,31 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
             </div>
           </button>
 
-          {/* 8. Restore Background */}
+          {/* 8. Hide or show projected text without changing the background */}
+          <button
+            type="button"
+            onClick={handleToggleProjectionText}
+            disabled={!isProjectionActive}
+            className="w-full flex items-center gap-2 py-1.5 px-2.5 border-0 border-b border-dashed border-t-0 border-l-0 border-r-0 border-black/30 dark:border-white/25 hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors cursor-pointer text-left group disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <div className="w-6 h-6 rounded-full bg-white/30 dark:bg-white/[0.04] border border-app-border/40 flex items-center justify-center flex-shrink-0 group-hover:border-app-accent transition-colors">
+              {isProjectionTextHidden ? (
+                <Eye className="w-3.5 h-3.5 text-app-text-muted group-hover:text-app-text transition-colors" />
+              ) : (
+                <EyeOff className="w-3.5 h-3.5 text-app-text-muted group-hover:text-app-text transition-colors" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="text-[11px] font-semibold text-app-text block leading-tight truncate">
+                {isProjectionTextHidden ? "Show Text" : "Hide Text"}
+              </span>
+              <span className="text-[9.5px] text-app-text-muted block leading-tight truncate">
+                Keep the background, hide projected lyrics
+              </span>
+            </div>
+          </button>
+
+          {/* 9. Restore Background */}
           <button
             type="button"
             onClick={handleRestoreBackground}
@@ -1180,7 +1283,9 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
                     {/* Pending badge */}
                     {isPending && (
                       <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-amber-400 text-white flex items-center justify-center shadow-md">
-                        <span className="text-[9px] font-bold leading-none">?</span>
+                        <span className="text-[9px] font-bold leading-none">
+                          ?
+                        </span>
                       </div>
                     )}
 
@@ -1231,7 +1336,9 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
         {/* Backgrounds Footer */}
         <div className="px-3 py-1.5 border-t border-app-border flex items-center justify-between text-[10px] text-app-text-muted bg-black/[0.02] dark:bg-black/20 flex-shrink-0">
           <span className="truncate max-w-[150px]">
-            {selectedBackground ? selectedBackground.name : "Default background"}
+            {selectedBackground
+              ? selectedBackground.name
+              : "Default background"}
           </span>
           <span className="tabular-nums">
             {backgrounds.length} {mediaType}

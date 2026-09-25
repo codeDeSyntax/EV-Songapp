@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import {
@@ -56,6 +56,7 @@ export const useProjectionData = () => {
   const dispatch = useDispatch();
   const commandProcessingRef = useRef(false);
   const listenerRegisteredRef = useRef(false);
+  const [isTextHidden, setIsTextHidden] = useState(false);
 
   const {
     slides,
@@ -372,6 +373,12 @@ export const useProjectionData = () => {
         return;
       }
 
+      if (data.command === "hide-text" || data.command === "show-text") {
+        setIsTextHidden(data.command === "hide-text");
+        commandProcessingRef.current = false;
+        return;
+      }
+
       // Handle font family updates
       if (data.type === "FONT_FAMILY_UPDATE" && data.fontFamily) {
         localStorage.setItem("bmusicfontFamily", data.fontFamily);
@@ -473,6 +480,7 @@ export const useProjectionData = () => {
     isFontCalculated,
     currentSlide: displaySlides[currentIndex] || null,
     lastProjectedSong,
+    isTextHidden,
 
     // Actions
     increaseFontSize: handleIncreaseFontSize,

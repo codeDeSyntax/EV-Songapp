@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useProjectionData } from "./hooks/useProjectionData";
 import { SlideContent } from "./components/SlideContent";
 import { ProjectionControls } from "./components/ProjectionControls";
@@ -34,6 +34,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
     isExternalDisplay,
     currentSlide,
     lastProjectedSong,
+    isTextHidden,
     increaseFontSize,
     decreaseFontSize,
     goToNext,
@@ -124,9 +125,9 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
   // Check if this is the last verse (not chorus repeat)
   const isLastVerse = Boolean(
     displaySlide &&
-      displaySlide.type &&
-      displaySlide.type.toLowerCase() === "verse" &&
-      displaySlide.number === totalVerses,
+    displaySlide.type &&
+    displaySlide.type.toLowerCase() === "verse" &&
+    displaySlide.number === totalVerses,
   );
 
   return (
@@ -148,19 +149,10 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
             renderBackgroundOnly={true}
           />
 
-          {/* Animated Text Content Only */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentIndex}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{
-                duration: 0.15,
-                ease: "easeInOut",
-              }}
-              className="absolute inset-0"
-            >
+          {/* Text Content Only. Keep this mounted so navigation can reuse the
+              auto-size cache instead of rebuilding it for every slide. */}
+          {!isTextHidden && (
+            <motion.div className="absolute inset-0" initial={false}>
               <SlideContent
                 content={displaySlide.content}
                 fontFamily={fontFamily}
@@ -175,7 +167,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
                 renderTextOnly={true}
               />
             </motion.div>
-          </AnimatePresence>
+          )}
         </>
       )}
 
