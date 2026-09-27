@@ -7,6 +7,15 @@ import React, {
 } from "react";
 import { BookOpen, Music, Flag, Layers, Sparkles } from "lucide-react";
 
+const getLineHeight = (fontSize: number): number => {
+  if (fontSize >= 100) return 1.0;
+  if (fontSize >= 40) return 1.4;
+  return 1.3;
+};
+
+const getRenderedLineHeight = (fontSize: number): number =>
+  fontSize >= 100 ? 1.0 : 1.2;
+
 interface SlideContentProps {
   content: string;
   fontFamily: string;
@@ -50,15 +59,6 @@ export const SlideContent: React.FC<SlideContentProps> = ({
   // Debounce timer ref for window resize
   const resizeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    // Force font to load
-    if (document.fonts) {
-      document.fonts.ready.then(() => {
-        console.log("  - All fonts are loaded and ready");
-      });
-    }
-  }, [fontFamily]);
-
   // Detect background type
   const backgroundType = useMemo(() => {
     if (backgroundImage.startsWith("solid:")) {
@@ -93,13 +93,19 @@ export const SlideContent: React.FC<SlideContentProps> = ({
     return backgroundType === "video";
   }, [backgroundType]);
 
-  // Auto-play video when it loads
+  // Auto-play only the active projection video after it is ready; keep thumbnails
+  // and other media non-eager to avoid unnecessary decode work.
   useEffect(() => {
-    if (isVideo && videoRef.current) {
-      videoRef.current.play().catch((err) => {
-        console.log("Video autoplay prevented:", err);
-      });
-    }
+    if (!isVideo || !videoRef.current) return;
+
+    const video = videoRef.current;
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+
+    video.play().catch((err) => {
+      console.log("Video autoplay prevented:", err);
+    });
   }, [isVideo, backgroundImage]);
 
   // Split content into lines
@@ -126,7 +132,7 @@ export const SlideContent: React.FC<SlideContentProps> = ({
     const availableWidth = containerElement.clientWidth;
 
     // Check in-memory cache for instant O(1) font size lookup
-    const cacheKey = `${content}_${fontSizeMultiplier}_${availableWidth}_${availableHeight}`;
+    const cacheKey = `${fontFamily}_${content}_${fontSizeMultiplier}_${availableWidth}_${availableHeight}`;
     const cached = fontSizeCache.current.get(cacheKey);
     if (cached) {
       setCalculatedFontSize(cached);
@@ -139,23 +145,18 @@ export const SlideContent: React.FC<SlideContentProps> = ({
 
     // Binary search for optimal font size
     let low = 12;
-    let high = Math.min(260, Math.floor(500 * fontSizeMultiplier));
+    let high = 500 * fontSizeMultiplier;
     let optimalSize = low;
 
     // Very small safety margin (1%) to prevent edge overflow while maximizing size
     const heightMargin = availableHeight * 0.01;
 
-    // 8 iterations provides 1px precision across a 256px range (2^8 = 256)
-    for (let i = 0; i < 8 && low <= high; i++) {
+    // 20 iterations preserves the precision used by the known-good releases.
+    for (let i = 0; i < 20 && low <= high; i++) {
       const testSize = Math.floor((low + high) / 2);
 
       // Calculate dynamic line height based on font size
-      let lineHeight = 1.2;
-      if (testSize >= 100) lineHeight = 1.0;
-      else if (testSize >= 80) lineHeight = 1.4;
-      else if (testSize >= 60) lineHeight = 1.4;
-      else if (testSize >= 40) lineHeight = 1.4;
-      else lineHeight = 1.3;
+      const lineHeight = getLineHeight(testSize);
 
       // FIX: Batch both style mutations BEFORE the layout read so the browser
       // only needs to recalculate layout once per iteration instead of twice.
@@ -166,7 +167,11 @@ export const SlideContent: React.FC<SlideContentProps> = ({
       const contentHeight = contentElement.scrollHeight;
 
       // Check if content fits
-      if (contentHeight <= availableHeight - heightMargin) {
+      const contentFits =
+        contentHeight <= availableHeight - heightMargin &&
+        contentElement.scrollWidth <= availableWidth;
+
+      if (contentFits) {
         optimalSize = testSize;
         low = testSize + 1;
       } else {
@@ -185,7 +190,25 @@ export const SlideContent: React.FC<SlideContentProps> = ({
     // Reveal text now that the correct size is committed
     setContentVisible(true);
     // FIX: isResizing removed from deps — ref-based guard needs no reactive tracking
-  }, [fontSizeMultiplier, content]);
+  }, [fontFamily, fontSizeMultiplier, content]);
+
+  // Refit after the selected font has finished loading. Font metrics can
+  // change after the first paint, invalidating a measurement made earlier.
+  useEffect(() => {
+    let cancelled = false;
+
+    if (document.fonts) {
+      document.fonts.ready.then(() => {
+        if (cancelled) return;
+        fontSizeCache.current.clear();
+        requestAnimationFrame(resizeToFit);
+      });
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fontFamily, resizeToFit]);
 
   // Trigger resize on content/font change
   // FIX: resizeToFit added to deps to prevent stale closure capturing old callback
@@ -348,6 +371,7 @@ export const SlideContent: React.FC<SlideContentProps> = ({
               loop
               muted
               playsInline
+              preload="metadata"
             />
           ) : backgroundType === "solid" ? (
             <div
@@ -387,7 +411,7 @@ export const SlideContent: React.FC<SlideContentProps> = ({
             style={{
               fontFamily: fontFamily,
               fontSize: `${calculatedFontSize}px`,
-              lineHeight: calculatedFontSize >= 100 ? 1.0 : 1.2,
+              lineHeight: getRenderedLineHeight(calculatedFontSize),
               // Smooth fade-in after resizeToFit commits the correct size
               opacity: contentVisible ? 1 : 0,
               transition: "opacity 80ms ease",
@@ -405,6 +429,7 @@ export const SlideContent: React.FC<SlideContentProps> = ({
                       : "0",
                   whiteSpace: "normal",
                   wordWrap: "break-word",
+                  overflowWrap: "anywhere",
                   textShadow: `
                   0 0 8px rgba(0, 0, 0, 0.9),
                   0 0 12px rgba(0, 0, 0, 0.8),

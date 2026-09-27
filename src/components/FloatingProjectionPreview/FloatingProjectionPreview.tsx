@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { X, Maximize2, Minimize2, Monitor, Wifi } from "lucide-react";
+import { X, Maximize2, Minimize2, Monitor } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactDOM from "react-dom";
 import { useAppSelector } from "@/store";
@@ -203,6 +203,19 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
     return sectionName;
   };
 
+  const handleCloseProjection = async (
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    event.stopPropagation();
+
+    try {
+      await window.api.closeProjectionWindow();
+      onClose();
+    } catch (error) {
+      console.error("Failed to close projection:", error);
+    }
+  };
+
   if (!isVisible) return null;
 
   const sectionDisplay = getSectionDisplayText();
@@ -249,15 +262,19 @@ const FloatingProjectionPreview: React.FC<FloatingProjectionPreviewProps> = ({
             </div>
           </div>
 
-          {/* Right: Status Button */}
+          {/* Right: Close projection button */}
           <DepthButton
+            onClick={handleCloseProjection}
+            onMouseDown={(event) => event.stopPropagation()}
+            aria-label="Close projection"
+            title="Close projection"
             sizeClassName="h-7 w-7 rounded-lg"
             activeClassName="text-white bg-app-accent border-app-accent"
             inactiveClassName="text-stone-300 hover:text-white"
             inactiveSurfaceClassName="bg-stone-800/80 border border-stone-600/50 hover:bg-stone-700/80"
             activeSurfaceClassName="bg-app-accent border border-app-accent"
           >
-            <Wifi className="w-3.5 h-3.5" />
+            <X className="w-3.5 h-3.5" />
           </DepthButton>
         </div>
       </motion.div>

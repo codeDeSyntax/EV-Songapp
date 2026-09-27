@@ -62,6 +62,49 @@ interface Background {
 
 type MediaType = "images" | "videos";
 
+interface VideoThumbnailProps {
+  src: string;
+  className?: string;
+}
+
+const VideoThumbnail: React.FC<VideoThumbnailProps> = ({ src, className }) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "metadata";
+    video.pause();
+    video.currentTime = 0;
+  }, [src]);
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      className={className}
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      onMouseEnter={() => {
+        const video = videoRef.current;
+        if (!video) return;
+        video.play().catch(() => undefined);
+      }}
+      onMouseLeave={() => {
+        const video = videoRef.current;
+        if (!video) return;
+        video.pause();
+        video.currentTime = 0;
+      }}
+    />
+  );
+};
+
 interface QueueState {
   queueCount: number;
   doneCount: number;
@@ -571,7 +614,7 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
       const projectData = {
         title: songTitle || "Untitled Song",
         content: displaySlides.map((slide) => slide.content).join("\n\n"),
-        slides: displaySlides.map((slide) => ({
+        slides: slides.map((slide) => ({
           content: slide.content,
           type: slide.type,
           number: slide.number,
@@ -1257,12 +1300,9 @@ export const CombinedActionsCard: React.FC<CombinedActionsCardProps> = ({
                     }`}
                   >
                     {mediaType === "videos" ? (
-                      <video
+                      <VideoThumbnail
                         src={background.src}
                         className="w-full h-full object-cover"
-                        muted
-                        loop
-                        playsInline
                       />
                     ) : (
                       <img

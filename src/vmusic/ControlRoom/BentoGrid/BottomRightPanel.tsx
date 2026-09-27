@@ -110,7 +110,8 @@ export const BottomRightPanel: React.FC<BottomRightPanelProps> = ({
             className="w-full h-full object-cover"
             muted
             loop
-            autoPlay
+            playsInline
+            preload="metadata"
           />
         </div>
       );

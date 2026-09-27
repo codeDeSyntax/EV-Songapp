@@ -422,10 +422,11 @@ export const useProjectionData = () => {
       }, 100);
     };
 
-    window.api.onSongProjectionCommand(handleSlideUpdate);
+    const cleanup = window.api.onSongProjectionCommand(handleSlideUpdate);
     listenerRegisteredRef.current = true;
 
     return () => {
+      cleanup?.();
       listenerRegisteredRef.current = false;
       commandProcessingRef.current = false;
     };

@@ -93,13 +93,19 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
       setQueueState(customEvent.detail);
     };
 
-    window.addEventListener("queueflow:state", handleQueueState as EventListener);
+    window.addEventListener(
+      "queueflow:state",
+      handleQueueState as EventListener,
+    );
     window.dispatchEvent(
       new CustomEvent("queueflow:action", { detail: { type: "refresh" } }),
     );
 
     return () => {
-      window.removeEventListener("queueflow:state", handleQueueState as EventListener);
+      window.removeEventListener(
+        "queueflow:state",
+        handleQueueState as EventListener,
+      );
     };
   }, []);
 
@@ -188,7 +194,13 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
     try {
       const now = new Date().toISOString();
       const createdAt: string = currentSong?.metadata?.created ?? now;
-      const encodedContent = encodeSongData(title, slides, true, undefined, language);
+      const encodedContent = encodeSongData(
+        title,
+        slides,
+        true,
+        undefined,
+        language,
+      );
       const result = await window.api.saveSong("", title, encodedContent);
 
       if (currentSongId || currentSong?.id) {
@@ -215,7 +227,9 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
 
       addToast(`"${title}" added to prelist! 🎵`, "success");
       loadSongs();
-      window.dispatchEvent(new CustomEvent("queueflow:action", { detail: { type: "refresh" } }));
+      window.dispatchEvent(
+        new CustomEvent("queueflow:action", { detail: { type: "refresh" } }),
+      );
     } catch (error) {
       addToast("Failed to add to prelist. Please try again.", "error");
     }
@@ -237,7 +251,9 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
     if (isEditingSlide) {
       onRequestDelete();
     } else if (currentSong) {
-      dispatch(openDeleteConfirmModal({ song: currentSong, type: "permanent" }));
+      dispatch(
+        openDeleteConfirmModal({ song: currentSong, type: "permanent" }),
+      );
     } else {
       addToast("No song selected to delete", "info");
     }
@@ -258,7 +274,12 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
       await generatePrelistPDF(prelistedSongs);
       addToast("Prelist PDF generated successfully!", "success");
     } catch (error) {
-      addToast(error instanceof Error ? error.message : "Failed to generate prelist PDF", "error");
+      addToast(
+        error instanceof Error
+          ? error.message
+          : "Failed to generate prelist PDF",
+        "error",
+      );
     }
   };
 
@@ -272,7 +293,12 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
       await generateSongsDatabasePDF(songs);
       addToast("Songs database PDF generated successfully!", "success");
     } catch (error) {
-      addToast(error instanceof Error ? error.message : "Failed to generate database PDF", "error");
+      addToast(
+        error instanceof Error
+          ? error.message
+          : "Failed to generate database PDF",
+        "error",
+      );
     }
   };
 
@@ -295,7 +321,7 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
       const projectData = {
         title: songTitle || "Untitled Song",
         content: displaySlides.map((slide) => slide.content).join("\n\n"),
-        slides: displaySlides.map((slide) => ({
+        slides: slides.map((slide) => ({
           content: slide.content,
           type: slide.type,
           number: slide.number,
@@ -304,7 +330,8 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
 
       await window.api.projectSong(projectData);
 
-      const currentSlide = displaySlides[currentDisplayIndex] || displaySlides[0];
+      const currentSlide =
+        displaySlides[currentDisplayIndex] || displaySlides[0];
       if (currentSlide) {
         await window.api.sendToSongProjection({
           type: "SLIDE_UPDATE",
@@ -337,7 +364,9 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
   const handleFocusProjection = async () => {
     try {
       const result = await window.api.focusProjectionWindow();
-      setStatusText(result.success ? "Projection focused" : "Focus unavailable");
+      setStatusText(
+        result.success ? "Projection focused" : "Focus unavailable",
+      );
     } catch {
       setStatusText("Focus unavailable");
     }
@@ -538,7 +567,9 @@ export const QuickActionsCard: React.FC<QuickActionsCardProps> = ({
               Song Presentation
             </span>
             <span className="text-[10px] text-app-text-muted block leading-tight truncate mt-0.5">
-              {isProjectionActive ? "Active projector running" : "Open presentation projector"}
+              {isProjectionActive
+                ? "Active projector running"
+                : "Open presentation projector"}
             </span>
           </div>
           {isProjectionActive && (

@@ -414,6 +414,7 @@ export const SongLibraryPanel: React.FC<SongLibraryPanelProps> = ({
                       src={backgroundValue}
                       muted
                       playsInline
+                      preload="metadata"
                     />
                   ) : backgroundType === "solid" ? (
                     <div

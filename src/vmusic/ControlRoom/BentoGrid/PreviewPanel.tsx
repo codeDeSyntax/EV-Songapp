@@ -228,9 +228,11 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only handle if not in an input/textarea and not editing
+      const target = e.target as HTMLElement | null;
       if (
-        document.activeElement?.tagName.toLowerCase() === "input" ||
-        document.activeElement?.tagName.toLowerCase() === "textarea" ||
+        target?.tagName.toLowerCase() === "input" ||
+        target?.tagName.toLowerCase() === "textarea" ||
+        target?.isContentEditable ||
         isEditingSlideRef.current
       ) {
         return;
@@ -256,12 +258,14 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
       if (e.key === "ArrowRight") {
         e.preventDefault();
+        e.stopPropagation();
         const nextIndex = currentIndex + 1;
         if (nextIndex < slides.length) {
           dispatch(setCurrentDisplayIndex(nextIndex));
         }
       } else if (e.key === "ArrowLeft") {
         e.preventDefault();
+        e.stopPropagation();
         const prevIndex = currentIndex - 1;
         if (prevIndex >= 0) {
           dispatch(setCurrentDisplayIndex(prevIndex));
@@ -289,8 +293,8 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [dispatch]);
 
   // ── System-wide global shortcuts (Ctrl+Shift+Right/Left/Space, Shift+F) ────
@@ -392,7 +396,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       const songData = {
         title: songTitle,
         content: displaySlides.map((s) => s.content).join("\n\n"),
-        slides: displaySlides.map((s) => ({
+        slides: slides.map((s) => ({
           content: s.content,
           type: s.type,
           number: s.number,
@@ -746,6 +750,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
               loop
               muted
               playsInline
+              preload="metadata"
             />
           ) : backgroundType === "solid" ? (
             <div
