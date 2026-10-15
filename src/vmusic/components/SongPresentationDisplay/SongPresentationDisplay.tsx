@@ -147,6 +147,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
             totalVerses={totalVerses}
             showVerseFraction={currentVerseNumber !== undefined}
             renderBackgroundOnly={true}
+            slideIndex={currentIndex}
           />
 
           {/* Text Content Only. Keep this mounted so navigation can reuse the
@@ -165,6 +166,7 @@ const SongPresentationDisplay: React.FC<SongPresentationDisplayProps> = ({
                 totalVerses={totalVerses}
                 showVerseFraction={currentVerseNumber !== undefined}
                 renderTextOnly={true}
+                slideIndex={currentIndex}
               />
             </motion.div>
           )}

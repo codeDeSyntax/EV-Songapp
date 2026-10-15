@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import { BookOpen, Music, Flag, Layers, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const getLineHeight = (fontSize: number): number => {
   if (fontSize >= 100) return 1.0;
@@ -30,6 +31,7 @@ interface SlideContentProps {
   showVerseFraction?: boolean;
   renderBackgroundOnly?: boolean;
   renderTextOnly?: boolean;
+  slideIndex?: number;
 }
 
 export const SlideContent: React.FC<SlideContentProps> = ({
@@ -46,6 +48,7 @@ export const SlideContent: React.FC<SlideContentProps> = ({
   showVerseFraction,
   renderBackgroundOnly = false,
   renderTextOnly = false,
+  slideIndex,
 }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -58,6 +61,19 @@ export const SlideContent: React.FC<SlideContentProps> = ({
   const isResizingRef = useRef(false);
   // Debounce timer ref for window resize
   const resizeDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Section tracking visibility: slides in from the right on each navigation,
+  // stays visible for 5 seconds, then smoothly disappears so it never covers song text.
+  const [showIndicator, setShowIndicator] = useState(true);
+
+  useEffect(() => {
+    setShowIndicator(true);
+    const timer = setTimeout(() => {
+      setShowIndicator(false);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [slideIndex, content, sectionType, sectionNumber]);
 
   // Detect background type
   const backgroundType = useMemo(() => {
@@ -447,30 +463,48 @@ export const SlideContent: React.FC<SlideContentProps> = ({
               </p>
             ))}
           </div>
-          {/* Section indicator at bottom right with black background, white text, and colored status icons */}
-          {sectionStatus && (
-            <div className="absolute bottom-2 md:bottom-4 right-4 md:right-6 z-30 select-none pointer-events-none flex items-center gap-3 md:gap-4 px-5 py-2.5 md:px-7 md:py-3.5 rounded-2xl bg-black/95 text-white border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.95)] backdrop-blur-md">
-              {/* Colored status icon and glowing status indicator */}
-              <div className="flex items-center gap-2.5">
-                {sectionStatus.icon}
-                <span className={`rounded-full ${sectionStatus.dotColor}`} />
-              </div>
+          {/* Section indicator at bottom right: slides in from right on navigation, shows for 5s, then smoothly disappears */}
+          <AnimatePresence>
+            {sectionStatus && showIndicator && (
+              <motion.div
+                key={`section-indicator-${slideIndex ?? 0}-${sectionType}-${sectionNumber}-${content}`}
+                initial={{ x: "120%", opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{
+                  x: "120%",
+                  opacity: 0,
+                  transition: { duration: 0.6, ease: "easeInOut" },
+                }}
+                transition={{
+                  type: "spring",
+                  damping: 25,
+                  stiffness: 220,
+                  opacity: { duration: 0.3 },
+                }}
+                className="absolute bottom-2 md:bottom-4 right-4 md:right-6 z-30 select-none pointer-events-none flex items-center gap-3 md:gap-4 px-5 py-2.5 md:px-7 md:py-3.5 rounded-2xl bg-black/95 text-white border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.95)] backdrop-blur-md"
+              >
+                {/* Colored status icon and glowing status indicator */}
+                <div className="flex items-center gap-2.5">
+                  {sectionStatus.icon}
+                  <span className={`rounded-full ${sectionStatus.dotColor}`} />
+                </div>
 
-              {/* Status badge pill if applicable (e.g. LAST, CHORUS, BRIDGE) */}
-              {sectionStatus.badge && (
-                <span
-                  className={`px-2.5 py-1 rounded-md text-xs md:text-sm uppercase tracking-wider ${sectionStatus.badgeColor} shadow-sm`}
-                >
-                  {sectionStatus.badge}
+                {/* Status badge pill if applicable (e.g. LAST, CHORUS, BRIDGE) */}
+                {sectionStatus.badge && (
+                  <span
+                    className={`px-2.5 py-1 rounded-md text-xs md:text-sm uppercase tracking-wider ${sectionStatus.badgeColor} shadow-sm`}
+                  >
+                    {sectionStatus.badge}
+                  </span>
+                )}
+
+                {/* Section text: restored to previous 4xl bold size */}
+                <span className="font-sans font-bold text-3xl md:text-4xl text-white tracking-wide">
+                  {sectionStatus.label}
                 </span>
-              )}
-
-              {/* Section text: restored to previous 4xl bold size */}
-              <span className="font-sans font-bold text-3xl md:text-4xl text-white tracking-wide">
-                {sectionStatus.label}
-              </span>
-            </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
     </div>
